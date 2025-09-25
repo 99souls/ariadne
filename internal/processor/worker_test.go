@@ -13,24 +13,24 @@ func TestWorkerPool(t *testing.T) {
 	t.Run("should create worker pool with configurable size", func(t *testing.T) {
 		pool := NewWorkerPool(3)
 		defer pool.Stop()
-		
+
 		if pool.WorkerCount() != 3 {
 			t.Errorf("Expected 3 workers, got %d", pool.WorkerCount())
 		}
 	})
-	
+
 	t.Run("should process pages concurrently", func(t *testing.T) {
 		pool := NewWorkerPool(2)
 		defer pool.Stop()
-		
+
 		pages := []*models.Page{
 			{Content: `<html><head><title>Page 1</title></head><body><h1>Title 1</h1><p>Content 1</p></body></html>`},
 			{Content: `<html><head><title>Page 2</title></head><body><h1>Title 2</h1><p>Content 2</p></body></html>`},
 			{Content: `<html><head><title>Page 3</title></head><body><h1>Title 3</h1><p>Content 3</p></body></html>`},
 		}
-		
+
 		results := pool.ProcessPages(pages, "https://example.com/")
-		
+
 		processedCount := 0
 		for result := range results {
 			if result.Success {
@@ -42,28 +42,28 @@ func TestWorkerPool(t *testing.T) {
 				t.Errorf("Processing should succeed: %v", result.Error)
 			}
 		}
-		
+
 		if processedCount != 3 {
 			t.Errorf("Expected 3 processed pages, got %d", processedCount)
 		}
 	})
-	
+
 	t.Run("should handle worker errors gracefully", func(t *testing.T) {
 		pool := NewWorkerPool(1)
 		defer pool.Stop()
-		
+
 		// Invalid HTML should be handled gracefully
 		pages := []*models.Page{
 			{Content: `<html><head><title>Valid</title></head><body><p>Good content</p></body></html>`},
 			{Content: `<<INVALID HTML>>`},
 			{Content: `<html><head><title>Also Valid</title></head><body><p>More good content</p></body></html>`},
 		}
-		
+
 		results := pool.ProcessPages(pages, "https://example.com/")
-		
+
 		successCount := 0
 		errorCount := 0
-		
+
 		for result := range results {
 			if result.Success {
 				successCount++
@@ -71,7 +71,7 @@ func TestWorkerPool(t *testing.T) {
 				errorCount++
 			}
 		}
-		
+
 		// Should handle valid pages successfully and invalid ones with errors
 		if successCount != 2 {
 			t.Errorf("Expected 2 successful pages, got %d", successCount)
@@ -98,8 +98,8 @@ func TestHTMLToMarkdownConverter(t *testing.T) {
 ### Section`,
 		},
 		{
-			name: "should convert paragraphs and emphasis",
-			html: `<p>This is <strong>bold</strong> and <em>italic</em> text.</p>`,
+			name:     "should convert paragraphs and emphasis",
+			html:     `<p>This is <strong>bold</strong> and <em>italic</em> text.</p>`,
 			expected: `This is **bold** and *italic* text.`,
 		},
 		{
@@ -112,13 +112,13 @@ func TestHTMLToMarkdownConverter(t *testing.T) {
 2. Second`,
 		},
 		{
-			name: "should convert links and preserve URLs",
-			html: `<p>Visit <a href="https://example.com">our site</a> and <a href="/local">local page</a>.</p>`,
+			name:     "should convert links and preserve URLs",
+			html:     `<p>Visit <a href="https://example.com">our site</a> and <a href="/local">local page</a>.</p>`,
 			expected: `Visit [our site](https://example.com) and [local page](/local).`,
 		},
 		{
-			name: "should convert code blocks and inline code",
-			html: `<p>Use <code>console.log()</code> for debugging.</p><pre><code>function hello() {\n  console.log("Hello!");\n}</code></pre>`,
+			name:     "should convert code blocks and inline code",
+			html:     `<p>Use <code>console.log()</code> for debugging.</p><pre><code>function hello() {\n  console.log("Hello!");\n}</code></pre>`,
 			expected: "Use `console.log()` for debugging.\n\n```\nfunction hello() {\n  console.log(\"Hello!\");\n}\n```",
 		},
 		{
@@ -130,30 +130,30 @@ func TestHTMLToMarkdownConverter(t *testing.T) {
 | Jane | 30 |`,
 		},
 		{
-			name: "should handle images with alt text",
-			html: `<p>Here's an image: <img src="/image.jpg" alt="Description"> and more text.</p>`,
+			name:     "should handle images with alt text",
+			html:     `<p>Here's an image: <img src="/image.jpg" alt="Description"> and more text.</p>`,
 			expected: `Here's an image: ![Description](/image.jpg) and more text.`,
 		},
 		{
-			name: "should convert blockquotes",
-			html: `<blockquote><p>This is a quoted text with multiple sentences. It should be properly formatted.</p></blockquote>`,
+			name:     "should convert blockquotes",
+			html:     `<blockquote><p>This is a quoted text with multiple sentences. It should be properly formatted.</p></blockquote>`,
 			expected: `> This is a quoted text with multiple sentences. It should be properly formatted.`,
 		},
 	}
-	
+
 	converter := NewHTMLToMarkdownConverter()
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := converter.Convert(tt.html)
 			if err != nil {
 				t.Fatalf("Convert failed: %v", err)
 			}
-			
+
 			// Normalize whitespace for comparison
 			result = normalizeMarkdownWhitespace(result)
 			expected := normalizeMarkdownWhitespace(tt.expected)
-			
+
 			if result != expected {
 				t.Errorf("Convert() = %q, expected %q", result, expected)
 			}
@@ -163,7 +163,7 @@ func TestHTMLToMarkdownConverter(t *testing.T) {
 
 func TestContentValidator(t *testing.T) {
 	validator := NewContentValidator()
-	
+
 	t.Run("should validate content quality metrics", func(t *testing.T) {
 		tests := []struct {
 			name    string
@@ -174,8 +174,8 @@ func TestContentValidator(t *testing.T) {
 			{
 				name: "high quality content should pass",
 				page: &models.Page{
-					Title:   "Comprehensive Guide to Web Development",
-					Content: `<h1>Web Development</h1><p>This is a detailed article about web development with substantial content. It covers multiple topics and provides valuable information to readers. The content is well-structured and informative.</p><h2>Frontend</h2><p>Frontend development involves creating user interfaces.</p>`,
+					Title:    "Comprehensive Guide to Web Development",
+					Content:  `<h1>Web Development</h1><p>This is a detailed article about web development with substantial content. It covers multiple topics and provides valuable information to readers. The content is well-structured and informative.</p><h2>Frontend</h2><p>Frontend development involves creating user interfaces.</p>`,
 					Metadata: models.PageMeta{WordCount: 45},
 				},
 				isValid: true,
@@ -184,8 +184,8 @@ func TestContentValidator(t *testing.T) {
 			{
 				name: "short content should be flagged",
 				page: &models.Page{
-					Title:   "Short",
-					Content: `<p>Too short.</p>`,
+					Title:    "Short",
+					Content:  `<p>Too short.</p>`,
 					Metadata: models.PageMeta{WordCount: 2},
 				},
 				isValid: false,
@@ -194,8 +194,8 @@ func TestContentValidator(t *testing.T) {
 			{
 				name: "missing title should be flagged",
 				page: &models.Page{
-					Title:   "",
-					Content: `<p>This content has no title but is otherwise substantial enough to meet content length requirements for processing.</p>`,
+					Title:    "",
+					Content:  `<p>This content has no title but is otherwise substantial enough to meet content length requirements for processing.</p>`,
 					Metadata: models.PageMeta{WordCount: 18},
 				},
 				isValid: false,
@@ -204,27 +204,27 @@ func TestContentValidator(t *testing.T) {
 			{
 				name: "low content density should be flagged",
 				page: &models.Page{
-					Title:   "Navigation Heavy Page",
-					Content: `<nav><ul><li><a href="/">Home</a></li><li><a href="/about">About</a></li></ul></nav><div class="ads">Advertisement content here</div><p>Small content.</p>`,
+					Title:    "Navigation Heavy Page",
+					Content:  `<nav><ul><li><a href="/">Home</a></li><li><a href="/about">About</a></li></ul></nav><div class="ads">Advertisement content here</div><p>Small content.</p>`,
 					Metadata: models.PageMeta{WordCount: 8},
 				},
 				isValid: false,
 				issues:  []string{"low_content_density"},
 			},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result := validator.ValidateContent(tt.page)
-				
+
 				if result.IsValid != tt.isValid {
 					t.Errorf("Expected IsValid=%t, got %t", tt.isValid, result.IsValid)
 				}
-				
+
 				if len(result.Issues) != len(tt.issues) {
 					t.Errorf("Expected %d issues, got %d: %v", len(tt.issues), len(result.Issues), result.Issues)
 				}
-				
+
 				for _, expectedIssue := range tt.issues {
 					found := false
 					for _, actualIssue := range result.Issues {
@@ -244,18 +244,18 @@ func TestContentValidator(t *testing.T) {
 
 func TestSpecialContentHandling(t *testing.T) {
 	processor := NewContentProcessor()
-	
+
 	t.Run("should preserve code blocks with syntax highlighting info", func(t *testing.T) {
 		html := `<div><pre><code class="language-go">func main() {
 	fmt.Println("Hello World")
 }</code></pre></div>`
-		
+
 		page := &models.Page{Content: html}
 		err := processor.ProcessPage(page, "https://example.com/")
 		if err != nil {
 			t.Fatalf("ProcessPage failed: %v", err)
 		}
-		
+
 		// Should preserve the code and language info
 		if !containsCodeBlock(page.Markdown) {
 			t.Error("Code block should be preserved in markdown")
@@ -264,7 +264,7 @@ func TestSpecialContentHandling(t *testing.T) {
 			t.Error("Language information should be preserved")
 		}
 	})
-	
+
 	t.Run("should handle complex tables with formatting", func(t *testing.T) {
 		html := `<table>
 			<thead>
@@ -275,13 +275,13 @@ func TestSpecialContentHandling(t *testing.T) {
 				<tr><td><em>Processing</em></td><td>🔄 In Progress</td><td>Advanced features</td></tr>
 			</tbody>
 		</table>`
-		
+
 		page := &models.Page{Content: html}
 		err := processor.ProcessPage(page, "https://example.com/")
 		if err != nil {
 			t.Fatalf("ProcessPage failed: %v", err)
 		}
-		
+
 		// Should convert to markdown table while preserving formatting
 		if !containsMarkdownTable(page.Markdown) {
 			t.Error("HTML table should be converted to markdown table")
@@ -290,7 +290,7 @@ func TestSpecialContentHandling(t *testing.T) {
 			t.Error("Table formatting (bold, italic) should be preserved")
 		}
 	})
-	
+
 	t.Run("should extract and catalog images", func(t *testing.T) {
 		html := `<div>
 			<p>Article with images:</p>
@@ -301,18 +301,18 @@ func TestSpecialContentHandling(t *testing.T) {
 				<figcaption>Our development team</figcaption>
 			</figure>
 		</div>`
-		
+
 		page := &models.Page{Content: html}
 		err := processor.ProcessPage(page, "https://example.com/")
 		if err != nil {
 			t.Fatalf("ProcessPage failed: %v", err)
 		}
-		
+
 		// Should catalog images
 		if len(page.Images) != 2 {
 			t.Errorf("Expected 2 images, found %d", len(page.Images))
 		}
-		
+
 		// Should preserve images in markdown
 		if !containsMarkdownImage(page.Markdown, "Architecture Diagram") {
 			t.Error("Image should be converted to markdown format")
@@ -375,28 +375,28 @@ func main() {
 				</html>`,
 			},
 		}
-		
+
 		// Process through complete pipeline
 		pool := NewWorkerPool(2)
 		defer pool.Stop()
-		
+
 		results := pool.ProcessPages(pages, "https://example.com/docs/")
-		
+
 		successCount := 0
 		for result := range results {
 			if !result.Success {
 				t.Errorf("Processing should succeed: %v", result.Error)
 				continue
 			}
-			
+
 			page := result.Page
 			successCount++
-			
+
 			// Validate content cleaning
 			if containsUnwantedElements(page.Content) {
 				t.Error("Unwanted elements should be removed")
 			}
-			
+
 			// Validate markdown conversion
 			if page.Markdown == "" {
 				t.Error("Markdown should be generated")
@@ -404,7 +404,7 @@ func main() {
 			if !containsMarkdownHeadings(page.Markdown) {
 				t.Error("Headings should be converted to markdown")
 			}
-			
+
 			// Validate metadata extraction
 			if page.Metadata.WordCount == 0 {
 				t.Error("Word count should be calculated")
@@ -412,17 +412,17 @@ func main() {
 			if page.Metadata.Description == "" && successCount == 1 {
 				t.Error("Metadata should be extracted from first page")
 			}
-			
+
 			// Validate URL conversion
 			if !containsAbsoluteURLs(page.Content) {
 				t.Error("Relative URLs should be converted to absolute")
 			}
 		}
-		
+
 		if successCount != 2 {
 			t.Errorf("Expected 2 successful pages, got %d", successCount)
 		}
-		
+
 		t.Logf("🔥 PHASE 2.2 SUCCESS: Complete pipeline processing %d pages!", successCount)
 	})
 }
@@ -433,12 +433,12 @@ func normalizeMarkdownWhitespace(s string) string {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
 	lines := strings.Split(s, "\n")
-	
+
 	// Trim whitespace from each line and remove empty lines at start/end
 	for i, line := range lines {
 		lines[i] = strings.TrimRight(line, " \t")
 	}
-	
+
 	// Remove leading/trailing empty lines
 	for len(lines) > 0 && lines[0] == "" {
 		lines = lines[1:]
@@ -446,7 +446,7 @@ func normalizeMarkdownWhitespace(s string) string {
 	for len(lines) > 0 && lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
 	}
-	
+
 	return strings.Join(lines, "\n")
 }
 

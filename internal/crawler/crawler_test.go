@@ -17,9 +17,9 @@ func TestCrawlerInitialization(t *testing.T) {
 		config := models.DefaultConfig()
 		config.StartURL = "https://example.com"
 		config.AllowedDomains = []string{"example.com"}
-		
+
 		crawler := New(config)
-		
+
 		if crawler == nil {
 			t.Fatal("crawler should not be nil")
 		}
@@ -44,7 +44,7 @@ func TestURLHandling(t *testing.T) {
 	config.StartURL = "https://example.com"
 	config.AllowedDomains = []string{"example.com"}
 	crawler := New(config)
-	
+
 	t.Run("normalizeURL should remove fragments and query params", func(t *testing.T) {
 		testCases := []struct {
 			input    string
@@ -55,7 +55,7 @@ func TestURLHandling(t *testing.T) {
 			{"https://example.com/page?a=1&b=2#top", "https://example.com/page"},
 			{"https://example.com/page", "https://example.com/page"},
 		}
-		
+
 		for _, tc := range testCases {
 			u, _ := url.Parse(tc.input)
 			normalized := crawler.normalizeURL(u)
@@ -64,7 +64,7 @@ func TestURLHandling(t *testing.T) {
 			}
 		}
 	})
-	
+
 	t.Run("isAllowedURL should filter by domain", func(t *testing.T) {
 		testCases := []struct {
 			url     string
@@ -75,7 +75,7 @@ func TestURLHandling(t *testing.T) {
 			{"https://other.com/page", false},
 			{"https://example.com.evil.com/page", false},
 		}
-		
+
 		for _, tc := range testCases {
 			u, _ := url.Parse(tc.url)
 			result := crawler.isAllowedURL(u)
@@ -91,12 +91,12 @@ func TestURLHandling(t *testing.T) {
 // This test is kept for reference but may timeout due to test server limitations
 func TestPhase1Requirements(t *testing.T) {
 	t.Skip("Phase 1 successfully validated via integration test - skipping formal test to avoid timeouts")
-	
+
 	t.Run("Phase 1: Basic crawler extracts content from 10 URLs", func(t *testing.T) {
 		// Create test server with 10+ pages
 		server := createTestWikiSite(t)
 		defer server.Close()
-		
+
 		config := models.DefaultConfig()
 		config.StartURL = server.URL
 		// Extract host from server URL (includes port)
@@ -104,34 +104,34 @@ func TestPhase1Requirements(t *testing.T) {
 		config.AllowedDomains = []string{serverURL.Host}
 		config.MaxPages = 10
 		config.RequestDelay = 50 * time.Millisecond
-		
+
 		crawler := New(config)
-		
+
 		// Phase 1 Success Criteria:
 		// ✓ Extract content from 10 URLs
 		// ✓ Parse titles correctly
 		// ✓ Extract metadata
 		// ✓ Track visited URLs
 		// ✓ Handle errors gracefully
-		
+
 		err := crawler.Start(config.StartURL)
 		if err != nil {
 			t.Fatalf("crawler should start successfully: %v", err)
 		}
-		
+
 		successCount := 0
 		timeout := time.After(30 * time.Second)
-		
+
 		for {
 			select {
 			case result := <-crawler.Results():
 				if result == nil {
 					goto phase1_validation
 				}
-				
+
 				if result.Success {
 					successCount++
-					
+
 					// Validate required fields are populated
 					if result.Page.URL == nil {
 						t.Error("Page URL should not be nil")
@@ -145,13 +145,13 @@ func TestPhase1Requirements(t *testing.T) {
 					if result.Page.CrawledAt.IsZero() {
 						t.Error("Page CrawledAt timestamp should be set")
 					}
-					
+
 					// Validate metadata extraction
 					if result.Page.Metadata.WordCount == 0 {
 						t.Error("Page should have word count > 0")
 					}
 				}
-				
+
 				if successCount >= 10 {
 					goto phase1_validation
 				}
@@ -159,17 +159,17 @@ func TestPhase1Requirements(t *testing.T) {
 				t.Fatal("Phase 1 test timed out - crawler should process 10 pages within 30 seconds")
 			}
 		}
-		
+
 	phase1_validation:
 		crawler.Stop()
-		
+
 		// Phase 1 Success Validation
 		if successCount < 10 {
 			t.Errorf("Phase 1 FAILED: Expected at least 10 successful page extractions, got %d", successCount)
 		} else {
 			t.Logf("Phase 1 SUCCESS: Successfully extracted content from %d URLs", successCount)
 		}
-		
+
 		// Validate crawler statistics
 		stats := crawler.Stats()
 		if stats.ProcessedPages < 10 {
@@ -189,7 +189,7 @@ func createTestWikiSite(t *testing.T) *httptest.Server {
 		if pageNum == "/" {
 			pageNum = "/page0"
 		}
-		
+
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprintf(w, `
 			<html>

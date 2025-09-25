@@ -77,7 +77,7 @@ func (c *Crawler) setupCallbacks() {
 	// HTML callback - extract content and links
 	c.collector.OnHTML("html", func(e *colly.HTMLElement) {
 		page := c.extractPage(e)
-		
+
 		// Extract internal links
 		e.ForEach("a[href]", func(_ int, el *colly.HTMLElement) {
 			link := el.Attr("href")
@@ -100,10 +100,10 @@ func (c *Crawler) setupCallbacks() {
 	// Error callback
 	c.collector.OnError(func(r *colly.Response, err error) {
 		log.Printf("Error crawling %s: %v", r.Request.URL, err)
-		
+
 		result := &models.CrawlResult{
 			Error:   models.NewCrawlError(r.Request.URL.String(), "crawl", err),
-			Stage:   "crawl", 
+			Stage:   "crawl",
 			Success: false,
 			Retry:   true,
 		}
@@ -126,7 +126,7 @@ func (c *Crawler) setupCallbacks() {
 // extractPage creates a Page model from the HTML element
 func (c *Crawler) extractPage(e *colly.HTMLElement) *models.Page {
 	pageHTML, _ := e.DOM.Html()
-	
+
 	page := &models.Page{
 		URL:       e.Request.URL,
 		Title:     c.extractTitle(e),
@@ -160,17 +160,17 @@ func (c *Crawler) extractTitle(e *colly.HTMLElement) string {
 	if title := e.ChildText("title"); title != "" {
 		return strings.TrimSpace(title)
 	}
-	
+
 	// Try h1 tag
 	if h1 := e.ChildText("h1"); h1 != "" {
 		return strings.TrimSpace(h1)
 	}
-	
+
 	// Try og:title meta tag
 	if ogTitle := e.ChildAttr("meta[property='og:title']", "content"); ogTitle != "" {
 		return strings.TrimSpace(ogTitle)
 	}
-	
+
 	return "Untitled"
 }
 
@@ -184,7 +184,7 @@ func (c *Crawler) processLink(link string, base *url.URL) {
 
 	// Normalize URL (remove fragment, query params for deduplication)
 	normalizedURL := c.normalizeURL(linkURL)
-	
+
 	// Check if already visited
 	if _, visited := c.visited.LoadOrStore(normalizedURL, true); visited {
 		return
@@ -227,13 +227,13 @@ func (c *Crawler) isAllowedURL(u *url.URL) bool {
 // Start begins the crawling process
 func (c *Crawler) Start(startURL string) error {
 	log.Printf("Starting crawl from: %s", startURL)
-	
+
 	// Add start URL to queue
 	c.queue <- startURL
-	
+
 	// Start processing queue
 	go c.processQueue()
-	
+
 	return nil
 }
 
@@ -243,7 +243,7 @@ func (c *Crawler) processQueue() {
 		if c.shouldStop() {
 			break
 		}
-		
+
 		err := c.collector.Visit(url)
 		if err != nil {
 			log.Printf("Failed to visit %s: %v", url, err)
@@ -255,11 +255,11 @@ func (c *Crawler) processQueue() {
 func (c *Crawler) shouldStop() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	if c.config.MaxPages > 0 && c.stats.ProcessedPages >= c.config.MaxPages {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -272,13 +272,13 @@ func (c *Crawler) Results() <-chan *models.CrawlResult {
 func (c *Crawler) Stats() *models.CrawlStats {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	stats := *c.stats
 	stats.Duration = time.Since(c.stats.StartTime)
 	if stats.Duration > 0 {
 		stats.PagesPerSec = float64(stats.ProcessedPages) / stats.Duration.Seconds()
 	}
-	
+
 	return &stats
 }
 
@@ -288,7 +288,7 @@ func (c *Crawler) Stop() {
 	close(c.queue)
 	c.collector.Wait()
 	close(c.results)
-	
+
 	c.mu.Lock()
 	c.stats.EndTime = time.Now()
 	c.stats.Duration = c.stats.EndTime.Sub(c.stats.StartTime)

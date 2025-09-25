@@ -13,7 +13,7 @@ import (
 
 func main() {
 	log.Println("🚀 Phase 1 Integration Test - Site Scraper")
-	
+
 	// Create test server to validate our crawler
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -29,7 +29,7 @@ func main() {
 		}
 	}))
 	defer server.Close()
-	
+
 	// Configure crawler for test
 	config := models.DefaultConfig()
 	config.StartURL = server.URL
@@ -37,50 +37,50 @@ func main() {
 	config.AllowedDomains = []string{serverURL.Host}
 	config.MaxPages = 3
 	config.RequestDelay = 200 * time.Millisecond // Slow down for testing
-	
+
 	log.Printf("Testing with server: %s", server.URL)
-	
+
 	// Create and start crawler
 	c := crawler.New(config)
 	err := c.Start(config.StartURL)
 	if err != nil {
 		log.Fatalf("Failed to start crawler: %v", err)
 	}
-	
+
 	// Collect results
 	successCount := 0
 	timeout := time.After(15 * time.Second)
-	
+
 	for {
 		select {
 		case result := <-c.Results():
 			if result == nil {
 				goto results
 			}
-			
+
 			if result.Success {
 				successCount++
 				log.Printf("✅ [%d] %s - '%s'", successCount, result.Page.URL.String(), result.Page.Title)
 			} else {
 				log.Printf("❌ Error: %v", result.Error)
 			}
-			
+
 			if successCount >= 3 {
 				goto results
 			}
-			
+
 		case <-timeout:
 			log.Println("Timeout reached")
 			goto results
 		}
 	}
-	
+
 results:
 	c.Stop()
 	stats := c.Stats()
-	
+
 	log.Printf("\nResults: %d successful, %d total processed", successCount, stats.ProcessedPages)
-	
+
 	if successCount >= 3 {
 		log.Println("🎉 PHASE 1 SUCCESS: Basic crawler validated!")
 	} else {
