@@ -224,10 +224,6 @@ go test -bench=. ./internal/processor
 | `asset_formats`   | `["jpg", "png"]` | Supported image formats     |
 | `max_image_size`  | 10MB             | Maximum image download size |
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
 ### Development Setup
 
 1. **Clone and setup**:
