@@ -55,13 +55,6 @@ jobs:
           #   echo "✅ Test coverage is above 80%"
           # fi
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.out
-          flags: unittests
-          name: codecov-umbrella
-
   build-matrix:
     runs-on: ${{ matrix.os }}
     strategy:
