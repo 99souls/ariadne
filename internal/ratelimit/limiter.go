@@ -2,8 +2,10 @@
 // Deprecated: import "site-scraper/packages/engine/ratelimit" instead.
 package ratelimit
 
-import englimit "site-scraper/packages/engine/ratelimit"
-import engmodels "site-scraper/packages/engine/models"
+import (
+	engmodels "site-scraper/packages/engine/models"
+	englimit "site-scraper/packages/engine/ratelimit"
+)
 
 // Type aliases for backward compatibility
 type (

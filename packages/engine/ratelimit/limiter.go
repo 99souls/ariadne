@@ -4,12 +4,12 @@ package ratelimit
 // NOTE: Original file kept as forwarding shim under internal/ratelimit during migration.
 
 import (
-    "context"
-    "errors"
-    "hash/fnv"
-    engmodels "site-scraper/packages/engine/models"
-    "sync"
-    "time"
+	"context"
+	"errors"
+	"hash/fnv"
+	engmodels "site-scraper/packages/engine/models"
+	"sync"
+	"time"
 )
 
 var ErrCircuitOpen = errors.New("ratelimit: circuit open")

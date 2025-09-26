@@ -1,11 +1,10 @@
 package engine
 
 import (
-	"time"
-
-	"site-scraper/internal/pipeline"
-	"site-scraper/internal/resources"
-	"site-scraper/pkg/models"
+    "time"
+    "site-scraper/internal/pipeline"
+    engresources "site-scraper/packages/engine/resources"
+    "site-scraper/pkg/models"
 )
 
 // Config is the public configuration surface for the Engine facade. It intentionally
@@ -28,7 +27,7 @@ type Config struct {
 	RateLimit models.RateLimitConfig
 
 	// Resource management
-	Resources resources.Config
+	Resources engresources.Config
 
 	// Resume settings
 	Resume         bool
@@ -39,7 +38,7 @@ type Config struct {
 // engineOptions are internal construction options resolved by New().
 type engineOptions struct {
 	limiter         interface{} // ratelimit.RateLimiter (avoid import cycle comments here)
-	resourceManager *resources.Manager
+	resourceManager *engresources.Manager
 }
 
 func (c Config) toPipelineConfig(opts engineOptions) *pipeline.PipelineConfig {
@@ -95,7 +94,7 @@ func Defaults() Config {
 			DomainStateTTL: 2 * time.Minute,
 			Shards:         16,
 		},
-		Resources: resources.Config{
+		Resources: engresources.Config{
 			CacheCapacity:      64,
 			MaxInFlight:        16,
 			CheckpointInterval: 50 * time.Millisecond,
