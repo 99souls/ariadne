@@ -1,6 +1,8 @@
 # Site Scraper Implementation Plan
 
-_Agentic workflow optimized for systematic development_
+_Central execution plan synchronized with GitHub issues (authoritative backlog)._ 
+
+This document now maps every phase/sub-phase item to a GitHub Issue for single-source-of-truth tracking. Closed checkboxes here should mirror closed issues; creation of new scope MUST create an issue first.
 
 ## Development Philosophy
 
@@ -11,7 +13,7 @@ _Agentic workflow optimized for systematic development_
 
 ---
 
-## Phase 1: Foundation & Core Architecture
+## Phase 1: Foundation & Core Architecture (Complete)
 
 **Timeline: Day 1-2 | Success Metric: Basic crawler extracts content from 10 URLs**
 
@@ -52,7 +54,7 @@ _Agentic workflow optimized for systematic development_
 
 ---
 
-## Phase 2: Content Processing Pipeline
+## Phase 2: Content Processing Pipeline (Complete)
 
 **Timeline: Day 2-3 | Success Metric: Clean markdown output from crawled content**
 
@@ -72,16 +74,16 @@ _Agentic workflow optimized for systematic development_
 
 ### 2.3 Asset Management
 
-- [ ] Implement image URL extraction and cataloging
-- [ ] Add option for image downloading vs. URL preservation
-- [ ] Handle asset optimization (resize, compress)
-- [ ] Create asset manifest for output generation
+- [x] Implement image URL extraction and cataloging
+- [x] Add option for image downloading vs. URL preservation
+- [x] Handle asset optimization (resize, compress)
+- [x] Create asset manifest for output generation
 
 **Validation Test**: Process 50 pages, generate clean markdown with preserved formatting and working links.
 
 ---
 
-## Phase 3: Concurrency & Performance Optimization
+## Phase 3: Concurrency & Performance Optimization (Partially Complete)
 
 **Timeline: Day 3-4 | Success Metric: Process 500+ pages efficiently with resource monitoring**
 
@@ -95,108 +97,129 @@ _Agentic workflow optimized for systematic development_
 
 ### 3.2 Intelligent Rate Limiting
 
-- [x] Implement adaptive rate limiter based on server responses
-- [x] Add per-domain rate limiting capabilities
-- [x] Create circuit breaker for server overload detection
-- [x] Add retry logic with exponential backoff
+- [x] Implement adaptive rate limiter based on server responses (AIMD + EWMA) – implemented
+- [x] Add per-domain rate limiting capabilities – implemented
+- [x] Create circuit breaker for server overload detection – implemented
+- [x] Add retry logic with exponential backoff – implemented
+- [ ] Persistent limiter state across runs (Issue #14)
 
 ### 3.3 Resource Management
 
-- [ ] Implement memory monitoring and management
-- [ ] Add content caching with LRU eviction
-- [ ] Create disk spillover for large datasets
-- [ ] Add progress checkpointing for resumable crawls
+- [x] Implement memory monitoring and management (lightweight sampling) – implemented
+- [x] Add content caching with LRU eviction – implemented
+- [x] Create disk spillover for large datasets – implemented
+- [x] Add progress checkpointing for resumable crawls – implemented
+- [ ] Spill retention / cleanup policy (Issue #8)
 
 **Validation Test**: Crawl 500+ page site within memory limits, complete within expected timeframe.
 
 ---
 
-## Phase 4: Output Generation System
+## Phase 4: Output Generation System (Scheduled)
 
 **Timeline: Day 4-5 | Success Metric: Generate high-quality PDF, MD, and HTML outputs**
 
 ### 4.1 Multi-Format Output Engine
 
-- [ ] Implement markdown compilation with table of contents
-- [ ] Create HTML template system for web output
-- [ ] Add PDF generation pipeline (markdown → HTML → PDF)
-- [ ] Implement output format plugins for extensibility
+- [ ] Markdown compilation with table of contents (Issue #19)
+- [ ] HTML template system for web output (Issue #20)
+- [ ] PDF generation pipeline (Issue #21)
+- [ ] Output format plugin registration (Issue #22)
 
 ### 4.2 Document Assembly
 
-- [ ] Create document structure organizing by URL hierarchy
-- [ ] Generate navigation and cross-reference links
-- [ ] Implement content deduplication logic
-- [ ] Add metadata extraction and inclusion
+- [ ] Document structure by URL hierarchy (Issue #23)
+- [ ] Navigation and cross-reference generation (Issue #24)
+- [ ] Content deduplication logic (Issue #25)
+- [ ] Metadata extraction & inclusion (Issue #26)
 
 ### 4.3 Content Enhancement
 
-- [ ] Generate automatic table of contents
-- [ ] Create index of pages and sections
-- [ ] Add search functionality for HTML output
-- [ ] Implement custom CSS styling for professional appearance
+- [ ] Automatic table of contents generation (Issue #27)
+- [ ] Index of pages and sections (Issue #28)
+- [ ] Search functionality for HTML output (Issue #29)
+- [ ] Custom CSS styling system (Issue #30)
 
 **Validation Test**: Generate publication-ready documents in all three formats from 100+ page crawl.
 
 ---
 
-## Phase 5: Production Readiness
+## Phase 5: Production Readiness (Queued)
 
 **Timeline: Day 5-6 | Success Metric: Production-ready tool with comprehensive error handling**
 
 ### 5.1 Configuration Management
 
-- [ ] Create comprehensive YAML configuration system
-- [ ] Add command-line argument parsing
-- [ ] Implement configuration validation and defaults
-- [ ] Add site-specific configuration profiles
+- [ ] Comprehensive YAML configuration system (Issue #31)
+- [ ] Configuration validation & defaulting (Issue #32)
+- [ ] Site-specific configuration profiles (Issue #33)
 
 ### 5.2 Error Handling & Recovery
 
-- [ ] Implement comprehensive error classification
-- [ ] Add failed URL retry queue with intelligent retry logic
-- [ ] Create partial completion support (generate from successful pages)
-- [ ] Add detailed error reporting and logging
+- [ ] Comprehensive error classification (Issue #34)
+- [ ] Failed URL retry queue with backoff (Issue #35)
+- [ ] Partial completion support (Issue #36)
+- [ ] Detailed error reporting & logging (Issue #37)
 
 ### 5.3 Monitoring & Observability
 
-- [ ] Implement real-time progress reporting
-- [ ] Add performance metrics (pages/sec, memory usage, error rates)
-- [ ] Create completion time estimation
-- [ ] Add structured logging with multiple verbosity levels
+- [ ] Real-time progress reporting (Issue #38)
+- [ ] Performance metrics collection (Issue #39)
+- [ ] Completion time estimation (Issue #40)
+- [ ] Structured logging & verbosity levels (Issue #41) (may integrate with Issue #9 if merged)
+- [ ] Snapshot JSON Schema (Issue #5)
+- [ ] Prometheus metrics exporter (Issue #6)
 
 **Validation Test**: Handle various failure scenarios gracefully, provide clear progress feedback.
 
 ---
 
-## Phase 6: Polish & CLI Experience
+## Phase 6: Polish & CLI Experience (Queued)
 
 **Timeline: Day 6-7 | Success Metric: Professional CLI tool ready for distribution**
 
 ### 6.1 Command-Line Interface
 
-- [ ] Create intuitive CLI with subcommands (crawl, resume, status)
-- [ ] Add progress bars and real-time status updates
-- [ ] Implement interactive configuration prompts
-- [ ] Add help system and usage examples
+- [ ] CLI subcommands (crawl, resume, status) (Issue #42)
+- [ ] Progress bars & real-time status UI (Issue #43)
+- [ ] Interactive configuration prompts (Issue #44)
+- [ ] Help system & usage examples (Issue #45)
 
 ### 6.2 Output Quality Improvements
 
-- [ ] Fine-tune markdown output formatting
-- [ ] Optimize PDF generation (fonts, spacing, page breaks)
-- [ ] Enhance HTML output with responsive design
-- [ ] Add output validation and quality metrics
+- [ ] Markdown output formatting refinements (Issue #46)
+- [ ] PDF generation optimization (Issue #47)
+- [ ] Responsive HTML output enhancements (Issue #48)
+- [ ] Output validation & quality metrics (Issue #49)
 
 ### 6.3 Documentation & Testing
 
-- [ ] Create comprehensive README with examples
-- [ ] Add unit tests for critical components
-- [ ] Create integration tests with sample sites
-- [ ] Document configuration options and best practices
+- [ ] Comprehensive README expansion with examples (Issue #50)
+- [ ] Unit tests for critical components (Issue #51)
+- [ ] Integration tests with sample sites (Issue #52)
+- [ ] Configuration options & best practices documentation (Issue #53)
 
 **Validation Test**: Tool can be used by external user with minimal guidance.
 
 ---
+
+## Cross-Cutting: Engine Package Decomposition & Facade (In Progress)
+
+Tracking moved to dedicated issues already created / to be created:
+- Persistent limiter state (Issue #14)
+- Advanced resume (mid-pipeline) (Issue #15)
+- Output plugin system (Issue #16) – overlaps Phase 4.1/6.2
+- Legacy banner mode (Issue #18)
+- Telemetry architecture design (Issue #12)
+- Snapshot rotation (Issue #13)
+- Coverage threshold (Issue #11)
+- Structured logging & verbosity (Issues #9, #41)
+
+Additional tasks (future issues when ready):
+- Engine facade public API reference doc (TBD)
+- Migration guide promotion (Issue #7)
+
+Acceptance remains: architectural enforcement test (DONE), facade snapshot stability (DONE), incremental refactor continues under test safety net.
 
 ## Success Metrics & Validation Strategy
 
