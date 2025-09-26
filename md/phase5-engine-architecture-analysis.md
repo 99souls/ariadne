@@ -3,7 +3,7 @@
 **Status**: Complete  
 **Date**: September 26, 2025  
 **Scope**: Critical evaluation of engine package as core business layer  
-**Next Phase**: Engine-centric architecture consolidation
+**Next Phase**: Engine-centric architecture consolidation → staged evolution toward a **multi-module monorepo** (engine core + runtime/API + CLI + presentation surfaces)
 
 ---
 
@@ -11,9 +11,11 @@
 
 Ariadne has successfully established `packages/engine` as a functional facade but **critical architectural gaps** prevent it from serving as a true core business layer. While the engine provides lifecycle management and metric aggregation, the functional requirements remain scattered across `internal/` packages with inconsistent abstraction boundaries. To achieve the goal of making engine the authoritative core business layer, we need **strategic consolidation, interface standardization, and systematic migration** of business logic.
 
+Additionally, the long‑term target state now explicitly includes **evolving the repository into a structured multi-module monorepo** to enable: (1) independent semantic versioning of the core engine, (2) faster iteration of API / web / CLI layers, (3) clearer contract boundaries, and (4) reduced accidental coupling. This document is augmented to outline that path (see Section 9 and Appendix C).
+
 **Current State**: 🟡 **Partially Achieved** - Facade exists but lacks domain authority  
-**Target State**: 🎯 **Engine as Single Source of Truth** - All business logic consolidated under engine interfaces  
-**Migration Effort**: **High** - Requires 6-8 phases of careful refactoring with maintained backward compatibility
+**Target State**: 🎯 **Engine as Single Source of Truth (Multi-Module Ready)** - All business logic consolidated under engine interfaces; repository partitioned into independent Go modules with clear dependency direction (presentation layers depend on engine, not vice versa).  
+**Migration Effort**: **High** - Requires 6-8 phases of careful refactoring plus an activation phase for module extraction with maintained backward compatibility
 
 ---
 
@@ -262,6 +264,54 @@ For Ariadne, the core business layer should encapsulate:
 
 **Success Criteria**: `main.go` should configure business behavior **only** through `engine.Config`, with no knowledge of internal implementation details.
 
+#### Phase 5G (Activation): Multi-Module Extraction (1-2 weeks, conditional trigger)
+
+**Goal**: Split the monolithic Go module into discrete, semantically versioned modules once engine interfaces stabilize (post 5F) and churn rate declines.
+
+**Trigger Conditions** (all must be true):
+
+1. Engine interface changes per week < 2 over a 3-week rolling window
+2. Processor / Fetcher strategy contracts marked stable (no TODO:BREAKING markers)
+3. Configuration consolidation complete; CLI only consumes `engine` public API
+4. Backward compatibility test suite green against last two engine tags
+
+**Planned Module Layout (initial):**
+
+```
+ /engine            (module: github.com/yourorg/ariadne/engine)
+ /cli               (module: github.com/yourorg/ariadne/cli) – depends on engine
+ /services/api      (module: github.com/yourorg/ariadne/api) – depends on engine
+ /adapters/output/* (optional future modules if externalized)
+ /shared/models     (folded progressively into engine/models; legacy kept temporarily)
+```
+
+**Tasks:**
+1. Extract `packages/engine` to `/engine` root module (rename path if needed)
+2. Move CLI entrypoint(s) to `/cli` with its own `go.mod` importing `engine`
+3. Introduce `/services/api` (stub) with placeholder server referencing engine (future expansion)
+4. Update import paths; add `replace` directives locally during transition
+5. Introduce compatibility layer: mark legacy import paths with forwarding packages (deprecation notices) if externally consumed
+6. Update CI to run matrix: (engine tests, cli tests, api tests) + integration harness
+7. Introduce tag policy: tag engine releases (`vX.Y.Z`), optional independent CLI tagging (or sync initially)
+
+**Risks:**
+| Risk | Impact | Mitigation |
+|------|--------|-----------|
+| Import Path Breakage | Medium | Add transitional forwarding packages & clear release notes |
+| Dependency Drift | Low | Renovate or Dependabot for each module, plus CI module graph diff |
+| Version Skew (CLI vs Engine) | Medium | Start with lockstep tagging for first 3 cycles |
+| Increased CI Time | Low | Parallelize workflows; cache build per module |
+
+**Success Metrics:**
+| Metric | Target |
+|--------|--------|
+| Engine module tests isolated | 100% engine tests not importing CLI/API |
+| Build graph direction | Only presentation modules depend on engine |
+| Independent release cadence | CLI or API can release w/o engine tag (after stabilization) |
+| Backward compatibility | No breaking API changes without MAJOR bump |
+
+**Deferral Strategy:** If interface churn remains high after 5F, re-evaluate at 2-week intervals; do not prematurely fragment.
+
 ### 3.2 Effort & Risk Assessment
 
 | Phase | Duration  | Risk Level | Complexity | Breaking Changes            |
@@ -455,6 +505,8 @@ func New(cfg Config) (*Engine, error)  // Uses default strategies
 - **Interface Coverage**: 90%+ of business logic accessible through engine interfaces
 - **Configuration Consolidation**: Single engine config controls all business policies
 - **Import Reduction**: Zero direct imports of `internal/*` packages outside engine
+- **Module Boundary Integrity (post 5G)**: No reverse (presentation → engine) circular dependencies; engine has zero imports from `/cli`, `/services/*`
+- **Version Stability**: Average time between engine minor releases increases after stabilization (indicates maturity)
 - **Test Coverage Maintenance**: >90% test coverage maintained throughout migration
 - **Performance Baseline**: <10% performance regression during migration
 
@@ -500,7 +552,105 @@ The analysis supports **proceeding with engine-centric consolidation** using the
 - **Improved Maintainability**: Business logic centralized and clearly bounded
 - **Better Testability**: Interface-driven architecture enables comprehensive unit and integration testing
 
-**Next Action**: Initiate Phase 5A (Interface Definition & Scaffolding) with focus on `Fetcher` and enhanced `Processor` interface design.
+**Next Action**: Initiate Phase 5A (Interface Definition & Scaffolding) with focus on `Fetcher` and enhanced `Processor` interface design. Begin collecting stabilization metrics to determine Phase 5G activation timing.
+
+---
+
+## 9. Multi-Module Monorepo Strategy (Augmentation)
+
+### 9.1 Rationale
+
+Moving to a multi-module monorepo decouples the **contract stability domain** (engine) from the **delivery velocity domain** (CLI, API, web). This supports:
+
+- Independent semantic versioning
+- Faster iteration & deployment of runtime surfaces
+- Clearer architectural boundaries and dependency direction
+- Reduced accidental coupling & easier dependency graph reasoning
+
+### 9.2 Guiding Principles
+
+1. Engine is the only module exposing core business contracts
+2. Downstream modules must not duplicate domain model types—source of truth in `engine`
+3. No module imports another's `internal/` packages (enforced via CI script)
+4. Public surface area changes require release notes & semantic versioning discipline
+5. Transitional forwarding allowed for one minor release window only
+
+### 9.3 Module Dependency Graph (Target)
+
+```
+┌──────────┐     ┌──────────┐
+│   CLI    │     │  API     │
+└────┬─────┘     └────┬─────┘
+     │                │
+     └────────┬───────┘
+          ▼
+      ┌────────────┐
+      │  ENGINE    │
+      └────────────┘
+```
+
+Potential future optional modules (not immediate): `engine-plugins/*`, `adapters/output/*`.
+
+### 9.4 Incremental Extraction Plan
+
+| Step | Action | Output |
+|------|--------|--------|
+| 1 | Freeze interface churn (label proposed breaking changes) | Stability window defined |
+| 2 | Carve out `/engine` module (`go.mod`) | Independent build |
+| 3 | Adjust imports; add `replace` for local dev | Transitional build success |
+| 4 | Move CLI entrypoint → `/cli` module | Separate binary build |
+| 5 | Introduce API skeleton (even if minimal) | Future service placeholder |
+| 6 | Add CI matrix & module boundary lint | Automated enforcement |
+| 7 | First dual release: tag engine + CLI | Baseline version alignment |
+| 8 | Remove forwarding shims / finalize | Clean boundary |
+
+### 9.5 CI/CD Adjustments
+
+- Add workflow matrix: `{module: engine|cli|api}` running `go test ./...`
+- Boundary guard job: script parses `go list -deps` ensuring no reverse dependency
+- Release workflow triggers on tags matching `engine/v*` and `cli/v*`
+- Contract diff job (engine only) using `apidiff` against last released tag
+
+### 9.6 Versioning & Tagging Policy
+
+- Tag format: `engine/vMAJOR.MINOR.PATCH`, `cli/vMAJOR.MINOR.PATCH` (namespaced tags avoid collision)
+- Initial lockstep: `engine/v1.0.0` + `cli/v1.0.0`; divergence allowed after 3 stable cycles
+- Changelog grouped by module; root `CHANGELOG.md` links to per-module logs
+
+### 9.7 Local Developer Workflow
+
+```
+git clone .../ariadne
+cd ariadne/cli
+go run ./cmd/ariadne --config ../examples/config.yaml
+```
+
+During transition:
+```
+replace github.com/yourorg/ariadne/engine => ../engine
+```
+
+### 9.8 Risk & Mitigation Snapshot
+
+| Risk | Mitigation |
+|------|------------|
+| Dual tagging confusion | Namespaced tags + release templates |
+| Orphaned shared code | Consolidate into engine or explicit shared internal utils inside engine |
+| Drift in domain models | Single source in engine; lint disallows duplicate type declarations |
+| Over-fragmentation | Limit to 3 modules initially; reevaluate before adding more |
+
+### 9.9 Exit Criteria (Multi-Module Considered Successful)
+
+1. Independent engine release executed without rebuilding CLI/API (beyond re-consume updated module)
+2. Contract diff job green for two consecutive minor releases
+3. Reduction in average PR size for CLI/API (measure after 4 weeks)
+4. No direct imports of legacy `internal/*` by CLI/API (enforced)
+
+### 9.10 Defer / Revert Strategy
+
+If fragmentation overhead > productivity gain (measured by slowed cycle time >15%), pause further module additions and keep engine stabilization work inside monorepo without further splitting.
+
+---
 
 ---
 
@@ -578,3 +728,17 @@ type Processor interface {
 ```
 
 This analysis provides the foundation for Phase 5 planning and execution, with clear technical guidance and risk mitigation strategies for transforming the engine into Ariadne's authoritative core business layer.
+
+---
+
+## Appendix C: Proposed Initial Multi-Module Layout & Responsibilities
+
+| Module | Responsibility | Public Surface | Depends On |
+|--------|----------------|----------------|------------|
+| `engine` | Core business logic (fetch/process/output strategies, policies, models) | Stable interfaces, config structs, strategy contracts | Standard lib + vetted third-party libs |
+| `cli` | User-facing command-line, config parsing, UX, invocation orchestration | CLI commands, flags (no business logic) | `engine` |
+| `api` | (Future) HTTP/gRPC service exposing engine operations | Handlers, DTO translation layer | `engine` |
+
+Transitional legacy areas (`internal/*`) will be incrementally either merged into `engine` or removed. No new code should be added under `internal/` after Phase 5C start—create strategies instead.
+
+---
