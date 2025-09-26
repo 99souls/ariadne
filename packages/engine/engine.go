@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"site-scraper/internal/pipeline"
-	engratelimit "site-scraper/packages/engine/ratelimit"
-	"site-scraper/internal/resources"
 	engmodels "site-scraper/packages/engine/models"
+	engratelimit "site-scraper/packages/engine/ratelimit"
+	engresources "site-scraper/packages/engine/resources"
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).
@@ -44,7 +44,7 @@ type Engine struct {
 	cfg      Config
 	pl       *pipeline.Pipeline
 	limiter  engratelimit.RateLimiter
-	rm       *resources.Manager
+	rm       *engresources.Manager
 	started  atomic.Bool
 	startedAt time.Time
 	resumeMetrics resumeState
@@ -67,9 +67,9 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	}
 
 	// Build resource manager if configured
-	var rm *resources.Manager
+	var rm *engresources.Manager
 	if cfg.Resources.CacheCapacity > 0 || cfg.Resources.MaxInFlight > 0 || cfg.Resources.CheckpointPath != "" {
-		manager, err := resources.NewManager(cfg.Resources)
+		manager, err := engresources.NewManager(cfg.Resources)
 		if err != nil {
 			return nil, err
 		}

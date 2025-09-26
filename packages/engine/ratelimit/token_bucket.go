@@ -1,8 +1,8 @@
 package ratelimit
 
 import (
-    "math"
-    "time"
+	"math"
+	"time"
 )
 
 type tokenBucket struct { capacity float64; fillRate float64; tokens float64; lastRefill time.Time }

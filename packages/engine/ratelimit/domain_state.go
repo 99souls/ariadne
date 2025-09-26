@@ -1,10 +1,10 @@
 package ratelimit
 
 import (
-    "math"
-    engmodels "site-scraper/packages/engine/models"
-    "sync"
-    "time"
+	"math"
+	engmodels "site-scraper/packages/engine/models"
+	"sync"
+	"time"
 )
 
 const latencyEWMALambda = 0.2

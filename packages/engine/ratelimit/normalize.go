@@ -1,11 +1,11 @@
 package ratelimit
 
 import (
-    "errors"
-    "fmt"
-    "net"
-    "net/url"
-    "strings"
+	"errors"
+	"fmt"
+	"net"
+	"net/url"
+	"strings"
 )
 
 var errInvalidDomain = errors.New("ratelimit: invalid domain")
