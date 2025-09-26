@@ -1,71 +1,145 @@
 package main
 
 import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
+
+	"site-scraper/packages/engine"
 )
 
 func main() {
-	fmt.Println("🔥 SITE SCRAPER v2.0 - EVOLUTION COMPLETE! 🔥")
-	fmt.Println("============================================================")
-	fmt.Println()
+	// Flags (minimal P5 CLI)
+	var (
+		seedList       string
+		seedFile       string
+		resume         bool
+		checkpointPath string
+		snapshotEvery  time.Duration
+		showVersion    bool
+	)
 
-	fmt.Println("✅ Phase 1: Foundation & Core Architecture - COMPLETED")
-	fmt.Println("   ✅ Project setup & dependencies")
-	fmt.Println("   ✅ Core data models")
-	fmt.Println("   ✅ Basic crawler implementation")
-	fmt.Println()
+	flag.StringVar(&seedList, "seeds", "", "Comma separated list of seed URLs")
+	flag.StringVar(&seedFile, "seed-file", "", "Path to file containing one seed URL per line")
+	flag.BoolVar(&resume, "resume", false, "Resume from existing checkpoint (skip already processed URLs)")
+	flag.StringVar(&checkpointPath, "checkpoint", "checkpoint.log", "Path to checkpoint log file")
+	flag.DurationVar(&snapshotEvery, "snapshot-interval", 10*time.Second, "Interval between progress snapshots (0=disabled)")
+	flag.BoolVar(&showVersion, "version", false, "Show version / build info")
+	flag.Parse()
 
-	fmt.Println("✅ Phase 2: Content Processing & Pipeline Architecture - COMPLETED")
-	fmt.Println("   ✅ HTML content cleaning (Phase 2.1)")
-	fmt.Println("   ✅ Content processing workers (Phase 2.2)")
-	fmt.Println("   ✅ Worker pools & concurrent processing")
-	fmt.Println("   ✅ HTML-to-Markdown conversion pipeline")
-	fmt.Println("   ✅ Content validation & quality metrics")
-	fmt.Println("   ✅ Special content handling (tables, code, images)")
-	fmt.Println("   🎯 Asset Management Pipeline (Phase 2.3) - COMPLETED!")
-	fmt.Println("      ✅ Asset Discovery System")
-	fmt.Println("      ✅ Asset Download & Local Storage")
-	fmt.Println("      ✅ Asset Optimization Engine")
-	fmt.Println("      ✅ HTML URL Rewriting Pipeline")
-	fmt.Println("      ✅ End-to-End Asset Processing")
-	fmt.Println()
+	if showVersion {
+		fmt.Println("site-scraper engine CLI (facade mode) – phase-3 experimental")
+		return
+	}
 
-	fmt.Println("🚀 NEXT: Phase 3 - Data Storage & Export Pipeline")
-	fmt.Println("   ⏳ Database integration")
-	fmt.Println("   ⏳ File export systems")
-	fmt.Println("   ⏳ API endpoints")
-	fmt.Println()
-
-	fmt.Println("🎉 ACHIEVEMENT: Complete TDD implementation with ALL TESTS PASSING!")
-	fmt.Printf("   📊 Test Coverage: Phase 2.3 Asset Management COMPLETE\n")
-	fmt.Printf("   🧪 TDD Methodology: RED → GREEN → REFACTOR cycles\n")
-	fmt.Printf("   ⚡ Evolution Achievement: Level 35 → Level 50!\n")
-	fmt.Printf("   🎮 New Abilities Unlocked: Asset Management Mastery!\n")
-	fmt.Printf("   📅 Completed: %s\n", time.Now().Format("2006-01-02 15:04:05"))
-	fmt.Println()
-
-	fmt.Println("Usage:")
-	fmt.Println("  Run Phase 1 tests:")
-	fmt.Println("    go test ./internal/crawler -v")
-	fmt.Println()
-	fmt.Println("  Run Phase 2 tests:")
-	fmt.Println("    go test ./internal/processor -v")
-	fmt.Println()
-	fmt.Println("  Run Phase 2.3 Asset tests:")
-	fmt.Println("    go test -v ./internal/processor -run \"TestAsset\"")
-	fmt.Println()
-	fmt.Println("  Run all tests:")
-	fmt.Println("    go test ./...")
-	fmt.Println()
-
-	fmt.Println("Ready for Phase 3 development! 🚀")
-
-	// TODO: Replace this with proper CLI when Phase 3 is implemented
-	if len(os.Args) > 1 {
-		log.Println("CLI interface pending Phase 3 development - current focus on data storage pipeline")
+	seeds, err := gatherSeeds(seedList, seedFile)
+	if err != nil {
+		log.Fatalf("collect seeds: %v", err)
+	}
+	if len(seeds) == 0 {
+		fmt.Println("No seeds provided. Use -seeds or -seed-file. Example: -seeds https://example.com,https://example.org")
 		os.Exit(1)
 	}
+
+	cfg := engine.Defaults()
+	cfg.Resume = resume
+	cfg.CheckpointPath = checkpointPath
+
+	eng, err := engine.New(cfg)
+	if err != nil {
+		log.Fatalf("create engine: %v", err)
+	}
+	defer func() { _ = eng.Stop() }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	results, err := eng.Start(ctx, seeds)
+	if err != nil {
+		log.Fatalf("start engine: %v", err)
+	}
+
+	// Snapshot ticker
+	var ticker *time.Ticker
+	if snapshotEvery > 0 {
+		ticker = time.NewTicker(snapshotEvery)
+		defer ticker.Stop()
+	}
+
+	// Result consumption
+	done := make(chan struct{})
+	go func() {
+		enc := json.NewEncoder(os.Stdout)
+		for r := range results {
+			// Stream results as JSON lines
+			if err := enc.Encode(r); err != nil {
+				log.Printf("encode result: %v", err)
+			}
+		}
+		close(done)
+	}()
+
+	// Snapshot loop
+	if ticker != nil {
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					snap := eng.Snapshot()
+					b, _ := json.MarshalIndent(snap, "", "  ")
+					fmt.Fprintf(os.Stderr, "\n=== SNAPSHOT %s ===\n%s\n", time.Now().Format(time.RFC3339), string(b))
+				case <-done:
+					return
+				}
+			}
+		}()
+	}
+
+	<-done
+}
+
+func gatherSeeds(seedList, seedFile string) ([]string, error) {
+	seeds := []string{}
+	if seedList != "" {
+		for _, s := range strings.Split(seedList, ",") {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				seeds = append(seeds, s)
+			}
+		}
+	}
+	if seedFile != "" {
+		f, err := os.Open(seedFile)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line != "" && !strings.HasPrefix(line, "#") {
+				seeds = append(seeds, line)
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+	}
+	// de-duplicate while preserving order
+	seen := make(map[string]struct{}, len(seeds))
+	out := make([]string, 0, len(seeds))
+	for _, s := range seeds {
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+	return out, nil
 }

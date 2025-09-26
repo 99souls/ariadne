@@ -85,10 +85,11 @@ go build # ✅ SUCCESS
 
 ## Open Items & Follow-Ups
 
-1. **Engine Resume (P4)**: Add resume-from-checkpoint filtering & metrics.
-2. **Limiter Telemetry Export**: Wire `Snapshot()` outputs to future metrics sink (Prometheus placeholders).
-3. **Unified CLI Migration (P5)**: Route `main.go` through engine facade only.
-4. **Documentation Hardening**: Add `API_STABILITY.md`, migration notes after P5.
+1. **CLI Migration (P5)**: Route `main.go` through engine facade only; add seed/resume flags.
+2. **Deprecations (P6)**: Mark direct pipeline constructors as experimental for prospective internalization.
+3. **Stability & Docs (P7)**: Add `API_STABILITY.md`, migration notes, baseline CHANGELOG.
+4. **Limiter Telemetry Export**: Wire `Snapshot()` outputs to future metrics sink (Prometheus placeholders).
+5. **Optional Domain Rate Detail**: Extend snapshot with top-N domain stats (deferred unless needed for CLI output).
 
 ---
 

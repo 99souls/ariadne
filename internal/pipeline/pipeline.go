@@ -101,7 +101,12 @@ type Pipeline struct {
 	rand   *rand.Rand
 }
 
-// NewPipeline creates a new multi-stage pipeline
+// NewPipeline creates a new multi-stage pipeline.
+//
+// DEPRECATION NOTICE (P6 roadmap): External callers should migrate to the engine
+// facade (`packages/engine`). Direct construction will become internal in a future
+// phase once the facade and CLI migration stabilize. Tests within this package
+// continue to rely on NewPipeline; production entrypoints should not.
 func NewPipeline(config *PipelineConfig) *Pipeline {
 	ctx, cancel := context.WithCancel(context.Background())
 
