@@ -262,6 +262,21 @@ go test -bench=. ./internal/processor
    ./scraper --help
    ```
 
+### Makefile Convenience Targets
+
+After cloning, you can streamline common tasks:
+
+```bash
+make build      # compile all packages
+make test       # run unit tests
+make race       # run tests with race detector
+make cover      # produce coverage report
+make vet        # go vet static checks
+make lint       # run golangci-lint (must be installed locally)
+make ci         # tidy + vet + test + race (CI parity)
+make tag VERSION=0.1.0  # create & push git tag v0.1.0
+```
+
 ### Code Style
 
 - Follow standard Go conventions
