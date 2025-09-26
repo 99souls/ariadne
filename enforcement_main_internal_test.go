@@ -1,9 +1,9 @@
 package main_test
 
 import (
-    "os"
-    "strings"
-    "testing"
+	"os"
+	"strings"
+	"testing"
 )
 
 // TestNoInternalImports enforces that the root CLI does not directly import

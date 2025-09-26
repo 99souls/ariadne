@@ -91,6 +91,44 @@ allowed_domains:
 
 # Performance settings
 workers: 4
+
+## 🧭 Roadmap & Backlog
+
+Current Release Baseline: v0.1.0 (engine facade, adaptive limiter, resume, resource manager, top-N domain stats, fully offline tests).
+
+Legend: P1 = High (near-term), P2 = Medium, P3 = Deferred (mid‑term), P4 = Strategic / later
+
+| Priority | Item | Type | Status | Notes |
+| -------- | ---- | ---- | ------ | ----- |
+| P1 | Snapshot JSON Schema (engine + crawl result) | Observability | Pending | Enables external tooling & validation |
+| P1 | Prometheus metrics exporter | Observability | Pending | Map snapshot fields to gauges/counters |
+| P2 | Promote migration notes to `MIGRATION.md` | Docs | Pending | Cross-link from README & CHANGELOG |
+| P2 | LRU spill retention / cleanup policy | Reliability | Pending | Configurable retention or max spill size |
+| P2 | Structured logging + verbosity flag | DX | Pending | JSON logs + `--log-level` |
+| P2 | Domain top-N limiter snapshot test | Testing | Pending | Assert ordering & max=10 cap |
+| P3 | Coverage gate in CI (80% threshold) | Quality | Pending | Activate once coverage improves |
+| P3 | Telemetry sink plugin architecture doc | Design | Pending | Pluggable outputs (Prom, OTLP, file) |
+| P3 | Snapshot file rotation flag (`--snapshot-json`) | Observability | Pending | Periodic write for external tailing |
+| P4 | Persistent limiter state across runs | Resilience | Pending | Serialize domain states for warm start |
+| P4 | Advanced resume (mid-pipeline recovery) | Resilience | Pending | Rehydrate partial stages beyond seeds |
+| P4 | Output plugin system (PDF/Markdown modular) | Extensibility | Pending | Registration & capability discovery |
+| P5 | Windows specific signal handling improvements | DX | Pending | Add CTRL_CLOSE_EVENT mapping |
+| P5 | Legacy banner mode (`--legacy-banner`) | UX | Pending | For nostalgic CLI users |
+
+Completed (Highlights):
+
+- Engine facade & CLI migration
+- Adaptive AIMD rate limiter + circuit breaker
+- Resource manager (cache + spill + checkpoints)
+- Resume-from-checkpoint (seed filtering)
+- Top-N domain limiter summaries
+- Fully offline deterministic test suite
+- Graceful shutdown with final snapshot
+- Enforcement test preventing internal imports in CLI
+- Changelog & stability docs established
+
+If you want to propose new items, open a GitHub issue referencing this table. Planned items will be tracked as labeled issues (e.g., `priority/P1`, `area/observability`).
+
 request_delay: 500ms
 max_depth: 10
 timeout: 30s

@@ -1,13 +1,13 @@
 package engine
 
 import (
+	"bufio"
 	"context"
 	"errors"
+	"os"
+	"strings"
 	"sync/atomic"
 	"time"
-	"os"
-	"bufio"
-	"strings"
 
 	"site-scraper/internal/pipeline"
 	"site-scraper/internal/ratelimit"
