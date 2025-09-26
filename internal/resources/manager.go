@@ -39,6 +39,32 @@ type Manager struct {
 	wg           sync.WaitGroup
 }
 
+// Stats provides lightweight insight into current resource manager state.
+// It is designed to be safe to call frequently and avoids heavy I/O.
+type Stats struct {
+	CacheEntries      int `json:"cache_entries"`
+	SpillFiles        int `json:"spill_files"`
+	InFlight          int `json:"in_flight"`
+	CheckpointQueued  int `json:"checkpoint_queued"`
+}
+
+// Stats returns a snapshot of internal counters. Best-effort only; values
+// may change immediately after reading.
+func (m *Manager) Stats() Stats {
+	var s Stats
+	m.mu.Lock()
+	s.CacheEntries = len(m.cache)
+	s.SpillFiles = len(m.spill)
+	m.mu.Unlock()
+	if m.slots != nil {
+		s.InFlight = len(m.slots)
+	}
+	if m.checkpointCh != nil {
+		s.CheckpointQueued = len(m.checkpointCh)
+	}
+	return s
+}
+
 type cacheEntry struct {
 	url  string
 	page *models.Page
