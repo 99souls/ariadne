@@ -17,26 +17,26 @@ import (
 
 // Snapshot is a unified view of engine state (initial minimal subset).
 type Snapshot struct {
-	StartedAt time.Time                 `json:"started_at"`
-	Uptime    time.Duration             `json:"uptime"`
-	Pipeline  *engpipeline.PipelineMetrics `json:"pipeline,omitempty"`
+	StartedAt time.Time                     `json:"started_at"`
+	Uptime    time.Duration                 `json:"uptime"`
+	Pipeline  *engpipeline.PipelineMetrics  `json:"pipeline,omitempty"`
 	Limiter   *engratelimit.LimiterSnapshot `json:"limiter,omitempty"`
-	Resources *ResourceSnapshot         `json:"resources,omitempty"`
-	Resume    *ResumeSnapshot           `json:"resume,omitempty"`
+	Resources *ResourceSnapshot             `json:"resources,omitempty"`
+	Resume    *ResumeSnapshot               `json:"resume,omitempty"`
 }
 
 // ResourceSnapshot surfaces basic cache / spill / checkpoint telemetry.
 type ResourceSnapshot struct {
-    CacheEntries     int `json:"cache_entries"`
-    SpillFiles       int `json:"spill_files"`
-    InFlight         int `json:"in_flight"`
-    CheckpointQueued int `json:"checkpoint_queued"`
+	CacheEntries     int `json:"cache_entries"`
+	SpillFiles       int `json:"spill_files"`
+	InFlight         int `json:"in_flight"`
+	CheckpointQueued int `json:"checkpoint_queued"`
 }
 
 // ResumeSnapshot exposes resume filtering counters.
 type ResumeSnapshot struct {
-    SeedsBefore int   `json:"seeds_before"`
-    Skipped     int64 `json:"skipped"`
+	SeedsBefore int   `json:"seeds_before"`
+	Skipped     int64 `json:"skipped"`
 }
 
 // Engine composes the pipeline, limiter, and resource manager under a single facade.
@@ -52,7 +52,7 @@ type Engine struct {
 }
 
 type resumeState struct {
-	skipped int64
+	skipped     int64
 	totalBefore int
 }
 
@@ -92,12 +92,12 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	pl := engpipeline.NewPipeline(pc)
 
 	e := &Engine{
-		cfg:           cfg,
-		pl:            pl,
-		limiter:       limiter,
-		rm:            rm,
-		startedAt:     time.Now(),
-		strategies:    nil, // Strategy injection placeholder
+		cfg:        cfg,
+		pl:         pl,
+		limiter:    limiter,
+		rm:         rm,
+		startedAt:  time.Now(),
+		strategies: nil, // Strategy injection placeholder
 	}
 	e.started.Store(true)
 	return e, nil
@@ -202,9 +202,8 @@ func NewWithStrategies(cfg Config, strategies EngineStrategies, opts ...Option) 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Store strategies for future use in pipeline integration
 	engine.strategies = strategies
 	return engine, nil
 }
-
