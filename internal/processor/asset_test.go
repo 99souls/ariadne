@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	httpmock "site-scraper/internal/test/httpmock"
 )
 
 // Phase 2.3 TDD Tests: Asset Management Pipeline
@@ -97,12 +99,9 @@ func TestAssetDownloader(t *testing.T) {
 
 	t.Run("should download and store assets locally", func(t *testing.T) {
 		// Create a test asset
-		asset := &AssetInfo{
-			URL:      "https://httpbin.org/robots.txt", // Reliable test endpoint
-			Type:     "document",
-			Filename: "robots.txt",
-			Size:     0,
-		}
+		mock := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: *", Status: 200}})
+		defer mock.Close()
+		asset := &AssetInfo{URL: mock.URL() + "/robots.txt", Type: "document", Filename: "robots.txt", Size: 0}
 
 		result, err := downloader.DownloadAsset(asset)
 		if err != nil {
@@ -143,11 +142,9 @@ func TestAssetDownloader(t *testing.T) {
 
 	t.Run("should skip download if file already exists", func(t *testing.T) {
 		// First download
-		asset1 := &AssetInfo{
-			URL:      "https://httpbin.org/robots.txt",
-			Type:     "document",
-			Filename: "robots-duplicate.txt",
-		}
+		mock2 := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: dup", Status: 200}})
+		defer mock2.Close()
+		asset1 := &AssetInfo{URL: mock2.URL() + "/robots.txt", Type: "document", Filename: "robots-duplicate.txt"}
 
 		result1, err := downloader.DownloadAsset(asset1)
 		if err != nil {
@@ -311,16 +308,18 @@ func TestAssetPipeline(t *testing.T) {
 
 		pipeline := NewAssetPipeline(assetDir)
 
-		// Test HTML with various asset types
+		mock := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: pipeline", Status: 200}})
+		defer mock.Close()
+		// Test HTML with various asset types referencing mock server
 		html := `<!DOCTYPE html>
 		<html>
 		<head>
 			<title>Asset Pipeline Test</title>
-			<link rel="stylesheet" href="https://httpbin.org/robots.txt">
+			<link rel="stylesheet" href="` + mock.URL() + `/robots.txt">
 		</head>
 		<body>
-			<img src="https://httpbin.org/robots.txt" alt="Test">
-			<script src="https://httpbin.org/robots.txt"></script>
+			<img src="` + mock.URL() + `/robots.txt" alt="Test">
+			<script src="` + mock.URL() + `/robots.txt"></script>
 		</body>
 		</html>`
 
@@ -349,7 +348,7 @@ func TestAssetPipeline(t *testing.T) {
 		}
 
 		// Validate HTML was updated with local paths
-		if strings.Contains(result.UpdatedHTML, "httpbin.org") {
+		if strings.Contains(result.UpdatedHTML, mock.URL()) {
 			t.Error("HTML should have asset URLs rewritten to local paths")
 		}
 

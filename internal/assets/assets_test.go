@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	httpmock "site-scraper/internal/test/httpmock"
 )
 
 // Phase 2.3 TDD Tests: Asset Management Pipeline
@@ -122,34 +124,31 @@ func TestAssetDownloader(t *testing.T) {
 		}
 	}()
 
-	t.Run("should download and store assets locally", func(t *testing.T) {
-		// Create a test asset
-		asset := &AssetInfo{
-			URL:      "https://httpbin.org/robots.txt", // Reliable test endpoint
-			Type:     AssetTypeDocument,
-			Filename: "robots.txt",
-			Size:     0,
-		}
+		// Use mock server for deterministic asset content
+		mock := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: *", Status: 200}})
+		defer mock.Close()
 
-		result, err := downloader.DownloadAsset(asset)
-		if err != nil {
-			t.Fatalf("DownloadAsset failed: %v", err)
-		}
-
-		// Verify file was created
-		if !fileExists(result.LocalPath) {
-			t.Error("Downloaded file should exist")
-		}
-
-		// Verify asset info was updated
-		if result.Size == 0 {
-			t.Error("Asset size should be updated after download")
-		}
-
-		if result.Downloaded != true {
-			t.Error("Asset should be marked as downloaded")
-		}
-	})
+		t.Run("should download and store assets locally", func(t *testing.T) {
+			asset := &AssetInfo{
+				URL:      mock.URL() + "/robots.txt",
+				Type:     AssetTypeDocument,
+				Filename: "robots.txt",
+				Size:     0,
+			}
+			result, err := downloader.DownloadAsset(asset)
+			if err != nil {
+				 t.Fatalf("DownloadAsset failed: %v", err)
+			}
+			if !fileExists(result.LocalPath) {
+				 t.Error("Downloaded file should exist")
+			}
+			if result.Size == 0 {
+				 t.Error("Asset size should be updated after download")
+			}
+			if !result.Downloaded {
+				 t.Error("Asset should be marked as downloaded")
+			}
+		})
 
 	t.Run("should handle download errors gracefully", func(t *testing.T) {
 		// Test with invalid URL
@@ -167,11 +166,9 @@ func TestAssetDownloader(t *testing.T) {
 
 	t.Run("should skip download if file already exists", func(t *testing.T) {
 		// Create asset and download it first time
-		asset := &AssetInfo{
-			URL:      "https://httpbin.org/robots.txt",
-			Type:     AssetTypeDocument,
-			Filename: "robots-exists.txt",
-		}
+		mock2 := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: mock", Status: 200}})
+		defer mock2.Close()
+		asset := &AssetInfo{URL: mock2.URL() + "/robots.txt", Type: AssetTypeDocument, Filename: "robots-exists.txt"}
 
 		// First download
 		first, err := downloader.DownloadAsset(asset)
@@ -352,17 +349,18 @@ func TestAssetPipeline(t *testing.T) {
 	pipeline := NewAssetPipeline(assetDir)
 
 	t.Run("Phase 2.3: Complete asset management pipeline", func(t *testing.T) {
-		// Test HTML with various asset types
+		mock := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: asset-pipeline", Status: 200}})
+		defer mock.Close()
 		html := `<!DOCTYPE html>
 		<html>
 		<head>
 			<title>Test Page</title>
-			<link rel="stylesheet" href="https://httpbin.org/robots.txt">
+			<link rel="stylesheet" href="` + mock.URL() + `/robots.txt">
 		</head>
 		<body>
 			<h1>Test Content</h1>
-			<img src="https://httpbin.org/robots.txt" alt="Test Image">
-			<script src="https://httpbin.org/robots.txt"></script>
+			<img src="` + mock.URL() + `/robots.txt" alt="Test Image">
+			<script src="` + mock.URL() + `/robots.txt"></script>
 		</body>
 		</html>`
 
@@ -390,7 +388,7 @@ func TestAssetPipeline(t *testing.T) {
 		}
 
 		// Verify HTML was rewritten
-		if strings.Contains(result.UpdatedHTML, "https://httpbin.org/robots.txt") {
+		if strings.Contains(result.UpdatedHTML, mock.URL()+"/robots.txt") {
 			t.Error("Original URLs should be replaced in updated HTML")
 		}
 
