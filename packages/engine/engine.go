@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"site-scraper/internal/pipeline"
+	engpipeline "site-scraper/packages/engine/pipeline"
 	engmodels "site-scraper/packages/engine/models"
 	engratelimit "site-scraper/packages/engine/ratelimit"
 	engresources "site-scraper/packages/engine/resources"
@@ -19,7 +19,7 @@ import (
 type Snapshot struct {
 	StartedAt time.Time                 `json:"started_at"`
 	Uptime    time.Duration             `json:"uptime"`
-	Pipeline  *pipeline.PipelineMetrics `json:"pipeline,omitempty"`
+	Pipeline  *engpipeline.PipelineMetrics `json:"pipeline,omitempty"`
 	Limiter   *engratelimit.LimiterSnapshot `json:"limiter,omitempty"`
 	Resources *ResourceSnapshot         `json:"resources,omitempty"`
 	Resume    *ResumeSnapshot           `json:"resume,omitempty"`
@@ -42,7 +42,7 @@ type ResumeSnapshot struct {
 // Engine composes the pipeline, limiter, and resource manager under a single facade.
 type Engine struct {
 	cfg      Config
-	pl       *pipeline.Pipeline
+	pl       *engpipeline.Pipeline
 	limiter  engratelimit.RateLimiter
 	rm       *engresources.Manager
 	started  atomic.Bool
@@ -88,7 +88,7 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	}
 
 	pc := (&cfg).toPipelineConfig(engineOptions{limiter: limiter, resourceManager: rm})
-	pl := pipeline.NewPipeline(pc)
+	pl := engpipeline.NewPipeline(pc)
 
 	e := &Engine{cfg: cfg, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
 	e.started.Store(true)
