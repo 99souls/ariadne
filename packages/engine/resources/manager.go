@@ -1,17 +1,17 @@
 package resources
 
 import (
-    "bufio"
-    "container/list"
-    "context"
-    "encoding/json"
-    "fmt"
-    "hash/fnv"
-    "os"
-    "path/filepath"
-    "sync"
-    "time"
-    engmodels "site-scraper/packages/engine/models"
+	"bufio"
+	"container/list"
+	"context"
+	"encoding/json"
+	"fmt"
+	"hash/fnv"
+	"os"
+	"path/filepath"
+	engmodels "site-scraper/packages/engine/models"
+	"sync"
+	"time"
 )
 
 // Config controls resource management features such as caching, spillover, and checkpoints.

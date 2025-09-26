@@ -17,6 +17,7 @@ import (
 )
 
 // PipelineConfig defines configuration for multi-stage pipeline
+// PipelineConfig defines configuration for multi-stage pipeline
 type PipelineConfig struct {
 	DiscoveryWorkers  int `yaml:"discovery_workers" json:"discovery_workers"`   // URL discovery workers
 	ExtractionWorkers int `yaml:"extraction_workers" json:"extraction_workers"` // Content extraction workers
@@ -37,6 +38,7 @@ type extractionTask struct {
 }
 
 // StageStatus represents the status of a pipeline stage
+// StageStatus represents the status of a pipeline stage
 type StageStatus struct {
 	Name    string `json:"name"`
 	Workers int    `json:"workers"`
@@ -45,12 +47,14 @@ type StageStatus struct {
 }
 
 // StageMetrics represents metrics for a pipeline stage
+// StageMetrics represents metrics for a pipeline stage
 type StageMetrics struct {
 	Processed int           `json:"processed"`
 	Failed    int           `json:"failed"`
 	AvgTime   time.Duration `json:"avg_time"`
 }
 
+// PipelineMetrics represents overall pipeline metrics
 // PipelineMetrics represents overall pipeline metrics
 type PipelineMetrics struct {
 	TotalProcessed int                     `json:"total_processed"`
@@ -60,6 +64,7 @@ type PipelineMetrics struct {
 	StageMetrics   map[string]StageMetrics `json:"stage_metrics"`
 }
 
+// Pipeline represents the multi-stage processing pipeline
 // Pipeline represents the multi-stage processing pipeline
 type Pipeline struct {
 	config *PipelineConfig
@@ -107,6 +112,9 @@ type Pipeline struct {
 // facade (`packages/engine`). Direct construction will become internal in a future
 // phase once the facade and CLI migration stabilize. Tests within this package
 // continue to rely on NewPipeline; production entrypoints should not.
+// NewPipeline creates a new multi-stage pipeline.
+//
+// DEPRECATION NOTICE: external callers should migrate to the engine facade.
 func NewPipeline(config *PipelineConfig) *Pipeline {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -156,10 +164,12 @@ func NewPipeline(config *PipelineConfig) *Pipeline {
 }
 
 // Config returns the pipeline configuration
+// Config returns the pipeline configuration
 func (p *Pipeline) Config() *PipelineConfig {
 	return p.config
 }
 
+// StageStatus returns the status of a specific stage
 // StageStatus returns the status of a specific stage
 func (p *Pipeline) StageStatus(stageName string) *StageStatus {
 	p.mutex.RLock()
@@ -172,6 +182,7 @@ func (p *Pipeline) StageStatus(stageName string) *StageStatus {
 	return &StageStatus{Name: stageName, Active: false}
 }
 
+// ProcessURLs processes a list of URLs through the complete pipeline
 // ProcessURLs processes a list of URLs through the complete pipeline
 func (p *Pipeline) ProcessURLs(ctx context.Context, urls []string) <-chan *models.CrawlResult {
 	atomic.StoreInt64(&p.expectedResults, int64(len(urls)))
@@ -201,6 +212,7 @@ func (p *Pipeline) ProcessURLs(ctx context.Context, urls []string) <-chan *model
 }
 
 // Metrics returns current pipeline metrics
+// Metrics returns current pipeline metrics
 func (p *Pipeline) Metrics() *PipelineMetrics {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -213,10 +225,18 @@ func (p *Pipeline) Metrics() *PipelineMetrics {
 }
 
 // Stop gracefully stops the pipeline
+// Stop gracefully stops the pipeline
 func (p *Pipeline) Stop() {
 	p.cancel()
 	p.retryWG.Wait()
 	p.wg.Wait() // Wait for all workers (including aggregator) to finish
+
+	// Mark stages inactive
+	p.mutex.Lock()
+	for _, st := range p.stageStatus {
+		st.Active = false
+	}
+	p.mutex.Unlock()
 	p.closeResults()
 
 	if closable, ok := p.limiter.(interface{ Close() error }); ok {
@@ -224,33 +244,8 @@ func (p *Pipeline) Stop() {
 	}
 }
 
-// initStageStatus initializes the stage status tracking
-func (p *Pipeline) initStageStatus() {
-	stages := map[string]int{
-		"discovery":  p.config.DiscoveryWorkers,
-		"extraction": p.config.ExtractionWorkers,
-		"processing": p.config.ProcessingWorkers,
-		"output":     p.config.OutputWorkers,
-	}
+// (Remaining implementation already present below in original file sections.)
 
-	for name, workers := range stages {
-		p.stageStatus[name] = &StageStatus{
-			Name:    name,
-			Workers: workers,
-			Active:  true,
-			Queue:   0,
-		}
-	}
-
-	if p.resourceManager != nil {
-		p.stageStatus["cache"] = &StageStatus{
-			Name:    "cache",
-			Workers: 0,
-			Active:  true,
-			Queue:   0,
-		}
-	}
-}
 
 // startStages starts all pipeline stage workers
 func (p *Pipeline) startStages() {
@@ -798,4 +793,15 @@ func (p *Pipeline) updateStageMetrics(stage string, success bool) {
 	}
 
 	p.metrics.StageMetrics[stage] = metrics
+}
+
+// initStageStatus initializes the stage status metadata for inspection via StageStatus()
+func (p *Pipeline) initStageStatus() {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	p.stageStatus["discovery"] = &StageStatus{Name: "discovery", Workers: p.config.DiscoveryWorkers, Active: p.config.DiscoveryWorkers > 0}
+	p.stageStatus["extraction"] = &StageStatus{Name: "extraction", Workers: p.config.ExtractionWorkers, Active: p.config.ExtractionWorkers > 0}
+	p.stageStatus["processing"] = &StageStatus{Name: "processing", Workers: p.config.ProcessingWorkers, Active: p.config.ProcessingWorkers > 0}
+	p.stageStatus["output"] = &StageStatus{Name: "output", Workers: p.config.OutputWorkers, Active: p.config.OutputWorkers > 0}
 }
