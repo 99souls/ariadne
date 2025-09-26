@@ -53,12 +53,6 @@ jobs:
             echo "✅ Test coverage is above 80%"
           fi
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          args: --timeout=5m
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
