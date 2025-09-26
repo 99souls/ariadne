@@ -1,4 +1,4 @@
-# Makefile for site-scraper
+# Makefile for ariadne
 
 GO ?= go
 PKGS := ./...

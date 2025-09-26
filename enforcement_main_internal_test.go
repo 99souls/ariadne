@@ -15,7 +15,7 @@ func TestNoInternalImports(t *testing.T) {
         t.Fatalf("read main.go: %v", err)
     }
     content := string(data)
-    if strings.Contains(content, "\"site-scraper/internal/") {
+    if strings.Contains(content, "\"ariadne/internal/") {
         t.Fatalf("main.go imports internal/*; migrate to engine facade only")
     }
 }

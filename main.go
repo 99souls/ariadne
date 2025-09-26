@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"site-scraper/packages/engine"
+	"ariadne/packages/engine"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	if showVersion {
-		fmt.Println("site-scraper engine CLI (facade mode) – phase-3 experimental")
+		fmt.Println("ariadne engine CLI (facade mode) – phase-3 experimental")
 		return
 	}
 

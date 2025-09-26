@@ -77,7 +77,7 @@ type Engine interface {
 // Deprecated: use packages/engine/ratelimit
 package ratelimit
 
-import engineRL "site-scraper/packages/engine/ratelimit"
+import engineRL "ariadne/packages/engine/ratelimit"
 
 type RateLimiter = engineRL.RateLimiter
 // (repeat for required exported symbols)

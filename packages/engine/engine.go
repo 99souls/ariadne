@@ -9,10 +9,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	engmodels "site-scraper/packages/engine/models"
-	engpipeline "site-scraper/packages/engine/pipeline"
-	engratelimit "site-scraper/packages/engine/ratelimit"
-	engresources "site-scraper/packages/engine/resources"
+	engmodels "ariadne/packages/engine/models"
+	engpipeline "ariadne/packages/engine/pipeline"
+	engratelimit "ariadne/packages/engine/ratelimit"
+	engresources "ariadne/packages/engine/resources"
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).

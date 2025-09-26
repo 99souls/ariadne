@@ -1,7 +1,7 @@
 package models
 
 import (
-	engmodels "site-scraper/packages/engine/models"
+	engmodels "ariadne/packages/engine/models"
 	"time"
 )
 
@@ -64,7 +64,7 @@ func DefaultConfig() *ScraperConfig {
 		},
 		OutputDir:         "./output",
 		OutputFormats:     []string{"markdown"},
-		UserAgent:         "Site-Scraper/1.0 (Educational Purpose)",
+		UserAgent:         "Ariadne/1.0 (Educational Purpose)",
 		IncludeImages:     true,
 		RespectRobots:     true,
 		EnableCheckpoints: false,

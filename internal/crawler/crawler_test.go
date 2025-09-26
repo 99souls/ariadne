@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"site-scraper/pkg/models"
+	"ariadne/pkg/models"
 )
 
 // TestCrawlerInitialization validates proper crawler setup

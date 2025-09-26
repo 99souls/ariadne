@@ -1,4 +1,4 @@
-# Site Scraper 🕷️
+# Ariadne 🕷️
 
 A high-performance, modular web scraping tool built in Go that intelligently extracts, processes, and converts web content into clean, structured formats. Perfect for documentation sites, wikis, and content archival.
 
@@ -35,8 +35,8 @@ A high-performance, modular web scraping tool built in Go that intelligently ext
 
 ```bash
 # Clone the repository
-git clone https://github.com/99souls/site-scraper.git
-cd site-scraper
+git clone https://github.com/99souls/ariadne.git
+cd ariadne
 
 # Build the binary
 go build -o scraper ./cmd/scraper
@@ -113,7 +113,7 @@ exclude_patterns:
 ## 📁 Project Structure
 
 ```
-site-scraper/
+ariadne/
 ├── cmd/scraper/              # CLI entry point
 ├── internal/
 │   ├── assets/              # 🎯 Asset management pipeline
@@ -230,8 +230,8 @@ go test -bench=. ./internal/processor
 1. **Clone and setup**:
 
    ```bash
-   git clone https://github.com/99souls/site-scraper.git
-   cd site-scraper
+  git clone https://github.com/99souls/ariadne.git
+  cd ariadne
    go mod tidy
    ```
 
@@ -320,9 +320,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🐛 Issues & Support
 
-- **Bug Reports**: [GitHub Issues](https://github.com/99souls/site-scraper/issues)
-- **Feature Requests**: [GitHub Discussions](https://github.com/99souls/site-scraper/discussions)
-- **Documentation**: [Wiki](https://github.com/99souls/site-scraper/wiki)
+- **Bug Reports**: [GitHub Issues](https://github.com/99souls/ariadne/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/99souls/ariadne/discussions)
+- **Documentation**: [Wiki](https://github.com/99souls/ariadne/wiki)
 
 ---
 
@@ -330,6 +330,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Site Scraper** - Intelligent web content extraction for the modern web
 
-[Report Bug](https://github.com/99souls/site-scraper/issues) · [Request Feature](https://github.com/99souls/site-scraper/discussions) · [Documentation](https://github.com/99souls/site-scraper/wiki)
+[Report Bug](https://github.com/99souls/ariadne/issues) · [Request Feature](https://github.com/99souls/ariadne/discussions) · [Documentation](https://github.com/99souls/ariadne/wiki)
 
 </div>

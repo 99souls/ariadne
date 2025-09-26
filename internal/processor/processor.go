@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"site-scraper/internal/assets"
-	"site-scraper/pkg/models"
+	"ariadne/internal/assets"
+	"ariadne/pkg/models"
 
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"

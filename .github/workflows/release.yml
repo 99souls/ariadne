@@ -40,26 +40,26 @@ jobs:
           mkdir -p dist
 
           # Build for multiple platforms
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/site-scraper-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/site-scraper-linux-arm64 .
-          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/site-scraper-darwin-amd64 .
-          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/site-scraper-darwin-arm64 .
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/site-scraper-windows-amd64.exe .
-          GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o dist/site-scraper-windows-arm64.exe .
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/ariadne-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/ariadne-linux-arm64 .
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/ariadne-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/ariadne-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/ariadne-windows-amd64.exe .
+          GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o dist/ariadne-windows-arm64.exe .
 
       - name: Create archives
         run: |
           cd dist
 
           # Create tar.gz for Unix systems
-          tar -czf site-scraper-linux-amd64.tar.gz site-scraper-linux-amd64
-          tar -czf site-scraper-linux-arm64.tar.gz site-scraper-linux-arm64
-          tar -czf site-scraper-darwin-amd64.tar.gz site-scraper-darwin-amd64
-          tar -czf site-scraper-darwin-arm64.tar.gz site-scraper-darwin-arm64
+          tar -czf ariadne-linux-amd64.tar.gz ariadne-linux-amd64
+          tar -czf ariadne-linux-arm64.tar.gz ariadne-linux-arm64
+          tar -czf ariadne-darwin-amd64.tar.gz ariadne-darwin-amd64
+          tar -czf ariadne-darwin-arm64.tar.gz ariadne-darwin-arm64
 
           # Create zip for Windows
-          zip site-scraper-windows-amd64.zip site-scraper-windows-amd64.exe
-          zip site-scraper-windows-arm64.zip site-scraper-windows-arm64.exe
+          zip ariadne-windows-amd64.zip ariadne-windows-amd64.exe
+          zip ariadne-windows-arm64.zip ariadne-windows-arm64.exe
 
       - name: Generate checksums
         run: |

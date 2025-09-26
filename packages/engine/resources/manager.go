@@ -9,7 +9,7 @@ import (
 	"hash/fnv"
 	"os"
 	"path/filepath"
-	engmodels "site-scraper/packages/engine/models"
+	engmodels "ariadne/packages/engine/models"
 	"sync"
 	"time"
 )

@@ -2,9 +2,9 @@ package models
 
 // Deprecated model aliases: moved to packages/engine/models.
 // These aliases preserve backward compatibility; new code should import
-// "site-scraper/packages/engine/models" instead. Removal planned in cleanup phase.
+// "ariadne/packages/engine/models" instead. Removal planned in cleanup phase.
 
-import engmodels "site-scraper/packages/engine/models"
+import engmodels "ariadne/packages/engine/models"
 
 type Page = engmodels.Page
 type PageMeta = engmodels.PageMeta

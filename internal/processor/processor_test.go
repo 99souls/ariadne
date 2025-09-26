@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"site-scraper/pkg/models"
+	"ariadne/pkg/models"
 )
 
 // Phase 2.1 TDD Tests: HTML Content Cleaning
