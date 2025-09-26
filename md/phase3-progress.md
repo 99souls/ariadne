@@ -47,7 +47,9 @@
 - **Extensibility**: Resource manager facade positions future modules (engine/TUI) to reuse caching + checkpointing without pipeline rewrites.
 
 ### Retrospective Snapshot
+
 See `phase3.3-retrospective.md` for full retro. Highlights:
+
 - Confidence remained high due to TDD guardrails; minimal refactor churn.
 - Cache + checkpoint primitives added early increase future optionality (resumable crawls, analytics).
 - Metric integrity preserved by isolating cache stage accounting.
