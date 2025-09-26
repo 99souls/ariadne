@@ -12,7 +12,7 @@ import (
 	"site-scraper/internal/pipeline"
 	"site-scraper/internal/ratelimit"
 	"site-scraper/internal/resources"
-	"site-scraper/pkg/models"
+	engmodels "site-scraper/packages/engine/models"
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).
@@ -96,7 +96,7 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 }
 
 // Start begins processing of the provided seed URLs. It returns a read-only results channel.
-func (e *Engine) Start(ctx context.Context, seeds []string) (<-chan *models.CrawlResult, error) {
+func (e *Engine) Start(ctx context.Context, seeds []string) (<-chan *engmodels.CrawlResult, error) {
 	if !e.started.Load() {
 		return nil, errors.New("engine not started")
 	}
