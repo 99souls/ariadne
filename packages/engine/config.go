@@ -1,10 +1,10 @@
 package engine
 
 import (
-    engpipeline "site-scraper/packages/engine/pipeline"
-    engresources "site-scraper/packages/engine/resources"
-    "site-scraper/pkg/models"
-    "time"
+	engpipeline "site-scraper/packages/engine/pipeline"
+	engresources "site-scraper/packages/engine/resources"
+	"site-scraper/pkg/models"
+	"time"
 )
 
 // Config is the public configuration surface for the Engine facade. It intentionally
