@@ -32,7 +32,7 @@ Scope: Engine facade (`packages/engine`) and CLI entrypoint
 
 - JSON tags are part of the public contract.
 - Duration fields expressed as Go `time.Duration` string values when marshaled.
-- Adding nested sections (e.g., domain rate summaries) is non-breaking.
+- Adding nested sections (e.g., domain rate summaries) is non-breaking. `LimiterSnapshot.Domains` (top N recent domains) added in v0.1.0 and may gain additional fields without breaking changes.
 
 ## Versioning Strategy
 

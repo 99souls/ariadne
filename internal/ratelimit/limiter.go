@@ -39,6 +39,15 @@ type LimiterSnapshot struct {
 	Denied           int64
 	OpenCircuits     int64
 	HalfOpenCircuits int64
+	Domains          []DomainSummary // optional: populated by extended snapshot collectors
+}
+
+// DomainSummary provides lightweight per-domain insight for observability.
+type DomainSummary struct {
+    Domain        string
+    FillRate      float64
+    CircuitState  string
+    LastActivity  time.Time
 }
 
 // AdaptiveRateLimiter implements intelligent per-domain adaptive rate limiting.
@@ -210,6 +219,7 @@ func (l *AdaptiveRateLimiter) Snapshot() LimiterSnapshot {
 	var open int64
 	var halfOpen int64
 
+	var domains []DomainSummary
 	for _, shard := range l.shards {
 		shard.mu.RLock()
 		for _, state := range shard.domains {
@@ -220,9 +230,58 @@ func (l *AdaptiveRateLimiter) Snapshot() LimiterSnapshot {
 			case circuitHalfOpen:
 				halfOpen++
 			}
+			// collect domain summary (lightweight; defer ordering until after locks)
+			cs := "closed"
+			switch state.breaker.state {
+			case circuitOpen:
+				cs = "open"
+			case circuitHalfOpen:
+				cs = "half-open"
+			}
+			domains = append(domains, DomainSummary{Domain: "", FillRate: state.fillRate, CircuitState: cs, LastActivity: state.lastActivity})
 			state.mu.Unlock()
 		}
 		shard.mu.RUnlock()
+	}
+	// best-effort enrichment: we lost the domain key in summary; re-collect with keys
+	// (trade-off: second pass with write lock for domain names to avoid map iteration copying names earlier under the lock)
+	// Acceptable because snapshot is infrequent and domain counts are bounded by activity.
+	// Rebuild domains slice with names.
+	if len(domains) > 0 {
+		// rebuild collecting with names
+		domains = domains[:0]
+		for _, shard := range l.shards {
+			shard.mu.RLock()
+			for name, state := range shard.domains {
+				state.mu.Lock()
+				cs := "closed"
+				switch state.breaker.state {
+				case circuitOpen:
+					cs = "open"
+				case circuitHalfOpen:
+					cs = "half-open"
+				}
+				domains = append(domains, DomainSummary{Domain: name, FillRate: state.fillRate, CircuitState: cs, LastActivity: state.lastActivity})
+				state.mu.Unlock()
+			}
+			shard.mu.RUnlock()
+		}
+		// sort by recency (last activity desc)
+		if len(domains) > 1 {
+			// simple insertion sort (domain list expected small); avoid pulling in sort import earlier
+			for i := 1; i < len(domains); i++ {
+				j := i
+				for j > 0 && domains[j-1].LastActivity.Before(domains[j].LastActivity) {
+					domains[j-1], domains[j] = domains[j], domains[j-1]
+					j--
+				}
+			}
+		}
+		const maxDomains = 10
+		if len(domains) > maxDomains {
+			domains = append([]DomainSummary(nil), domains[:maxDomains]...)
+		}
+		base.Domains = domains
 	}
 
 	base.OpenCircuits = open

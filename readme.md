@@ -62,6 +62,22 @@ go install ./cmd/scraper
 ./scraper resume --session ./output/.scraper-session
 ```
 
+### Engine Facade CLI (Current Minimal Implementation)
+
+The current CLI is a thin wrapper over the engine facade (pre-v1 stabilization). It streams each `CrawlResult` as a JSON line to stdout and periodically prints a snapshot to stderr.
+
+```bash
+# Minimal run with two seeds
+./site-scraper -seeds https://example.com,https://example.org -snapshot-interval 5s
+
+# Using a seed file and resuming from an existing checkpoint
+./site-scraper -seed-file seeds.txt -resume -checkpoint checkpoint.log -snapshot-interval 10s
+
+# Graceful shutdown: press Ctrl+C once to flush in-flight work and emit a final snapshot
+```
+
+Snapshot JSON includes pipeline metrics, limiter statistics (with top-N domain summaries), resource manager stats, and resume counts when enabled.
+
 ### Configuration File
 
 Create a `scraper.yaml` configuration file:
