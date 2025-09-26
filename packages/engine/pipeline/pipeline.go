@@ -41,7 +41,43 @@ type PipelineMetrics struct { TotalProcessed int `json:"total_processed"`; Total
 
 type Pipeline struct { config *PipelineConfig; urlQueue chan string; extractionQueue chan extractionTask; processingQueue chan *engmodels.Page; outputQueue chan *engmodels.CrawlResult; resultsInternal chan *engmodels.CrawlResult; results chan *engmodels.CrawlResult; ctx context.Context; cancel context.CancelFunc; wg sync.WaitGroup; mutex sync.RWMutex; metrics *PipelineMetrics; stageStatus map[string]*StageStatus; closeResultsOnce sync.Once; expectedResults int64; resultCount int64; discoveryWG sync.WaitGroup; extractionWG sync.WaitGroup; processingWG sync.WaitGroup; outputWG sync.WaitGroup; retryWG sync.WaitGroup; limiter engratelimit.RateLimiter; resourceManager *engresources.Manager; randMu sync.Mutex; rand *rand.Rand }
 
-func NewPipeline(config *PipelineConfig) *Pipeline { ctx, cancel := context.WithCancel(context.Background()); if config.RetryBaseDelay <= 0 { config.RetryBaseDelay = 200 * time.Millisecond }; if config.RetryMaxDelay <= 0 { config.RetryMaxDelay = 5 * time.Second }; if config.RetryMaxAttempts <= 0 { config.RetryMaxAttempts = 3 }; randSource := rand.NewSource(time.Now().UnixNano()); randGen := rand.New(randSource); p := &Pipeline{ config: config, ctx: ctx, cancel: cancel, urlQueue: make(chan string, config.BufferSize), extractionQueue: make(chan extractionTask, config.BufferSize), processingQueue: make(chan *engmodels.Page, config.BufferSize), outputQueue: make(chan *engmodels.CrawlResult, config.BufferSize), resultsInternal: make(chan *engmodels.CrawlResult, config.BufferSize), results: make(chan *engmodels.CrawlResult, config.BufferSize), metrics: &PipelineMetrics{ StartTime: time.Now(), StageMetrics: make(map[string]StageMetrics)}, stageStatus: make(map[string]*StageStatus), limiter: config.RateLimiter, resourceManager: config.ResourceManager, rand: randGen }; p.initStageStatus(); p.startStages(); p.startResultAggregator(); return p }
+func NewPipeline(config *PipelineConfig) *Pipeline {
+    ctx, cancel := context.WithCancel(context.Background())
+    if config.RetryBaseDelay <= 0 {
+        config.RetryBaseDelay = 200 * time.Millisecond
+    }
+    if config.RetryMaxDelay <= 0 {
+        config.RetryMaxDelay = 5 * time.Second
+    }
+    if config.RetryMaxAttempts <= 0 {
+        config.RetryMaxAttempts = 3
+    }
+    randSource := rand.NewSource(time.Now().UnixNano())
+    randGen := rand.New(randSource)
+    p := &Pipeline{
+        config:           config,
+        ctx:              ctx,
+        cancel:           cancel,
+        urlQueue:         make(chan string, config.BufferSize),
+        extractionQueue:  make(chan extractionTask, config.BufferSize),
+        processingQueue:  make(chan *engmodels.Page, config.BufferSize),
+        outputQueue:      make(chan *engmodels.CrawlResult, config.BufferSize),
+        resultsInternal:  make(chan *engmodels.CrawlResult, config.BufferSize),
+        results:          make(chan *engmodels.CrawlResult, config.BufferSize),
+        metrics: &PipelineMetrics{
+            StartTime:    time.Now(),
+            StageMetrics: make(map[string]StageMetrics),
+        },
+        stageStatus:     make(map[string]*StageStatus),
+        limiter:         config.RateLimiter,
+        resourceManager: config.ResourceManager,
+        rand:            randGen,
+    }
+    p.initStageStatus()
+    p.startStages()
+    p.startResultAggregator()
+    return p
+}
 
 func (p *Pipeline) Config() *PipelineConfig { return p.config }
 func (p *Pipeline) StageStatus(stageName string) *StageStatus { p.mutex.RLock(); defer p.mutex.RUnlock(); if status, exists := p.stageStatus[stageName]; exists { return status }; return &StageStatus{Name: stageName, Active: false} }
