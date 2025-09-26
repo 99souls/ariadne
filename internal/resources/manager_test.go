@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -156,6 +157,82 @@ func TestManagerAcquireRelease(t *testing.T) {
 		}
 	case <-time.After(50 * time.Millisecond):
 		t.Fatalf("acquire did not complete after release")
+	}
+}
+
+// TestConcurrentPageAccess specifically tests for the race condition that was fixed
+func TestConcurrentPageAccess(t *testing.T) {
+	tmp := t.TempDir()
+	cfg := Config{
+		CacheCapacity:      1,
+		SpillDirectory:     tmp + "/spill",
+		CheckpointInterval: 5 * time.Millisecond,
+	}
+
+	mgr, err := NewManager(cfg)
+	if err != nil {
+		t.Fatalf("failed to create manager: %v", err)
+	}
+	defer mgr.Close()
+
+	// Create a page with time fields that could race
+	pageURL, _ := url.Parse("https://example.com/race-test")
+	page := &models.Page{
+		URL:       pageURL,
+		Title:     "Race Test",
+		CrawledAt: time.Now(),
+		ProcessedAt: time.Now(),
+	}
+
+	// Store the page
+	if err := mgr.StorePage(pageURL.String(), page); err != nil {
+		t.Fatalf("store failed: %v", err)
+	}
+
+	// Run concurrent operations that could race
+	var wg sync.WaitGroup
+	const numGoroutines = 10
+
+	// Goroutines that read from cache/spill (triggers JSON marshaling)
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 5; j++ {
+				_, _, _ = mgr.GetPage(pageURL.String())
+				time.Sleep(time.Millisecond)
+			}
+		}()
+	}
+
+	// Goroutines that modify time fields (simulating pipeline processing)  
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 5; j++ {
+				retrieved, found, err := mgr.GetPage(pageURL.String())
+				if err == nil && found && retrieved != nil {
+					// This simulates what the pipeline does
+					retrieved.ProcessedAt = time.Now()
+				}
+				time.Sleep(time.Millisecond)
+			}
+		}()
+	}
+
+	// Wait for all goroutines with timeout
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Success - no race detected
+	case <-time.After(2 * time.Second):
+		t.Fatal("test timed out - possible deadlock")
 	}
 }
 
