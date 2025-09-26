@@ -16,12 +16,12 @@ Current business logic (pipeline, rate limiting, processing, assets, crawler) re
 
 ## 2. Goals
 
-| Goal | Description | Success Metric |
-|------|-------------|----------------|
-| Stable Embedding API | Provide a single facade for starting/stopping crawls & retrieving stats | New CLI uses only `packages/engine` |
-| Maintainability | Reduce direct imports of legacy `internal/*` packages | 0 new imports added outside engine after migration start |
-| Incremental Migration | Avoid big-bang refactor; keep tests green each step | All tests pass per phase |
-| Backward Compatibility | No breaking changes for existing internal tests & build pipeline | `go test ./...` unchanged |
+| Goal                   | Description                                                             | Success Metric                                           |
+| ---------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------- |
+| Stable Embedding API   | Provide a single facade for starting/stopping crawls & retrieving stats | New CLI uses only `packages/engine`                      |
+| Maintainability        | Reduce direct imports of legacy `internal/*` packages                   | 0 new imports added outside engine after migration start |
+| Incremental Migration  | Avoid big-bang refactor; keep tests green each step                     | All tests pass per phase                                 |
+| Backward Compatibility | No breaking changes for existing internal tests & build pipeline        | `go test ./...` unchanged                                |
 
 ## 3. Non-Goals
 
@@ -58,17 +58,17 @@ type Engine interface {
 
 ## 5. Migration Phases
 
-| Phase | Description | Output |
-|-------|-------------|--------|
-| P0 | Scaffold engine package | README + placeholder (DONE) |
-| P1 | Define facade & interfaces | `engine/engine.go` with constructor |
-| P2 | Move `ratelimit` + forwarding shim | `internal/ratelimit` deprecated file |
-| P3 | Move `pipeline` + forwarding shim | Updated imports |
-| P4 | Relocate `models` → `packages/engine/models` | Re-export wrappers in old path |
-| P5 | Move `processor` & `assets` | Minimized exported symbols |
-| P6 | Move `crawler` & `output` | Unified config path |
-| P7 | Remove shims & finalize facade | Clean dependency graph |
-| P8 | Refactor CLI to depend solely on facade | New simplified `main.go` |
+| Phase | Description                                  | Output                               |
+| ----- | -------------------------------------------- | ------------------------------------ |
+| P0    | Scaffold engine package                      | README + placeholder (DONE)          |
+| P1    | Define facade & interfaces                   | `engine/engine.go` with constructor  |
+| P2    | Move `ratelimit` + forwarding shim           | `internal/ratelimit` deprecated file |
+| P3    | Move `pipeline` + forwarding shim            | Updated imports                      |
+| P4    | Relocate `models` → `packages/engine/models` | Re-export wrappers in old path       |
+| P5    | Move `processor` & `assets`                  | Minimized exported symbols           |
+| P6    | Move `crawler` & `output`                    | Unified config path                  |
+| P7    | Remove shims & finalize facade               | Clean dependency graph               |
+| P8    | Refactor CLI to depend solely on facade      | New simplified `main.go`             |
 
 ## 6. Forwarding Shim Pattern
 
@@ -93,12 +93,12 @@ This preserves backward compatibility while encouraging migration via deprecatio
 
 ## 8. Risk Analysis
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Shim Divergence | Stale aliases cause confusion | Keep shims minimal; remove promptly at P7 |
-| Export Surface Creep | Hard to maintain API | Centralize exports via facade; internalize helpers |
-| Hidden Coupling | Blocked migration mid-phase | Introduce interfaces (e.g., ContentProcessor) where needed |
-| Test Flakiness | Slows iteration | Run targeted package tests before full suite |
+| Risk                 | Impact                        | Mitigation                                                 |
+| -------------------- | ----------------------------- | ---------------------------------------------------------- |
+| Shim Divergence      | Stale aliases cause confusion | Keep shims minimal; remove promptly at P7                  |
+| Export Surface Creep | Hard to maintain API          | Centralize exports via facade; internalize helpers         |
+| Hidden Coupling      | Blocked migration mid-phase   | Introduce interfaces (e.g., ContentProcessor) where needed |
+| Test Flakiness       | Slows iteration               | Run targeted package tests before full suite               |
 
 ## 9. Metrics & Exit Criteria
 
@@ -121,8 +121,8 @@ This preserves backward compatibility while encouraging migration via deprecatio
 
 ## 12. Change Log
 
-| Date | Change |
-|------|--------|
+| Date       | Change                          |
+| ---------- | ------------------------------- |
 | 2025-09-26 | Initial design document created |
 
 ---

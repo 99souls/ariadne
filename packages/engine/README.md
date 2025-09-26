@@ -12,16 +12,16 @@ This package will encapsulate the reusable, headless crawling and processing eng
 
 The following internal packages are prime candidates to move (with minimal or no exported surface changes) into `packages/engine`:
 
-| Current Path                | New Path (Proposed)                     | Notes |
-|----------------------------|-----------------------------------------|-------|
-| `pkg/models`               | `packages/engine/models`                | Public data structures. Keep backward compatibility via re-export stubs if needed. |
-| `internal/pipeline`        | `packages/engine/pipeline`              | Core multi-stage pipeline. Export high-level orchestration API. |
-| `internal/ratelimit`       | `packages/engine/ratelimit`             | Adaptive limiter. Will become public API surface (careful versioning). |
-| `internal/processor`       | `packages/engine/processor`             | Content extraction & markdown conversion. Audit for internal-only helpers. |
-| `internal/assets`          | `packages/engine/assets`                | Asset discovery/downloading/rewriting. Consider making downloader interface-driven. |
-| `internal/crawler`         | `packages/engine/crawler`               | URL discovery and queue management. |
-| `internal/config`          | `packages/engine/config`                | Configuration loader & defaults. Possibly unify with models. |
-| `internal/output`          | `packages/engine/output`                | Future output pipeline components. |
+| Current Path         | New Path (Proposed)         | Notes                                                                               |
+| -------------------- | --------------------------- | ----------------------------------------------------------------------------------- |
+| `pkg/models`         | `packages/engine/models`    | Public data structures. Keep backward compatibility via re-export stubs if needed.  |
+| `internal/pipeline`  | `packages/engine/pipeline`  | Core multi-stage pipeline. Export high-level orchestration API.                     |
+| `internal/ratelimit` | `packages/engine/ratelimit` | Adaptive limiter. Will become public API surface (careful versioning).              |
+| `internal/processor` | `packages/engine/processor` | Content extraction & markdown conversion. Audit for internal-only helpers.          |
+| `internal/assets`    | `packages/engine/assets`    | Asset discovery/downloading/rewriting. Consider making downloader interface-driven. |
+| `internal/crawler`   | `packages/engine/crawler`   | URL discovery and queue management.                                                 |
+| `internal/config`    | `packages/engine/config`    | Configuration loader & defaults. Possibly unify with models.                        |
+| `internal/output`    | `packages/engine/output`    | Future output pipeline components.                                                  |
 
 ## Architectural Approach
 
@@ -57,7 +57,7 @@ Phase 2: Move stateless/shared models (`pkg/models` → `packages/engine/models`
 Phase 3: Relocate `ratelimit` & `pipeline` (lowest external dependencies).  
 Phase 4: Move `processor`, `assets`, `crawler` with careful public function curation.  
 Phase 5: Remove/alias deprecated imports; update `go vet` & tests.  
-Phase 6: Introduce TUI/CLI packages consuming the engine.  
+Phase 6: Introduce TUI/CLI packages consuming the engine.
 
 ## Open Questions
 
