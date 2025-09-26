@@ -1,10 +1,10 @@
 package engine
 
 import (
-    "time"
-    "site-scraper/internal/pipeline"
+    engpipeline "site-scraper/packages/engine/pipeline"
     engresources "site-scraper/packages/engine/resources"
     "site-scraper/pkg/models"
+    "time"
 )
 
 // Config is the public configuration surface for the Engine facade. It intentionally
@@ -41,8 +41,8 @@ type engineOptions struct {
 	resourceManager *engresources.Manager
 }
 
-func (c Config) toPipelineConfig(opts engineOptions) *pipeline.PipelineConfig {
-	pc := &pipeline.PipelineConfig{
+func (c Config) toPipelineConfig(opts engineOptions) *engpipeline.PipelineConfig {
+	pc := &engpipeline.PipelineConfig{
 		DiscoveryWorkers:  c.DiscoveryWorkers,
 		ExtractionWorkers: c.ExtractionWorkers,
 		ProcessingWorkers: c.ProcessingWorkers,
