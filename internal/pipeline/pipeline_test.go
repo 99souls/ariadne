@@ -2,11 +2,15 @@ package pipeline
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"site-scraper/internal/ratelimit"
+	"site-scraper/internal/resources"
 )
 
 // Phase 3.1 TDD Tests: Multi-Stage Pipeline Architecture
@@ -386,6 +390,182 @@ func TestPipelineExtractionRetriesAndFailure(t *testing.T) {
 
 	if failures != 1 {
 		t.Fatalf("expected 1 failure result, got %d", failures)
+	}
+}
+
+func TestPipelineResourceCacheHit(t *testing.T) {
+	tempDir := t.TempDir()
+
+	resourceCfg := resources.Config{
+		CacheCapacity:      2,
+		MaxInFlight:        4,
+		SpillDirectory:     filepath.Join(tempDir, "spill"),
+		CheckpointPath:     filepath.Join(tempDir, "checkpoint.log"),
+		CheckpointInterval: 5 * time.Millisecond,
+	}
+
+	manager, err := resources.NewManager(resourceCfg)
+	if err != nil {
+		t.Fatalf("failed to create resource manager: %v", err)
+	}
+	defer manager.Close()
+
+	config := &PipelineConfig{
+		DiscoveryWorkers:  1,
+		ExtractionWorkers: 1,
+		ProcessingWorkers: 1,
+		OutputWorkers:     1,
+		BufferSize:        4,
+		ResourceManager:   manager,
+	}
+
+	pipeline := NewPipeline(config)
+	defer pipeline.Stop()
+
+	urls := []string{
+		"https://example.com/cache", // first pass populates cache
+		"https://example.com/cache", // second pass should hit cache
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	results := pipeline.ProcessURLs(ctx, urls)
+
+	processed := 0
+	for range results {
+		processed++
+	}
+
+	if processed != len(urls) {
+		t.Fatalf("expected %d results, got %d", len(urls), processed)
+	}
+
+	metrics := pipeline.Metrics()
+	extraction := metrics.StageMetrics["extraction"].Processed
+	cacheHits := metrics.StageMetrics["cache"].Processed
+
+	if extraction != 1 {
+		t.Fatalf("expected 1 extraction, got %d", extraction)
+	}
+	if cacheHits != 1 {
+		t.Fatalf("expected 1 cache hit, got %d", cacheHits)
+	}
+}
+
+func TestPipelineResourceSpillover(t *testing.T) {
+	tempDir := t.TempDir()
+
+	resourceCfg := resources.Config{
+		CacheCapacity:      1,
+		MaxInFlight:        2,
+		SpillDirectory:     filepath.Join(tempDir, "spill"),
+		CheckpointPath:     filepath.Join(tempDir, "checkpoint.log"),
+		CheckpointInterval: 5 * time.Millisecond,
+	}
+
+	manager, err := resources.NewManager(resourceCfg)
+	if err != nil {
+		t.Fatalf("failed to create resource manager: %v", err)
+	}
+	defer manager.Close()
+
+	config := &PipelineConfig{
+		DiscoveryWorkers:  1,
+		ExtractionWorkers: 1,
+		ProcessingWorkers: 1,
+		OutputWorkers:     1,
+		BufferSize:        4,
+		ResourceManager:   manager,
+	}
+
+	pipeline := NewPipeline(config)
+	defer pipeline.Stop()
+
+	urls := []string{
+		"https://example.com/resource/1",
+		"https://example.com/resource/2",
+		"https://example.com/resource/3",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	results := pipeline.ProcessURLs(ctx, urls)
+	for range results {
+	}
+
+	spillDir := filepath.Join(tempDir, "spill")
+	entries, err := os.ReadDir(spillDir)
+	if err != nil {
+		t.Fatalf("expected spill directory, got error: %v", err)
+	}
+
+	found := false
+	for _, entry := range entries {
+		if strings.HasSuffix(entry.Name(), ".spill.json") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Fatal("expected at least one spill file")
+	}
+}
+
+func TestPipelineResourceCheckpointing(t *testing.T) {
+	tempDir := t.TempDir()
+	checkpointPath := filepath.Join(tempDir, "checkpoint.log")
+
+	resourceCfg := resources.Config{
+		CacheCapacity:      4,
+		MaxInFlight:        4,
+		SpillDirectory:     filepath.Join(tempDir, "spill"),
+		CheckpointPath:     checkpointPath,
+		CheckpointInterval: 1 * time.Millisecond,
+	}
+
+	manager, err := resources.NewManager(resourceCfg)
+	if err != nil {
+		t.Fatalf("failed to create resource manager: %v", err)
+	}
+	defer manager.Close()
+
+	config := &PipelineConfig{
+		DiscoveryWorkers:  1,
+		ExtractionWorkers: 1,
+		ProcessingWorkers: 1,
+		OutputWorkers:     1,
+		BufferSize:        4,
+		ResourceManager:   manager,
+	}
+
+	pipeline := NewPipeline(config)
+	defer pipeline.Stop()
+
+	urls := []string{
+		"https://example.com/checkpoint/1",
+		"https://example.com/checkpoint/2",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	results := pipeline.ProcessURLs(ctx, urls)
+	for range results {
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	data, err := os.ReadFile(checkpointPath)
+	if err != nil {
+		t.Fatalf("expected checkpoint file, got error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != len(urls) {
+		t.Fatalf("expected %d checkpoint entries, got %d", len(urls), len(lines))
 	}
 }
 

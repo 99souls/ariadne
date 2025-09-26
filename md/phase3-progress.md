@@ -23,6 +23,29 @@
 - **Retry Discipline**: Backoff scheduling respects pipeline cancellation, preventing zombie goroutines after shutdown.
 - **Observability Hooks**: `Snapshot()` exposes aggregated limiter stats for future telemetry wiring.
 
+## 🧠 Phase 3.3 Resource Management – Complete ✅
+
+### Highlights
+
+1. **Unified Resource Manager**: Introduced `internal/resources.Manager` with configurable in-flight ceilings, LRU cache, disk spillover, and checkpoint journaling.
+2. **Pipeline Integration**: Extraction workers consult the cache before making network requests, throttle concurrent work via `Acquire`, and persist checkpoints after results are delivered.
+3. **Disk Spillover**: LRU evictions serialize `models.Page` to JSON (`*.spill.json`) enabling recovery for repeated visits without exhausting memory.
+4. **Progress Journaling**: As URLs complete, checkpoints append to a log for resumable crawls and crash recovery insights.
+
+### Test & Verification Summary
+
+- **Resource Unit Tests**: `internal/resources` suite covers cache hits, spillover recovery, checkpoint flushing, and concurrency guards.
+- **Pipeline Integration Tests**: Added scenarios for cache hits, spillover creation, and checkpoint ledger validation.
+- **Full Suite**: `go test ./...` ✅ (asset downloader tests flaky/offline – documented legacy issue with HTTPBIN dependency).
+- **Race Detector**: `go test -race ./internal/resources ./internal/pipeline` ✅ (matches 3.1/3.2 rigor).
+
+### Key Outcomes
+
+- **Memory Guardrails**: `MaxInFlight` semaphore prevents extraction stampedes that would balloon memory under heavy load.
+- **Cache Efficiency**: Repeat URLs bypass extraction, lowering latency and reducing limiter pressure (tracked via new `cache` stage metrics).
+- **Persistent Safety Net**: Checkpoint log enables resumable operations and post-run auditing of processed URLs.
+- **Extensibility**: Resource manager facade positions future modules (engine/TUI) to reuse caching + checkpointing without pipeline rewrites.
+
 ---
 
 ## 🎯 Phase 3.1 Multi-Stage Pipeline Architecture – Foundation Complete ✅

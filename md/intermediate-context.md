@@ -4,11 +4,34 @@ go build # ✅ SUCCESS
 
 # Site Scraper Implementation Context
 
-## Current Status: Phase 3.2 Intelligent Rate Limiting Complete ✅
+## Current Status: Phase 3 Complete (3.1–3.3) ✅
 
 **Date**: November 3, 2025  
 **Phase**: Concurrency & Performance Track (Phase 3)  
-**Achievement**: Adaptive, per-domain rate limiting integrated across the pipeline with comprehensive automated tests
+**Achievement**: Multi-stage pipeline, adaptive rate limiting, and resource management (cache, spillover, checkpoints) delivered with full TDD coverage
+
+---
+
+## Phase 3.3 Highlights – Resource Management Delivered
+
+### Core Deliverables
+
+- **Resource Manager (`internal/resources`)**: Configurable MaxInFlight semaphore, LRU cache with disk spillover, checkpoint journaling goroutine, and unit tests covering cache hits, spill recovery, and concurrency semantics.
+- **Pipeline Caching Integration**: Extraction stage consults cache before hitting network, records cache stage metrics, and stores fresh pages post-fetch. Cache hits bypass rate limiter permits for faster throughput.
+- **Checkpointing & Journaling**: `deliverResult` appends processed URLs to durable log while pipeline integration tests confirm flush semantics.
+- **Memory Guardrails**: In-flight slot acquisition prevents runaway extraction concurrency; release occurs immediately after caching to maintain throughput without saturating memory.
+
+### Validation & Quality Gates
+
+- `go test ./internal/resources ./internal/pipeline` ✅ – verifies cache hits, spillover, checkpoint flush, and pipeline integration.
+- `go test -race ./internal/resources ./internal/pipeline` ✅ – ensures concurrency safety across new manager and pipeline interactions.
+- `go test ./...` ⚠️ – asset downloader tests still rely on HTTPBIN (legacy Phase 2 issue; documented follow-up). All other packages green.
+
+### Key Insights
+
+- Caching and checkpointing significantly reduce redundant extraction work during retries or duplicate URLs.
+- Spillover format (`spill-*.spill.json`) provides deterministic artifacts for debugging and future resumption logic.
+- Integrating resource manager early sets the stage for the upcoming engine facade to expose clean APIs for CLI/TUI layers.
 
 ---
 

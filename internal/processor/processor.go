@@ -83,7 +83,7 @@ func (cp *ContentProcessor) ExtractContent(html string, selectors []string) (str
 		bodySelection.Find("script, style, nav, footer, aside, header").Remove()
 		bodySelection.Find(".advertisement, .ad, .ads").Remove()
 		bodySelection.Find("img[width='1'][height='1']").Remove()
-		
+
 		bodyContent, err := bodySelection.Html()
 		if err != nil {
 			return "", fmt.Errorf("could not extract any content: %w", err)
@@ -118,7 +118,7 @@ func (cp *ContentProcessor) RemoveUnwantedElements(html string) (string, error) 
 		".footer", ".header",
 		"#comments", ".comments",
 	}
-	
+
 	for _, selector := range unwantedSelectors {
 		doc.Find(selector).Remove()
 	}
@@ -177,7 +177,7 @@ func (cp *ContentProcessor) ConvertRelativeURLs(html, baseURL string) (string, e
 		s.SetAttr("href", absoluteURL.String())
 	})
 
-	// Convert relative image sources  
+	// Convert relative image sources
 	doc.Find("img[src]").Each(func(i int, s *goquery.Selection) {
 		src, exists := s.Attr("src")
 		if !exists {
@@ -279,8 +279,8 @@ func (cp *ContentProcessor) ExtractImages(html, baseURL string) ([]string, error
 		}
 
 		// Skip data URLs and tracking pixels
-		if strings.HasPrefix(src, "data:") || 
-		   (s.AttrOr("width", "") == "1" && s.AttrOr("height", "") == "1") {
+		if strings.HasPrefix(src, "data:") ||
+			(s.AttrOr("width", "") == "1" && s.AttrOr("height", "") == "1") {
 			return
 		}
 
@@ -328,10 +328,10 @@ func (cp *ContentProcessor) ProcessPage(page *models.Page, baseURL string) error
 
 	// Step 3: Extract main content using common selectors
 	contentSelectors := []string{
-		"main", "article", ".content", "#content", 
+		"main", "article", ".content", "#content",
 		".post", ".entry", ".article-content",
 	}
-	
+
 	extractedContent, err := cp.ExtractContent(withAbsoluteURLs, contentSelectors)
 	if err != nil {
 		// If extraction fails, use the cleaned content
@@ -393,12 +393,12 @@ type ContentValidator struct {
 
 // ValidationResult represents the result of content validation
 type ValidationResult struct {
-	IsValid      bool     `json:"is_valid"`
-	Score        float64  `json:"score"`
-	Issues       []string `json:"issues"`
-	WordCount    int      `json:"word_count"`
-	HasContent   bool     `json:"has_content"`
-	HasHeadings  bool     `json:"has_headings"`
+	IsValid     bool     `json:"is_valid"`
+	Score       float64  `json:"score"`
+	Issues      []string `json:"issues"`
+	WordCount   int      `json:"word_count"`
+	HasContent  bool     `json:"has_content"`
+	HasHeadings bool     `json:"has_headings"`
 }
 
 // NewWorkerPool creates a new worker pool
@@ -429,29 +429,34 @@ func (wp *WorkerPool) Stop() {
 // ProcessPages processes multiple pages concurrently
 func (wp *WorkerPool) ProcessPages(pages []*models.Page, baseURL string) <-chan *models.CrawlResult {
 	results := make(chan *models.CrawlResult, len(pages))
-	
+
 	// Process pages (simplified for now - in reality would use worker goroutines)
 	go func() {
 		defer close(results)
-		
+
 		for _, page := range pages {
 			processor := NewContentProcessor()
 			err := processor.ProcessPage(page, baseURL)
-			
+
+			resultURL := ""
+			if page != nil && page.URL != nil {
+				resultURL = page.URL.String()
+			}
 			result := &models.CrawlResult{
+				URL:     resultURL,
 				Page:    page,
 				Success: err == nil,
 				Stage:   "processing",
 			}
-			
+
 			if err != nil {
 				result.Error = err
 			}
-			
+
 			results <- result
 		}
 	}()
-	
+
 	return results
 }
 
@@ -478,7 +483,7 @@ func (c *HTMLToMarkdownConverter) Convert(html string) (string, error) {
 
 	// Clean up the markdown
 	cleaned := cleanMarkdown(markdown)
-	
+
 	return cleaned, nil
 }
 
@@ -487,15 +492,15 @@ func cleanMarkdown(markdown string) string {
 	// Remove HTML comments that may have been preserved
 	re := regexp.MustCompile(`<!--[\s\S]*?-->`)
 	cleaned := re.ReplaceAllString(markdown, "")
-	
+
 	// Remove excessive newlines
 	re = regexp.MustCompile(`\n{3,}`)
 	cleaned = re.ReplaceAllString(cleaned, "\n\n")
-	
+
 	// Fix escaped characters in code blocks (common with some converters)
 	cleaned = strings.ReplaceAll(cleaned, "\\n", "\n")
 	cleaned = strings.ReplaceAll(cleaned, `\"`, `"`)
-	
+
 	// Clean up table formatting - remove excessive spaces in cells
 	lines := strings.Split(cleaned, "\n")
 	for i, line := range lines {
@@ -520,7 +525,7 @@ func cleanMarkdown(markdown string) string {
 			lines[i] = strings.TrimRight(line, " ")
 		}
 	}
-	
+
 	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
 
@@ -566,14 +571,14 @@ func (cv *ContentValidator) ValidateContent(page *models.Page) *ValidationResult
 	result.WordCount = wordCount
 
 	// Priority-based validation - only flag the most critical issues
-	
+
 	// 1. Check title first (most critical for short content)
 	titleMissing := strings.TrimSpace(page.Title) == ""
 	titleTooShort := !titleMissing && len(strings.TrimSpace(page.Title)) < 10
-	
+
 	// 2. Check content length (very short threshold)
 	contentTooShort := wordCount < 5 // Only flag extremely short content
-	
+
 	// 3. Check content density (for pages with some content but lots of markup)
 	lowContentDensity := false
 	if wordCount >= 5 && wordCount <= 15 { // Medium-length content that might have density issues
@@ -592,7 +597,7 @@ func (cv *ContentValidator) ValidateContent(page *models.Page) *ValidationResult
 		result.Issues = append(result.Issues, "title_too_short")
 		result.Score -= 0.3
 	}
-	
+
 	if contentTooShort {
 		result.Issues = append(result.Issues, "content_too_short")
 		result.Score -= 0.4
