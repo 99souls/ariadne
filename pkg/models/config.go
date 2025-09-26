@@ -1,8 +1,8 @@
 package models
 
 import (
+	engmodels "site-scraper/packages/engine/models"
 	"time"
-    engmodels "site-scraper/packages/engine/models"
 )
 
 // ScraperConfig holds all configuration for the scraper

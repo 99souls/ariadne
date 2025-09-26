@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"site-scraper/internal/pipeline"
-	"site-scraper/internal/ratelimit"
+	engratelimit "site-scraper/packages/engine/ratelimit"
 	"site-scraper/internal/resources"
 	engmodels "site-scraper/packages/engine/models"
 )
@@ -20,7 +20,7 @@ type Snapshot struct {
 	StartedAt time.Time                 `json:"started_at"`
 	Uptime    time.Duration             `json:"uptime"`
 	Pipeline  *pipeline.PipelineMetrics `json:"pipeline,omitempty"`
-	Limiter   *ratelimit.LimiterSnapshot `json:"limiter,omitempty"`
+	Limiter   *engratelimit.LimiterSnapshot `json:"limiter,omitempty"`
 	Resources *ResourceSnapshot         `json:"resources,omitempty"`
 	Resume    *ResumeSnapshot           `json:"resume,omitempty"`
 }
@@ -43,7 +43,7 @@ type ResumeSnapshot struct {
 type Engine struct {
 	cfg      Config
 	pl       *pipeline.Pipeline
-	limiter  ratelimit.RateLimiter
+	limiter  engratelimit.RateLimiter
 	rm       *resources.Manager
 	started  atomic.Bool
 	startedAt time.Time
@@ -77,9 +77,9 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	}
 
 	// Build rate limiter
-	var limiter ratelimit.RateLimiter
+	var limiter engratelimit.RateLimiter
 	if cfg.RateLimit.Enabled {
-		limiter = ratelimit.NewAdaptiveRateLimiter(cfg.RateLimit)
+		limiter = engratelimit.NewAdaptiveRateLimiter(cfg.RateLimit)
 	}
 
 	// Override checkpoint path if provided directly on facade config
