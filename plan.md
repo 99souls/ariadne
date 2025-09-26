@@ -1,79 +1,13 @@
 # Site Scraper Implementation Plan
 
-_Agentic workflow optimized for systematic development with proven TDD methodology_
+_Agentic workflow optimized for systematic development_
 
 ## Development Philosophy
 
-- **Test-Driven Development (TDD)**: Write tests first, implement to pass, refactor with confidence
-- **Iterative Refactoring**: Build, test, refine in small, verifiable increments
+- **Iterative Development**: Build, test, refine in small increments
 - **Early Validation**: Test each component independently before integration
-- **Modular Architecture**: Single responsibility principle with clean interfaces
-- **Measurable Progress**: Clear success criteria with comprehensive test coverage
-- **Fail-Fast Approach**: Identify and resolve blockers quickly through systematic testing
-
----
-
-## 🧪 TDD Methodology & Best Practices
-
-### Core TDD Principles Applied
-
-#### Red-Green-Refactor Cycle
-
-1. **Red**: Write failing tests that define expected behavior
-2. **Green**: Implement minimal code to make tests pass
-3. **Refactor**: Improve code structure while maintaining test coverage
-
-#### Test-First Development Benefits
-
-- **Interface Design**: Tests define clean API contracts before implementation
-- **Regression Prevention**: Comprehensive test suite catches breaking changes immediately
-- **Documentation**: Tests serve as living documentation of system behavior
-- **Confidence**: Full coverage enables fearless refactoring and optimization
-
-#### Modular Testing Strategy
-
-- **Unit Tests**: Individual component behavior validation
-- **Integration Tests**: Cross-module interaction verification
-- **End-to-End Tests**: Complete pipeline functionality validation
-- **Performance Tests**: Benchmarking and resource usage monitoring
-
-### Proven TDD Success Stories
-
-#### ✅ Asset Management Module Extraction
-
-**Challenge**: Extract asset management from 1109-line monolith without breaking changes  
-**TDD Solution**:
-
-- Created comprehensive test suite before extraction (449 test lines)
-- Defined module interfaces through test specifications
-- Maintained backward compatibility via type alias testing
-- Verified independent operation through isolated test execution
-
-**Result**: 100% test coverage, zero breaking changes, fully modular architecture
-
-#### ✅ Content Processing Pipeline Enhancement
-
-**Challenge**: Fix multiple failing tests while maintaining functionality  
-**TDD Solution**:
-
-- Analyzed each test failure to understand expected behavior
-- Implemented fixes iteratively with immediate test validation
-- Enhanced functionality based on test requirements (image extraction, validation logic)
-- Refactored implementation while preserving test contracts
-
-**Result**: 11/11 test suites passing, enhanced functionality, improved code quality
-
-#### ✅ Refactoring Safety Net
-
-**Challenge**: Major architectural changes without regression  
-**TDD Solution**:
-
-- Existing test suite provided safety net for refactoring
-- Each change validated against complete test suite
-- Iterative approach with continuous integration verification
-- Test-driven interface design prevented coupling issues
-
-**Result**: 57% code reduction, 83% lint improvement, zero functional regression
+- **Measurable Progress**: Clear success criteria for each milestone
+- **Fail-Fast Approach**: Identify and resolve blockers quickly
 
 ---
 
@@ -138,10 +72,10 @@ _Agentic workflow optimized for systematic development with proven TDD methodolo
 
 ### 2.3 Asset Management
 
-- [x] Implement image URL extraction and cataloging
-- [x] Add option for image downloading vs. URL preservation
-- [x] Handle asset optimization (resize, compress)
-- [x] Create asset manifest for output generation
+- [ ] Implement image URL extraction and cataloging
+- [ ] Add option for image downloading vs. URL preservation
+- [ ] Handle asset optimization (resize, compress)
+- [ ] Create asset manifest for output generation
 
 **Validation Test**: Process 50 pages, generate clean markdown with preserved formatting and working links.
 
@@ -161,10 +95,10 @@ _Agentic workflow optimized for systematic development with proven TDD methodolo
 
 ### 3.2 Intelligent Rate Limiting
 
-- [ ] Implement adaptive rate limiter based on server responses
-- [ ] Add per-domain rate limiting capabilities
-- [ ] Create circuit breaker for server overload detection
-- [ ] Add retry logic with exponential backoff
+- [x] Implement adaptive rate limiter based on server responses
+- [x] Add per-domain rate limiting capabilities
+- [x] Create circuit breaker for server overload detection
+- [x] Add retry logic with exponential backoff
 
 ### 3.3 Resource Management
 
@@ -174,87 +108,6 @@ _Agentic workflow optimized for systematic development with proven TDD methodolo
 - [ ] Add progress checkpointing for resumable crawls
 
 **Validation Test**: Crawl 500+ page site within memory limits, complete within expected timeframe.
-
----
-
-## Cross-Cutting Initiative: Engine Package Decomposition
-
-**Decision**: Begin incremental extraction NOW (overlapping with late Phase 3) rather than deferring until after all feature phases. Early decomposition reduces future refactor cost, establishes clean public APIs before they ossify, and keeps dependency graphs stable for upcoming output, observability, and CLI/TUI work.
-
-### Rationale
-
-- **Avoid Deep Coupling**: Additional Phase 4–6 features would otherwise expand imports into `internal/*`, increasing migration surface later.
-- **API Stabilization**: Defining a facade early allows downstream (CLI / TUI / future API server) to target a stable seam.
-- **Test Leverage**: Existing comprehensive suites provide safety net for incremental moves (forwarding shims + aliasing).
-- **Parallelizable**: Migration tasks are mostly mechanical and can proceed alongside feature development without blocking critical paths.
-
-### Scope
-
-Create `packages/engine` as the canonical embedding API containing (eventually):
-
-- `models` (public data & config structures)
-- `pipeline` (multi-stage orchestration)
-- `ratelimit` (adaptive limiter)
-- `processor` (content extraction & markdown conversion)
-- `assets` (discovery, download, optimization, rewrite)
-- `crawler` (URL discovery / queue)
-- `output` (future output format generation)
-
-### Non-Goals (Now)
-
-- Multi-module split (stay single `go.mod` initially)
-- Public semantic version tagging (defer until facade API stabilized)
-- Breaking changes to current internal tests (all must remain green during migration)
-
-### Strategy & Phases
-
-1. **P0 – Facade Skeleton** (DONE scaffold): Create `packages/engine` directory + README + placeholder file.
-2. **P1 – Facade Definition**: Introduce `Engine` struct & interfaces delegating to existing internal packages (no code moves yet).
-3. **P2 – Low-Risk Moves**: Relocate `ratelimit` & `pipeline` under `packages/engine/` with alias stubs left at old paths:
-
-- Add deprecated forwarding files (`// Deprecated: use packages/engine/...`) to preserve imports.
-
-4. **P3 – Models Consolidation**: Move `pkg/models` → `packages/engine/models`; add re-export wrappers preserving old package for soft migration.
-5. **P4 – Processor & Assets**: Migrate content & asset modules; prune unexported symbols; expose only necessary public API via facade.
-6. **P5 – Crawler & Output**: Move remaining modules, introducing interfaces where direct coupling exists.
-7. **P6 – Cleanup & Hardening**: Remove forwarding shims after internal imports updated; run `-race`, lint, and regenerate docs.
-8. **P7 – CLI/TUI Layering**: Implement new `cmd/scraper` using only facade; prepare future `packages/tui`.
-
-### Task Checklist
-
-- [ ] Define `Engine` facade interfaces (Start, Stop, Snapshot, Configure)
-- [ ] Add integration test for facade (ensures parity with direct pipeline usage)
-- [ ] Move `ratelimit` package + add forwarding shim
-- [ ] Move `pipeline` package + add forwarding shim
-- [ ] Introduce `packages/engine/models` + re-export `pkg/models`
-- [ ] Update imports across repo to use new paths (incremental)
-- [ ] Move `processor` & `assets` with tightened export surface
-- [ ] Move `crawler` & `output`
-- [ ] Remove deprecated forwarding shims
-- [ ] Add documentation: migration log & public API reference
-- [ ] Establish versioning policy (doc only, no tags yet)
-
-### Acceptance Criteria
-
-- All existing tests pass after each migration step
-- No circular imports introduced
-- Facade integration test green, demonstrating end-to-end crawl
-- Forwarding shims removed with zero unresolved imports
-- Public API documented (README + `godoc` comments) and stable for CLI adoption
-
-### Risks & Mitigations
-
-| Risk                              | Impact                     | Mitigation                                                          |
-| --------------------------------- | -------------------------- | ------------------------------------------------------------------- |
-| Hidden internal coupling          | Migration stalls           | Introduce interfaces during move (dependency inversion)             |
-| Large diffs reduce review quality | Slower iteration           | Phase-by-phase small PRs with shims                                 |
-| Accidental API surface bloat      | Long-term maintenance cost | Explicit facade; keep subpackages internal except necessary exports |
-| Test flakiness during moves       | Lost confidence            | Run full suite (incl. `-race`) per step                             |
-
-### Follow-Up Opportunities
-
-- After stabilization: consider multi-module (engine vs. cli) if external embedding demand arises.
-- Add semantic version tagging once API adoption starts.
 
 ---
 
