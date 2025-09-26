@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	engpipeline "site-scraper/packages/engine/pipeline"
 	engmodels "site-scraper/packages/engine/models"
+	engpipeline "site-scraper/packages/engine/pipeline"
 	engratelimit "site-scraper/packages/engine/ratelimit"
 	engresources "site-scraper/packages/engine/resources"
 )
