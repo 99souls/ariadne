@@ -41,13 +41,14 @@ type ResumeSnapshot struct {
 
 // Engine composes the pipeline, limiter, and resource manager under a single facade.
 type Engine struct {
-	cfg      Config
-	pl       *engpipeline.Pipeline
-	limiter  engratelimit.RateLimiter
-	rm       *engresources.Manager
-	started  atomic.Bool
-	startedAt time.Time
+	cfg           Config
+	pl            *engpipeline.Pipeline
+	limiter       engratelimit.RateLimiter
+	rm            *engresources.Manager
+	started       atomic.Bool
+	startedAt     time.Time
 	resumeMetrics resumeState
+	strategies    interface{} // Placeholder for strategy injection (Phase 5A Step 4)
 }
 
 type resumeState struct {
@@ -90,7 +91,14 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	pc := (&cfg).toPipelineConfig(engineOptions{limiter: limiter, resourceManager: rm})
 	pl := engpipeline.NewPipeline(pc)
 
-	e := &Engine{cfg: cfg, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
+	e := &Engine{
+		cfg:           cfg,
+		pl:            pl,
+		limiter:       limiter,
+		rm:            rm,
+		startedAt:     time.Now(),
+		strategies:    nil, // Strategy injection placeholder
+	}
 	e.started.Store(true)
 	return e, nil
 }
@@ -176,5 +184,27 @@ func (e *Engine) Snapshot() Snapshot {
 		snap.Resume = &ResumeSnapshot{SeedsBefore: e.resumeMetrics.totalBefore, Skipped: e.resumeMetrics.skipped}
 	}
 	return snap
+}
+
+// EngineStrategies defines business logic components for dependency injection
+// This is the foundation for Phase 5A Step 4: Strategy-Aware Engine Constructor
+type EngineStrategies struct {
+	Fetcher     interface{} // Placeholder for crawler.Fetcher interface
+	Processors  interface{} // Placeholder for []processor.Processor slice
+	OutputSinks interface{} // Placeholder for []output.OutputSink slice
+}
+
+// NewWithStrategies creates an engine with custom business logic strategies
+// This is a foundational implementation for Phase 5A Step 4
+func NewWithStrategies(cfg Config, strategies EngineStrategies, opts ...Option) (*Engine, error) {
+	// Build engine using existing constructor
+	engine, err := New(cfg, opts...)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Store strategies for future use in pipeline integration
+	engine.strategies = strategies
+	return engine, nil
 }
 
