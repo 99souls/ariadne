@@ -4,11 +4,11 @@ package resources
 import engres "ariadne/packages/engine/resources"
 
 type (
-    Config = engres.Config
-    Manager = engres.Manager
-    Stats = engres.Stats
+	Config  = engres.Config
+	Manager = engres.Manager
+	Stats   = engres.Stats
 )
 
 var (
-    NewManager = engres.NewManager
+	NewManager = engres.NewManager
 )

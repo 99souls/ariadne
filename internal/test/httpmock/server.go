@@ -67,11 +67,17 @@ func (m *MockServer) handle(w http.ResponseWriter, r *http.Request) {
 	for _, spec := range m.ordered {
 		if spec.Regex {
 			matched, _ := regexp.MatchString(spec.Pattern, path)
-			if !matched { continue }
+			if !matched {
+				continue
+			}
 		} else if spec.MatchPrefix {
-			if !strings.HasPrefix(path, spec.Pattern) { continue }
+			if !strings.HasPrefix(path, spec.Pattern) {
+				continue
+			}
 		} else {
-			if !strings.Contains(path, spec.Pattern) { continue }
+			if !strings.Contains(path, spec.Pattern) {
+				continue
+			}
 		}
 
 		if spec.Delay > 0 {
@@ -81,7 +87,9 @@ func (m *MockServer) handle(w http.ResponseWriter, r *http.Request) {
 			case <-time.After(spec.Delay):
 			}
 		}
-		for k, v := range spec.Headers { w.Header().Set(k, v) }
+		for k, v := range spec.Headers {
+			w.Header().Set(k, v)
+		}
 		w.WriteHeader(spec.Status)
 		_, _ = w.Write([]byte(spec.Body))
 		return

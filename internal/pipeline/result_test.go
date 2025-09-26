@@ -19,7 +19,7 @@ func TestPipelineResultCounting(t *testing.T) {
 
 	pipeline := NewPipeline(config)
 	defer pipeline.Stop()
-	
+
 	ctx := context.Background()
 	urls := []string{"https://example.com/test"}
 	results := pipeline.ProcessURLs(ctx, urls)
@@ -28,19 +28,19 @@ func TestPipelineResultCounting(t *testing.T) {
 	var wg sync.WaitGroup
 	var resultCount int
 	var resultMutex sync.Mutex
-	
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		
+
 		for result := range results {
 			resultMutex.Lock()
 			resultCount++
 			count := resultCount
 			resultMutex.Unlock()
-			
+
 			t.Logf("Result %d: stage=%s, success=%v", count, result.Stage, result.Success)
-			
+
 			// If we got our expected result, we can return
 			if count == 1 {
 				return
@@ -60,7 +60,7 @@ func TestPipelineResultCounting(t *testing.T) {
 		resultMutex.Lock()
 		count := resultCount
 		resultMutex.Unlock()
-		
+
 		if count == 1 {
 			t.Logf("✅ Successfully processed %d result", count)
 		} else {

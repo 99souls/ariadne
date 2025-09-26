@@ -32,10 +32,10 @@ func TestMockServerBasicRoutes(t *testing.T) {
 	for _, c := range cases {
 		resp, err := ms.MustGet(ctx, c.path)
 		if err != nil {
-				 t.Fatalf("GET %s: %v", c.path, err)
+			t.Fatalf("GET %s: %v", c.path, err)
 		}
 		if resp.StatusCode != c.status {
-			 t.Fatalf("status for %s: got %d want %d", c.path, resp.StatusCode, c.status)
+			t.Fatalf("status for %s: got %d want %d", c.path, resp.StatusCode, c.status)
 		}
 		// no body read needed for lightweight verification
 	}
@@ -51,6 +51,6 @@ func TestMockServerDelayCancellation(t *testing.T) {
 	_, err := ms.MustGet(ctx, "/delay")
 	if err == nil {
 		// Request may race between cancellation and completion; allow both outcomes by timing threshold
-		 t.Log("Request completed before cancellation (acceptable)" )
+		t.Log("Request completed before cancellation (acceptable)")
 	}
 }
