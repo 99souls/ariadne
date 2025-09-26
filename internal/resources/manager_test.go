@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"site-scraper/pkg/models"
+	"ariadne/pkg/models"
 )
 
 func TestManagerCacheStoreAndGet(t *testing.T) {

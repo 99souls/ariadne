@@ -2,7 +2,7 @@ package ratelimit
 
 import (
 	"math"
-	"site-scraper/pkg/models"
+	"ariadne/pkg/models"
 	"sync"
 	"time"
 )

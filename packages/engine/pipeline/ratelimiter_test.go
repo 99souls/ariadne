@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	engratelimit "site-scraper/packages/engine/ratelimit"
+	engratelimit "ariadne/packages/engine/ratelimit"
 )
 
 // stubLimiter simulates a circuit that opens on first attempt then closes.

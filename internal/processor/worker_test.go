@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"site-scraper/pkg/models"
+	"ariadne/pkg/models"
 )
 
 // Phase 2.2 TDD Tests: Content Processing Workers & HTML-to-Markdown Pipeline

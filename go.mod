@@ -1,4 +1,4 @@
-module site-scraper
+module ariadne
 
 go 1.25.1
 

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"site-scraper/internal/ratelimit"
-	"site-scraper/internal/resources"
+	"ariadne/internal/ratelimit"
+	"ariadne/internal/resources"
 )
 
 // Phase 3.1 TDD Tests: Multi-Stage Pipeline Architecture

@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
-	engmodels "site-scraper/packages/engine/models"
+	engmodels "ariadne/packages/engine/models"
 	"sync"
 	"time"
 )

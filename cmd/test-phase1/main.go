@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"site-scraper/internal/crawler"
-	"site-scraper/pkg/models"
+	"ariadne/internal/crawler"
+	"ariadne/pkg/models"
 )
 
 func main() {

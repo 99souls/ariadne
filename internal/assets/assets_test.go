@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	httpmock "site-scraper/internal/test/httpmock"
+	httpmock "ariadne/internal/test/httpmock"
 )
 
 // Phase 2.3 TDD Tests: Asset Management Pipeline

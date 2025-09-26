@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"site-scraper/pkg/models"
+	"ariadne/pkg/models"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/gocolly/colly/v2/debug"

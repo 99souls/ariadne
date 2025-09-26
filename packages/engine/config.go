@@ -1,9 +1,9 @@
 package engine
 
 import (
-	engpipeline "site-scraper/packages/engine/pipeline"
-	engresources "site-scraper/packages/engine/resources"
-	"site-scraper/pkg/models"
+	engpipeline "ariadne/packages/engine/pipeline"
+	engresources "ariadne/packages/engine/resources"
+	"ariadne/pkg/models"
 	"time"
 )
 

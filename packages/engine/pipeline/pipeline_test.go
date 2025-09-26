@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	engresources "site-scraper/packages/engine/resources"
+	engresources "ariadne/packages/engine/resources"
 )
 
 func TestPipelineBasicFlow(t *testing.T){

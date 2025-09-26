@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"site-scraper/internal/ratelimit"
-	"site-scraper/internal/resources"
-	"site-scraper/pkg/models"
+	"ariadne/internal/ratelimit"
+	"ariadne/internal/resources"
+	"ariadne/pkg/models"
 )
 
 // PipelineConfig defines configuration for multi-stage pipeline
