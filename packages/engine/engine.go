@@ -9,15 +9,24 @@ import (
 	"site-scraper/internal/pipeline"
 	"site-scraper/internal/ratelimit"
 	"site-scraper/internal/resources"
+	"site-scraper/pkg/models"
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).
 type Snapshot struct {
-	StartedAt time.Time
-	Uptime    time.Duration
-	Pipeline  *pipeline.PipelineMetrics
-	Limiter   *ratelimit.LimiterSnapshot
-	// Resources placeholder - will expand in P2
+	StartedAt time.Time                 `json:"started_at"`
+	Uptime    time.Duration             `json:"uptime"`
+	Pipeline  *pipeline.PipelineMetrics `json:"pipeline,omitempty"`
+	Limiter   *ratelimit.LimiterSnapshot `json:"limiter,omitempty"`
+	Resources *ResourceSnapshot         `json:"resources,omitempty"`
+}
+
+// ResourceSnapshot surfaces basic cache / spill / checkpoint telemetry.
+type ResourceSnapshot struct {
+	CacheEntries     int `json:"cache_entries"`
+	SpillFiles       int `json:"spill_files"`
+	InFlight         int `json:"in_flight"`
+	CheckpointQueued int `json:"checkpoint_queued"`
 }
 
 // Engine composes the pipeline, limiter, and resource manager under a single facade.
@@ -66,21 +75,13 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 }
 
 // Start begins processing of the provided seed URLs. It returns a read-only results channel.
-func (e *Engine) Start(ctx context.Context, seeds []string) (<-chan interface{}, error) {
+func (e *Engine) Start(ctx context.Context, seeds []string) (<-chan *models.CrawlResult, error) {
 	if !e.started.Load() {
 		return nil, errors.New("engine not started")
 	}
 	// Underlying pipeline already started at construction; we just feed URLs now.
 	results := e.pl.ProcessURLs(ctx, seeds)
-	// Wrap into a generic channel for now; P1 keeps internal types unexposed.
-	out := make(chan interface{}, cap(results))
-	go func() {
-		defer close(out)
-		for r := range results {
-			out <- r
-		}
-	}()
-	return out, nil
+	return results, nil
 }
 
 // Stop gracefully stops the engine and underlying components.
@@ -110,6 +111,15 @@ func (e *Engine) Snapshot() Snapshot {
 	if e.limiter != nil {
 		ls := e.limiter.Snapshot()
 		snap.Limiter = &ls
+	}
+	if e.rm != nil {
+		rs := e.rm.Stats()
+		snap.Resources = &ResourceSnapshot{
+			CacheEntries:     rs.CacheEntries,
+			SpillFiles:       rs.SpillFiles,
+			InFlight:         rs.InFlight,
+			CheckpointQueued: rs.CheckpointQueued,
+		}
 	}
 	return snap
 }

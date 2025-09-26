@@ -43,7 +43,9 @@ func TestEngineBasicFlow(t *testing.T) {
 
 	snap := eng.Snapshot()
 	if snap.Pipeline == nil || snap.Pipeline.TotalProcessed == 0 {
-		// minimal assertion that pipeline metrics flowed through
-		t.Fatalf("expected pipeline metrics populated, got %#v", snap.Pipeline)
+		 t.Fatalf("expected pipeline metrics populated, got %#v", snap.Pipeline)
+	}
+	if snap.Resources == nil {
+		 t.Fatalf("expected resource snapshot populated")
 	}
 }
