@@ -225,15 +225,15 @@ Acceptance remains: architectural enforcement test (DONE), facade snapshot stabi
 
 ### Migration Work Breakdown (M0–M3 Active)
 
-| Slice | Status | Scope | Key Actions | Risks |
-|-------|--------|-------|-------------|-------|
-| M0 Models consolidation | IN PROGRESS | Create `packages/engine/models`, alias legacy `pkg/models` | Copy types (`Page`, `CrawlResult`, `RateLimitConfig`), add aliases & deprecation comments, update facade imports | Duplicate error constants (ensure single source) |
-| M1 Rate limiter move | TODO | Relocate `internal/ratelimit` under engine | Move code, add forwarding shim at old path, adjust imports, keep tests green | Import cycles if pipeline references internals unexpectedly |
-| M2 Resources move | TODO | Relocate `internal/resources` | Same shim pattern, verify checkpoint & spill paths unaffected | Hidden coupling with pipeline config |
-| M3 Pipeline isolation | TODO | Move `internal/pipeline` under engine | Introduce small interfaces (RateLimiter, ResourceManager), migrate tests | Largest diff; risk of race regressions |
-| M4 Processor & Assets | PLANNED | Move `internal/processor`, `internal/assets` | Keep them internal (non-export) under engine tree | Surface creep if exported prematurely |
-| M5 Crawler & Output | PLANNED | Relocate remaining modules | Evaluate need for sub-interfaces | Output phase may overlap feature dev |
-| M6 Shim removal | PLANNED | Delete forwarding aliases | Update docs & stability file | Downstream break if external users lag |
+| Slice                   | Status      | Scope                                                      | Key Actions                                                                                                      | Risks                                                       |
+| ----------------------- | ----------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| M0 Models consolidation | IN PROGRESS | Create `packages/engine/models`, alias legacy `pkg/models` | Copy types (`Page`, `CrawlResult`, `RateLimitConfig`), add aliases & deprecation comments, update facade imports | Duplicate error constants (ensure single source)            |
+| M1 Rate limiter move    | TODO        | Relocate `internal/ratelimit` under engine                 | Move code, add forwarding shim at old path, adjust imports, keep tests green                                     | Import cycles if pipeline references internals unexpectedly |
+| M2 Resources move       | TODO        | Relocate `internal/resources`                              | Same shim pattern, verify checkpoint & spill paths unaffected                                                    | Hidden coupling with pipeline config                        |
+| M3 Pipeline isolation   | TODO        | Move `internal/pipeline` under engine                      | Introduce small interfaces (RateLimiter, ResourceManager), migrate tests                                         | Largest diff; risk of race regressions                      |
+| M4 Processor & Assets   | PLANNED     | Move `internal/processor`, `internal/assets`               | Keep them internal (non-export) under engine tree                                                                | Surface creep if exported prematurely                       |
+| M5 Crawler & Output     | PLANNED     | Relocate remaining modules                                 | Evaluate need for sub-interfaces                                                                                 | Output phase may overlap feature dev                        |
+| M6 Shim removal         | PLANNED     | Delete forwarding aliases                                  | Update docs & stability file                                                                                     | Downstream break if external users lag                      |
 
 Gate to start Phase 4 Output: Complete through M3 (pipeline moved & stable) plus schema + metrics tasks (#5, #6).
 
