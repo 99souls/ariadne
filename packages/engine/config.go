@@ -29,6 +29,10 @@ type Config struct {
 
 	// Resource management
 	Resources resources.Config
+
+	// Resume settings
+	Resume         bool
+	CheckpointPath string // Overrides Resources.CheckpointPath if set
 }
 
 // toPipelineConfig adapts the facade Config to the internal pipeline config.

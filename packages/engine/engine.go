@@ -5,6 +5,9 @@ import (
 	"errors"
 	"sync/atomic"
 	"time"
+	"os"
+	"bufio"
+	"strings"
 
 	"site-scraper/internal/pipeline"
 	"site-scraper/internal/ratelimit"
@@ -19,14 +22,21 @@ type Snapshot struct {
 	Pipeline  *pipeline.PipelineMetrics `json:"pipeline,omitempty"`
 	Limiter   *ratelimit.LimiterSnapshot `json:"limiter,omitempty"`
 	Resources *ResourceSnapshot         `json:"resources,omitempty"`
+	Resume    *ResumeSnapshot           `json:"resume,omitempty"`
 }
 
 // ResourceSnapshot surfaces basic cache / spill / checkpoint telemetry.
 type ResourceSnapshot struct {
-	CacheEntries     int `json:"cache_entries"`
-	SpillFiles       int `json:"spill_files"`
-	InFlight         int `json:"in_flight"`
-	CheckpointQueued int `json:"checkpoint_queued"`
+    CacheEntries     int `json:"cache_entries"`
+    SpillFiles       int `json:"spill_files"`
+    InFlight         int `json:"in_flight"`
+    CheckpointQueued int `json:"checkpoint_queued"`
+}
+
+// ResumeSnapshot exposes resume filtering counters.
+type ResumeSnapshot struct {
+    SeedsBefore int   `json:"seeds_before"`
+    Skipped     int64 `json:"skipped"`
 }
 
 // Engine composes the pipeline, limiter, and resource manager under a single facade.
@@ -37,6 +47,12 @@ type Engine struct {
 	rm       *resources.Manager
 	started  atomic.Bool
 	startedAt time.Time
+	resumeMetrics resumeState
+}
+
+type resumeState struct {
+	skipped int64
+	totalBefore int
 }
 
 // Option functional option for customization.
@@ -66,6 +82,11 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 		limiter = ratelimit.NewAdaptiveRateLimiter(cfg.RateLimit)
 	}
 
+	// Override checkpoint path if provided directly on facade config
+	if cfg.CheckpointPath != "" {
+		cfg.Resources.CheckpointPath = cfg.CheckpointPath
+	}
+
 	pc := (&cfg).toPipelineConfig(engineOptions{limiter: limiter, resourceManager: rm})
 	pl := pipeline.NewPipeline(pc)
 
@@ -79,9 +100,39 @@ func (e *Engine) Start(ctx context.Context, seeds []string) (<-chan *models.Craw
 	if !e.started.Load() {
 		return nil, errors.New("engine not started")
 	}
-	// Underlying pipeline already started at construction; we just feed URLs now.
-	results := e.pl.ProcessURLs(ctx, seeds)
+	filtered := seeds
+	if e.cfg.Resume && e.cfg.Resources.CheckpointPath != "" {
+		filtered = e.filterSeeds(seeds)
+	}
+	results := e.pl.ProcessURLs(ctx, filtered)
 	return results, nil
+}
+
+func (e *Engine) filterSeeds(seeds []string) []string {
+	e.resumeMetrics.totalBefore = len(seeds)
+	path := e.cfg.Resources.CheckpointPath
+	file, err := os.Open(path)
+	if err != nil {
+		return seeds // if missing treat as fresh
+	}
+	defer file.Close()
+	seen := make(map[string]struct{}, len(seeds))
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		seen[strings.TrimSpace(scanner.Text())] = struct{}{}
+	}
+	if err := scanner.Err(); err != nil {
+		return seeds
+	}
+	out := make([]string, 0, len(seeds))
+	for _, s := range seeds {
+		if _, ok := seen[s]; ok {
+			e.resumeMetrics.skipped++
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
 }
 
 // Stop gracefully stops the engine and underlying components.
@@ -120,6 +171,9 @@ func (e *Engine) Snapshot() Snapshot {
 			InFlight:         rs.InFlight,
 			CheckpointQueued: rs.CheckpointQueued,
 		}
+	}
+	if e.cfg.Resume {
+		snap.Resume = &ResumeSnapshot{SeedsBefore: e.resumeMetrics.totalBefore, Skipped: e.resumeMetrics.skipped}
 	}
 	return snap
 }

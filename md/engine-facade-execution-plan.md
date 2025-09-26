@@ -1,6 +1,6 @@
 # Engine Facade & Resilience Enhancements – Execution Plan
 
-Status: Proposed (Ready to Execute)
+Status: In Progress (P1–P3 Complete; Implementing P4 Resume)
 Date: September 26, 2025
 Owner: Architecture / Platform Track
 Related Docs: `engine-decomposition.md`, `phase3.3-retrospective.md`, `phase3-progress.md`
@@ -178,9 +178,9 @@ Add race detector runs for facade + resume integration tests.
 
 ## 10. Tracking Checklist
 
-- [ ] P1 Facade integration test passes
-- [ ] P2 Snapshot aggregated & documented
-- [ ] P3 Mock server added & asset tests offline
+- [x] P1 Facade integration test passes
+- [x] P2 Snapshot aggregated & documented (includes resource stats)
+- [x] P3 Mock server added & asset tests offline (`-race` full suite green)
 - [ ] P4 Resume feature test passes
 - [ ] P5 CLI uses facade only
 - [ ] P6 No direct internal imports in CLI path
@@ -208,7 +208,7 @@ Add race detector runs for facade + resume integration tests.
 
 ## 13. Next Immediate Action
 
-Begin P1: write `engine_integration_test.go` describing desired facade contract before implementation; then implement facade to satisfy test.
+Begin P4: Implement resume-from-checkpoint in engine facade (`Config.Resume` flag + filtering seeds based on existing checkpoint file). Add `ResumeSnapshot` to unified snapshot, integration test verifying skipped/processed counts.
 
 ---
 

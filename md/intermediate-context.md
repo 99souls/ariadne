@@ -25,7 +25,7 @@ go build # ✅ SUCCESS
 
 - `go test ./internal/resources ./internal/pipeline` ✅ – verifies cache hits, spillover, checkpoint flush, and pipeline integration.
 - `go test -race ./internal/resources ./internal/pipeline` ✅ – ensures concurrency safety across new manager and pipeline interactions.
-- `go test ./...` ⚠️ – asset downloader tests still rely on HTTPBIN (legacy Phase 2 issue; documented follow-up). All other packages green.
+- `go test -race ./...` ✅ – full suite now green offline after replacing external HTTPBIN dependencies with internal `httpmock` server.
 
 ### Key Insights
 
@@ -54,7 +54,7 @@ go build # ✅ SUCCESS
 
 - `go test ./...` ✅ – entire suite green post-integration
 - `go test -race ./internal/ratelimit ./internal/pipeline` ✅ – concurrency-safe limiter & pipeline
-- `go test -race ./...` ⚠️ – asset downloader tests timeout against external HTTPBIN (pre-existing issue, documented follow-up)
+- `go test -race ./...` ✅ – external flakiness removed (mocked assets)
 - `gofmt` + linting applied to new/modified Go files
 
 ### Key Learnings
@@ -85,9 +85,10 @@ go build # ✅ SUCCESS
 
 ## Open Items & Follow-Ups
 
-1. **Race Detector Parity**: Address `internal/assets` reliance on external HTTPBIN to enable full `go test -race ./...` in CI.
-2. **Limiter Telemetry**: Wire `Snapshot()` outputs into metrics/exporters for live visibility.
-3. **Resource Management (Phase 3.3)**: Proceed with memory monitoring, caching, and spillover as outlined in the master plan.
+1. **Engine Resume (P4)**: Add resume-from-checkpoint filtering & metrics.
+2. **Limiter Telemetry Export**: Wire `Snapshot()` outputs to future metrics sink (Prometheus placeholders).
+3. **Unified CLI Migration (P5)**: Route `main.go` through engine facade only.
+4. **Documentation Hardening**: Add `API_STABILITY.md`, migration notes after P5.
 
 ---
 
