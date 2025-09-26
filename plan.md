@@ -1,6 +1,6 @@
 # Site Scraper Implementation Plan
 
-_Central execution plan synchronized with GitHub issues (authoritative backlog)._ 
+_Central execution plan synchronized with GitHub issues (authoritative backlog)._
 
 This document now maps every phase/sub-phase item to a GitHub Issue for single-source-of-truth tracking. Closed checkboxes here should mirror closed issues; creation of new scope MUST create an issue first.
 
@@ -206,6 +206,7 @@ This document now maps every phase/sub-phase item to a GitHub Issue for single-s
 ## Cross-Cutting: Engine Package Decomposition & Facade (In Progress)
 
 Tracking moved to dedicated issues already created / to be created:
+
 - Persistent limiter state (Issue #14)
 - Advanced resume (mid-pipeline) (Issue #15)
 - Output plugin system (Issue #16) – overlaps Phase 4.1/6.2
@@ -216,10 +217,25 @@ Tracking moved to dedicated issues already created / to be created:
 - Structured logging & verbosity (Issues #9, #41)
 
 Additional tasks (future issues when ready):
+
 - Engine facade public API reference doc (TBD)
 - Migration guide promotion (Issue #7)
 
 Acceptance remains: architectural enforcement test (DONE), facade snapshot stability (DONE), incremental refactor continues under test safety net.
+
+### Migration Work Breakdown (M0–M3 Active)
+
+| Slice | Status | Scope | Key Actions | Risks |
+|-------|--------|-------|-------------|-------|
+| M0 Models consolidation | IN PROGRESS | Create `packages/engine/models`, alias legacy `pkg/models` | Copy types (`Page`, `CrawlResult`, `RateLimitConfig`), add aliases & deprecation comments, update facade imports | Duplicate error constants (ensure single source) |
+| M1 Rate limiter move | TODO | Relocate `internal/ratelimit` under engine | Move code, add forwarding shim at old path, adjust imports, keep tests green | Import cycles if pipeline references internals unexpectedly |
+| M2 Resources move | TODO | Relocate `internal/resources` | Same shim pattern, verify checkpoint & spill paths unaffected | Hidden coupling with pipeline config |
+| M3 Pipeline isolation | TODO | Move `internal/pipeline` under engine | Introduce small interfaces (RateLimiter, ResourceManager), migrate tests | Largest diff; risk of race regressions |
+| M4 Processor & Assets | PLANNED | Move `internal/processor`, `internal/assets` | Keep them internal (non-export) under engine tree | Surface creep if exported prematurely |
+| M5 Crawler & Output | PLANNED | Relocate remaining modules | Evaluate need for sub-interfaces | Output phase may overlap feature dev |
+| M6 Shim removal | PLANNED | Delete forwarding aliases | Update docs & stability file | Downstream break if external users lag |
+
+Gate to start Phase 4 Output: Complete through M3 (pipeline moved & stable) plus schema + metrics tasks (#5, #6).
 
 ## Success Metrics & Validation Strategy
 
