@@ -1,6 +1,6 @@
 # Engine Facade & Resilience Enhancements – Execution Plan
 
-Status: In Progress (P1–P3 Complete; Implementing P4 Resume)
+Status: In Progress (P1–P4 Complete; Implementing P5 CLI Migration)
 Date: September 26, 2025
 Owner: Architecture / Platform Track
 Related Docs: `engine-decomposition.md`, `phase3.3-retrospective.md`, `phase3-progress.md`
@@ -181,9 +181,9 @@ Add race detector runs for facade + resume integration tests.
 - [x] P1 Facade integration test passes
 - [x] P2 Snapshot aggregated & documented (includes resource stats)
 - [x] P3 Mock server added & asset tests offline (`-race` full suite green)
-- [ ] P4 Resume feature test passes
+- [x] P4 Resume feature test passes (resume integration test green)
 - [ ] P5 CLI uses facade only
-- [ ] P6 No direct internal imports in CLI path
+- [ ] P6 No direct internal imports in CLI path (enforced)
 - [ ] P7 Docs & stability guide merged
 
 ---
@@ -208,7 +208,7 @@ Add race detector runs for facade + resume integration tests.
 
 ## 13. Next Immediate Action
 
-Begin P4: Implement resume-from-checkpoint in engine facade (`Config.Resume` flag + filtering seeds based on existing checkpoint file). Add `ResumeSnapshot` to unified snapshot, integration test verifying skipped/processed counts.
+Begin P5: Migrate CLI (`main.go`) to use the engine facade exclusively. Provide minimal flags: `-seeds`, `-seed-file`, `-resume`, `-checkpoint`, `-snapshot-interval`. Stream results to stdout and periodically emit JSON snapshot for observability. Update README (temporary minimal CLI section) and add `API_STABILITY.md` + migration notes draft.
 
 ---
 
