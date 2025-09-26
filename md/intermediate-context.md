@@ -32,6 +32,7 @@ go build # ✅ SUCCESS
 - Caching and checkpointing significantly reduce redundant extraction work during retries or duplicate URLs.
 - Spillover format (`spill-*.spill.json`) provides deterministic artifacts for debugging and future resumption logic.
 - Integrating resource manager early sets the stage for the upcoming engine facade to expose clean APIs for CLI/TUI layers.
+- Formal retrospective captured in `phase3.3-retrospective.md` (covers emotions, process wins, risks, and next sprint picks).
 
 ---
 
