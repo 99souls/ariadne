@@ -26,7 +26,7 @@ func TestManagerCacheStoreAndGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
 	}
-	defer mgr.Close()
+	defer func() { _ = mgr.Close() }()
 
 	pageURL, _ := url.Parse("https://example.com/test")
 	page := &models.Page{URL: pageURL, Title: "test"}
@@ -60,7 +60,7 @@ func TestManagerSpillover(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
 	}
-	defer mgr.Close()
+	defer func() { _ = mgr.Close() }()
 
 	u1, _ := url.Parse("https://example.com/1")
 	u2, _ := url.Parse("https://example.com/2")
@@ -111,7 +111,7 @@ func TestManagerCheckpoint(t *testing.T) {
 	mgr.Checkpoint("https://example.com/a")
 	mgr.Checkpoint("https://example.com/b")
 
-	mgr.Close()
+	_ = mgr.Close()
 
 	data, err := os.ReadFile(checkpoint)
 	if err != nil {
@@ -130,7 +130,7 @@ func TestManagerAcquireRelease(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
 	}
-	defer mgr.Close()
+	defer func() { _ = mgr.Close() }()
 
 	if err := mgr.Acquire(context.Background()); err != nil {
 		t.Fatalf("expected acquire success: %v", err)
@@ -173,14 +173,14 @@ func TestConcurrentPageAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
 	}
-	defer mgr.Close()
+	defer func() { _ = mgr.Close() }()
 
 	// Create a page with time fields that could race
 	pageURL, _ := url.Parse("https://example.com/race-test")
 	page := &models.Page{
-		URL:       pageURL,
-		Title:     "Race Test",
-		CrawledAt: time.Now(),
+		URL:         pageURL,
+		Title:       "Race Test",
+		CrawledAt:   time.Now(),
 		ProcessedAt: time.Now(),
 	}
 
@@ -205,7 +205,7 @@ func TestConcurrentPageAccess(t *testing.T) {
 		}()
 	}
 
-	// Goroutines that modify time fields (simulating pipeline processing)  
+	// Goroutines that modify time fields (simulating pipeline processing)
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func() {

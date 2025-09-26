@@ -123,7 +123,7 @@ func (e *Engine) filterSeeds(seeds []string) []string {
 	if err != nil {
 		return seeds // if missing treat as fresh
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	seen := make(map[string]struct{}, len(seeds))
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {

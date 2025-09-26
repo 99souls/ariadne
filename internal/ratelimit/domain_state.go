@@ -1,8 +1,8 @@
 package ratelimit
 
 import (
-	"math"
 	"ariadne/pkg/models"
+	"math"
 	"sync"
 	"time"
 )
@@ -157,25 +157,6 @@ func (ds *domainState) allowRequest(cfg models.RateLimitConfig, now time.Time) b
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 	return ds.allowRequestLocked(cfg, now)
-}
-
-func (ds *domainState) planRequest(cfg models.RateLimitConfig, now time.Time) (time.Duration, error) {
-	ds.mu.Lock()
-	defer ds.mu.Unlock()
-
-	if !ds.allowRequestLocked(cfg, now) {
-		return 0, ErrCircuitOpen
-	}
-
-	if ds.nextEarliest.After(now) {
-		return ds.nextEarliest.Sub(now), nil
-	}
-
-	wait, ok := ds.bucket.Reserve(now, 1)
-	if ok {
-		return 0, nil
-	}
-	return wait, nil
 }
 
 func (ds *domainState) updateBreakerAfterFeedback(cfg models.RateLimitConfig, now time.Time, isError bool, success bool, errorRate float64, total int) {

@@ -237,28 +237,28 @@ func (r *HTMLTemplateRenderer) addPageToNavigation(root *NavigationNode, page *m
 func (r *HTMLTemplateRenderer) renderNavigationNode(nav *strings.Builder, node *NavigationNode, indent int) {
 	indentStr := strings.Repeat("  ", indent)
 
-	nav.WriteString(fmt.Sprintf("%s<li class=\"nav-item level-%d\">\n", indentStr, node.Level))
+	_, _ = fmt.Fprintf(nav, "%s<li class=\"nav-item level-%d\">\n", indentStr, node.Level)
 
 	if node.URL != "" && len(node.Children) == 0 {
 		// Leaf node - create link
 		anchor := r.createAnchor(node.Title)
-		nav.WriteString(fmt.Sprintf("%s  <a href=\"#%s\" class=\"nav-link\">%s</a>\n",
-			indentStr, anchor, template.HTMLEscapeString(node.Title)))
+		_, _ = fmt.Fprintf(nav, "%s  <a href=\"#%s\" class=\"nav-link\">%s</a>\n",
+			indentStr, anchor, template.HTMLEscapeString(node.Title))
 	} else {
 		// Parent node - just title
-		nav.WriteString(fmt.Sprintf("%s  <span class=\"nav-title\">%s</span>\n",
-			indentStr, template.HTMLEscapeString(node.Title)))
+		_, _ = fmt.Fprintf(nav, "%s  <span class=\"nav-title\">%s</span>\n",
+			indentStr, template.HTMLEscapeString(node.Title))
 	}
 
 	if len(node.Children) > 0 {
-		nav.WriteString(fmt.Sprintf("%s  <ul class=\"nav-sublist\">\n", indentStr))
+		_, _ = fmt.Fprintf(nav, "%s  <ul class=\"nav-sublist\">\n", indentStr)
 		for _, child := range node.Children {
 			r.renderNavigationNode(nav, child, indent+2)
 		}
-		nav.WriteString(fmt.Sprintf("%s  </ul>\n", indentStr))
+		_, _ = fmt.Fprintf(nav, "%s  </ul>\n", indentStr)
 	}
 
-	nav.WriteString(fmt.Sprintf("%s</li>\n", indentStr))
+	_, _ = fmt.Fprintf(nav, "%s</li>\n", indentStr)
 }
 
 // createAnchor creates URL-safe anchor from text

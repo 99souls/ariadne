@@ -19,11 +19,11 @@ func main() {
 		w.Header().Set("Content-Type", "text/html")
 		switch r.URL.Path {
 		case "/":
-			w.Write([]byte(`<html><head><title>Home</title></head><body><h1>Home</h1><p>Home content</p><a href="/page1">Page 1</a><a href="/page2">Page 2</a></body></html>`))
+			_, _ = w.Write([]byte(`<html><head><title>Home</title></head><body><h1>Home</h1><p>Home content</p><a href="/page1">Page 1</a><a href="/page2">Page 2</a></body></html>`))
 		case "/page1":
-			w.Write([]byte(`<html><head><title>Page 1</title></head><body><h1>Page 1</h1><p>Page 1 content</p></body></html>`))
+			_, _ = w.Write([]byte(`<html><head><title>Page 1</title></head><body><h1>Page 1</h1><p>Page 1 content</p></body></html>`))
 		case "/page2":
-			w.Write([]byte(`<html><head><title>Page 2</title></head><body><h1>Page 2</h1><p>Page 2 content</p></body></html>`))
+			_, _ = w.Write([]byte(`<html><head><title>Page 2</title></head><body><h1>Page 2</h1><p>Page 2 content</p></body></html>`))
 		default:
 			http.NotFound(w, r)
 		}

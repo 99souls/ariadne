@@ -268,7 +268,7 @@ func (mc *MarkdownCompiler) Flush() error {
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Generate document header
 	if _, err := file.WriteString(mc.generateDocumentHeader()); err != nil {

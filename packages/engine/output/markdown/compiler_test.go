@@ -78,7 +78,7 @@ func TestMarkdownCompilerCreation(t *testing.T) {
 func TestMarkdownCompilerWrite(t *testing.T) {
 	t.Run("should write individual crawl results", func(t *testing.T) {
 		compiler := NewMarkdownCompiler()
-		defer compiler.Close()
+		defer func() { _ = compiler.Close() }()
 
 		result := &models.CrawlResult{
 			URL:     "https://example.com/test",
@@ -106,7 +106,7 @@ func TestMarkdownCompilerWrite(t *testing.T) {
 
 	t.Run("should handle failed crawl results", func(t *testing.T) {
 		compiler := NewMarkdownCompiler()
-		defer compiler.Close()
+		defer func() { _ = compiler.Close() }()
 
 		result := &models.CrawlResult{
 			URL:     "https://example.com/failed",
@@ -136,7 +136,7 @@ func TestMarkdownCompilerWrite(t *testing.T) {
 func TestTableOfContentsGeneration(t *testing.T) {
 	t.Run("should generate TOC from markdown headers", func(t *testing.T) {
 		compiler := NewMarkdownCompiler()
-		defer compiler.Close()
+		defer func() { _ = compiler.Close() }()
 
 		// Add pages with various header levels
 		pages := []*models.CrawlResult{
@@ -201,7 +201,7 @@ func TestMarkdownDocumentAssembly(t *testing.T) {
 			TOCMaxDepth: 3,
 		}
 		compiler := NewMarkdownCompilerWithConfig(config)
-		defer compiler.Close()
+		defer func() { _ = compiler.Close() }()
 
 		// Add sample pages
 		pages := []*models.CrawlResult{
@@ -282,7 +282,7 @@ func TestMarkdownCompilerIntegration(t *testing.T) {
 			SortByURL:    true,
 		}
 		compiler := NewMarkdownCompilerWithConfig(config)
-		defer compiler.Close()
+		defer func() { _ = compiler.Close() }()
 
 		// Simulate wiki crawl results
 		wikiPages := []*models.CrawlResult{

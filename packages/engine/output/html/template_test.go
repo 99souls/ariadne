@@ -191,7 +191,7 @@ func TestHTMLNavigationGeneration(t *testing.T) {
 		}
 
 		for _, page := range pages {
-			renderer.Write(&models.CrawlResult{Page: page, Success: true})
+			_ = renderer.Write(&models.CrawlResult{Page: page, Success: true})
 		}
 
 		navigation := renderer.GenerateNavigation()
@@ -237,7 +237,7 @@ func TestHTMLDocumentGeneration(t *testing.T) {
 		}
 
 		for _, page := range pages {
-			renderer.Write(&models.CrawlResult{Page: page, Success: true})
+			_ = renderer.Write(&models.CrawlResult{Page: page, Success: true})
 		}
 
 		html := renderer.GenerateHTML()

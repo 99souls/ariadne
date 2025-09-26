@@ -186,7 +186,7 @@ func TestDocumentHierarchyGeneration(t *testing.T) {
 		}
 
 		for _, page := range pages {
-			assembler.Write(&models.CrawlResult{Page: page, Success: true})
+			_ = assembler.Write(&models.CrawlResult{Page: page, Success: true})
 		}
 
 		hierarchy := assembler.GenerateHierarchy()
@@ -276,7 +276,7 @@ func TestCrossReferenceGeneration(t *testing.T) {
 		}
 
 		for _, page := range pages {
-			assembler.Write(&models.CrawlResult{Page: page, Success: true})
+			_ = assembler.Write(&models.CrawlResult{Page: page, Success: true})
 		}
 
 		crossRefs := assembler.GenerateCrossReferences()
@@ -335,7 +335,7 @@ func TestContentDeduplication(t *testing.T) {
 		}
 
 		for _, page := range pages {
-			assembler.Write(&models.CrawlResult{Page: page, Success: true})
+			_ = assembler.Write(&models.CrawlResult{Page: page, Success: true})
 		}
 
 		duplicates := assembler.DetectDuplicateContent()
@@ -406,7 +406,7 @@ func TestMetadataExtraction(t *testing.T) {
 		}
 
 		for _, page := range pages {
-			assembler.Write(&models.CrawlResult{Page: page, Success: true})
+			_ = assembler.Write(&models.CrawlResult{Page: page, Success: true})
 		}
 
 		enrichedPages := assembler.ExtractMetadata()

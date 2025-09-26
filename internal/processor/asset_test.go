@@ -95,7 +95,7 @@ func TestAssetDiscovery(t *testing.T) {
 
 func TestAssetDownloader(t *testing.T) {
 	downloader := NewAssetDownloader("/tmp/test-assets")
-	defer os.RemoveAll("/tmp/test-assets")
+	defer func() { _ = os.RemoveAll("/tmp/test-assets") }()
 
 	t.Run("should download and store assets locally", func(t *testing.T) {
 		// Create a test asset
@@ -175,7 +175,7 @@ func TestAssetOptimizer(t *testing.T) {
 	t.Run("should optimize image assets", func(t *testing.T) {
 		// Create temp test image file
 		testImagePath := createTestImageFile(t)
-		defer os.Remove(testImagePath)
+		defer func() { _ = os.Remove(testImagePath) }()
 
 		asset := &AssetInfo{
 			LocalPath: testImagePath,
@@ -212,7 +212,7 @@ func TestAssetOptimizer(t *testing.T) {
 		}`
 
 		testCSSPath := createTestFile(t, "test.css", testCSSContent)
-		defer os.Remove(testCSSPath)
+		defer func() { _ = os.Remove(testCSSPath) }()
 
 		asset := &AssetInfo{
 			LocalPath: testCSSPath,
@@ -303,8 +303,8 @@ func TestAssetPipeline(t *testing.T) {
 	t.Run("Phase 2.3: Complete asset management pipeline", func(t *testing.T) {
 		// Create temporary directory for test assets
 		assetDir := "/tmp/test-pipeline-assets"
-		os.RemoveAll(assetDir)
-		defer os.RemoveAll(assetDir)
+		_ = os.RemoveAll(assetDir)
+		defer func() { _ = os.RemoveAll(assetDir) }()
 
 		pipeline := NewAssetPipeline(assetDir)
 

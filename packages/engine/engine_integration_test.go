@@ -16,7 +16,7 @@ func TestEngineBasicFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New engine: %v", err)
 	}
-	defer eng.Stop()
+	defer func() { _ = eng.Stop() }()
 
 	urls := []string{
 		"https://example.com/one",
@@ -29,7 +29,7 @@ func TestEngineBasicFlow(t *testing.T) {
 
 	resultsCh, err := eng.Start(ctx, urls)
 	if err != nil {
-		 t.Fatalf("start: %v", err)
+		t.Fatalf("start: %v", err)
 	}
 
 	var count int
@@ -43,9 +43,9 @@ func TestEngineBasicFlow(t *testing.T) {
 
 	snap := eng.Snapshot()
 	if snap.Pipeline == nil || snap.Pipeline.TotalProcessed == 0 {
-		 t.Fatalf("expected pipeline metrics populated, got %#v", snap.Pipeline)
+		t.Fatalf("expected pipeline metrics populated, got %#v", snap.Pipeline)
 	}
 	if snap.Resources == nil {
-		 t.Fatalf("expected resource snapshot populated")
+		t.Fatalf("expected resource snapshot populated")
 	}
 }

@@ -37,7 +37,7 @@ func New(config *models.ScraperConfig) *Crawler {
 	)
 
 	// Set up collector options
-	c.Limit(&colly.LimitRule{
+	_ = c.Limit(&colly.LimitRule{
 		DomainGlob:  "*",
 		Parallelism: 1, // Start with single worker for Phase 1
 		Delay:       config.RequestDelay,
