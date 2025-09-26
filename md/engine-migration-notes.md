@@ -1,6 +1,6 @@
 # Engine Migration Notes
 
-Status: Draft (P6 in progress)
+Status: Draft (P7 in progress – will merge into MIGRATION.md when finalized)
 
 ## Goal
 

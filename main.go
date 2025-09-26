@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -60,6 +61,19 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Graceful shutdown on SIGINT/SIGTERM
+	sigCh := make(chan os.Signal, 2)
+	signal.Notify(sigCh, os.Interrupt)
+	go func() {
+		<-sigCh
+		log.Println("signal received; initiating graceful shutdown...")
+		cancel()
+		// second signal forces exit
+		<-sigCh
+		log.Println("second signal received; forcing exit")
+		os.Exit(1)
+	}()
+
 	results, err := eng.Start(ctx, seeds)
 	if err != nil {
 		log.Fatalf("start engine: %v", err)
@@ -102,6 +116,10 @@ func main() {
 	}
 
 	<-done
+	// Final snapshot (best-effort)
+	final := eng.Snapshot()
+	b, _ := json.MarshalIndent(final, "", "  ")
+	fmt.Fprintf(os.Stderr, "\n=== FINAL SNAPSHOT %s ===\n%s\n", time.Now().Format(time.RFC3339), string(b))
 }
 
 func gatherSeeds(seedList, seedFile string) ([]string, error) {

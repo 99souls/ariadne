@@ -1,6 +1,6 @@
 # API Stability & Versioning Guide
 
-Status: Draft (Post-P5, Implementing P6)
+Status: Initial (P7 – preparing v0.1.0 tag)
 Date: September 26, 2025
 Scope: Engine facade (`packages/engine`) and CLI entrypoint
 
@@ -52,4 +52,4 @@ Semantic Versioning (SemVer) will guide post-P7 releases:
 
 ---
 
-This document will be updated again at completion of P6 (enforcement test merged) and finalized in P7 to lock initial stability guarantees.
+This document will be versioned alongside the first tag (v0.1.0) and future changes will be recorded in CHANGELOG.md.

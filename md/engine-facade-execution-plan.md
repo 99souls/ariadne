@@ -1,6 +1,6 @@
 # Engine Facade & Resilience Enhancements – Execution Plan
 
-Status: In Progress (P1–P5 Complete; Implementing P6 Deprecations)
+Status: In Progress (P1–P6 Complete; Implementing P7 Documentation & Versioning)
 Date: September 26, 2025
 Owner: Architecture / Platform Track
 Related Docs: `engine-decomposition.md`, `phase3.3-retrospective.md`, `phase3-progress.md`
@@ -183,7 +183,7 @@ Add race detector runs for facade + resume integration tests.
 - [x] P3 Mock server added & asset tests offline (`-race` full suite green)
 - [x] P4 Resume feature test passes (resume integration test green)
 - [x] P5 CLI uses facade only (engine facade wired; flags & snapshots)
-- [ ] P6 No direct internal imports in CLI path (enforced test)
+- [x] P6 No direct internal imports in CLI path (enforced test)
 - [ ] P7 Docs & stability guide merged
 
 ---
@@ -208,7 +208,7 @@ Add race detector runs for facade + resume integration tests.
 
 ## 13. Next Immediate Action
 
-Begin P6: Add automated enforcement (test) ensuring root CLI (`main.go`) imports only `packages/engine` (no `internal/*` paths). Extend migration notes to reflect enforcement. Update API stability status to Post-P5. Consider additional deprecation comments if any secondary constructors get exposed later.
+Begin P7: Produce baseline `CHANGELOG.md` (v0.1.0), finalize stability guarantees (convert `API_STABILITY.md` from Draft to Initial), add public API inventory section, refresh migration notes (promote to `MIGRATION.md` after review), and ensure README includes concise engine CLI usage snippet. Optional nicety: graceful SIGINT handling to flush final snapshot.
 
 ---
 
