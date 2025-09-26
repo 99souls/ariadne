@@ -28,8 +28,35 @@ func (m *Manager) Stats() Stats { var s Stats; m.mu.Lock(); s.CacheEntries = len
 type cacheEntry struct { url string; page *engmodels.Page }
 
 // NewManager constructs a resource manager according to the provided configuration.
-func NewManager(cfg Config) (*Manager, error) { manager := &Manager{ cfg: cfg, lru: list.New(), cache: make(map[string]*list.Element), spill: make(map[string]string)}; if cfg.MaxInFlight > 0 { manager.slots = make(chan struct{}, cfg.MaxInFlight) }; if cfg.SpillDirectory != "" { if err := os.MkdirAll(cfg.SpillDirectory, 0o755); err != nil { return nil, fmt.Errorf("create spill directory: %w", err) } }; if cfg.CheckpointPath != "" { if err := os.MkdirAll(filepath.Dir(cfg.CheckpointPath), 0o755); err != nil { return nil, fmt.Errorf("create checkpoint directory: %w", err) }; manager.checkpointCh = make(chan string, 1024); manager.wg.Add(1); go manager.checkpointLoop() }; return manager, nil }
+func NewManager(cfg Config) (*Manager, error) {
+	manager := &Manager{
+		cfg:        cfg,
+		lru:        list.New(),
+		cache:      make(map[string]*list.Element),
+		spill:      make(map[string]string),
+	}
 
+	if cfg.MaxInFlight > 0 {
+		manager.slots = make(chan struct{}, cfg.MaxInFlight)
+	}
+
+	if cfg.SpillDirectory != "" {
+		if err := os.MkdirAll(cfg.SpillDirectory, 0o755); err != nil {
+			return nil, fmt.Errorf("create spill directory: %w", err)
+		}
+	}
+
+	if cfg.CheckpointPath != "" {
+		if err := os.MkdirAll(filepath.Dir(cfg.CheckpointPath), 0o755); err != nil {
+			return nil, fmt.Errorf("create checkpoint directory: %w", err)
+		}
+		manager.checkpointCh = make(chan string, 1024)
+		manager.wg.Add(1)
+		go manager.checkpointLoop()
+	}
+
+	return manager, nil
+}
 // Close flushes and stops background goroutines.
 func (m *Manager) Close() error { if m.checkpointCh != nil { close(m.checkpointCh); m.wg.Wait() }; return nil }
 
