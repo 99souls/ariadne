@@ -41,6 +41,7 @@ type OpenGraphMeta struct {
 
 // CrawlResult represents the result of processing a single URL through the pipeline
 type CrawlResult struct {
+	URL     string `json:"url"`
 	Page    *Page  `json:"page"`
 	Error   error  `json:"error,omitempty"`
 	Stage   string `json:"stage"` // Which stage produced this result

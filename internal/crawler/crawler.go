@@ -84,7 +84,12 @@ func (c *Crawler) setupCallbacks() {
 			c.processLink(link, e.Request.URL)
 		})
 
+		resultURL := ""
+		if page.URL != nil {
+			resultURL = page.URL.String()
+		}
 		result := &models.CrawlResult{
+			URL:     resultURL,
 			Page:    page,
 			Stage:   "crawl",
 			Success: true,
@@ -102,6 +107,7 @@ func (c *Crawler) setupCallbacks() {
 		log.Printf("Error crawling %s: %v", r.Request.URL, err)
 
 		result := &models.CrawlResult{
+			URL:     r.Request.URL.String(),
 			Error:   models.NewCrawlError(r.Request.URL.String(), "crawl", err),
 			Stage:   "crawl",
 			Success: false,

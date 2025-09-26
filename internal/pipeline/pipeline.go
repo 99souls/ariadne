@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"site-scraper/internal/ratelimit"
+	"site-scraper/internal/resources"
 	"site-scraper/pkg/models"
 )
 
@@ -27,6 +28,7 @@ type PipelineConfig struct {
 	RetryBaseDelay   time.Duration         `yaml:"retry_base_delay" json:"retry_base_delay"`
 	RetryMaxDelay    time.Duration         `yaml:"retry_max_delay" json:"retry_max_delay"`
 	RetryMaxAttempts int                   `yaml:"retry_max_attempts" json:"retry_max_attempts"`
+	ResourceManager  *resources.Manager    `yaml:"-" json:"-"`
 }
 
 type extractionTask struct {
@@ -92,7 +94,8 @@ type Pipeline struct {
 
 	retryWG sync.WaitGroup
 
-	limiter ratelimit.RateLimiter
+	limiter         ratelimit.RateLimiter
+	resourceManager *resources.Manager
 
 	randMu sync.Mutex
 	rand   *rand.Rand
@@ -129,9 +132,10 @@ func NewPipeline(config *PipelineConfig) *Pipeline {
 			StartTime:    time.Now(),
 			StageMetrics: make(map[string]StageMetrics),
 		},
-		stageStatus: make(map[string]*StageStatus),
-		limiter:     config.RateLimiter,
-		rand:        randGen,
+		stageStatus:     make(map[string]*StageStatus),
+		limiter:         config.RateLimiter,
+		resourceManager: config.ResourceManager,
+		rand:            randGen,
 	}
 
 	// Initialize stage status
@@ -228,6 +232,15 @@ func (p *Pipeline) initStageStatus() {
 		p.stageStatus[name] = &StageStatus{
 			Name:    name,
 			Workers: workers,
+			Active:  true,
+			Queue:   0,
+		}
+	}
+
+	if p.resourceManager != nil {
+		p.stageStatus["cache"] = &StageStatus{
+			Name:    "cache",
+			Workers: 0,
 			Active:  true,
 			Queue:   0,
 		}
@@ -356,7 +369,34 @@ func (p *Pipeline) deliverResult(result *models.CrawlResult) bool {
 	case <-p.ctx.Done():
 		return false
 	case p.resultsInternal <- result:
+		if p.resourceManager != nil && result != nil {
+			checkpointURL := result.URL
+			if checkpointURL == "" && result.Page != nil && result.Page.URL != nil {
+				checkpointURL = result.Page.URL.String()
+			}
+			if checkpointURL != "" {
+				p.resourceManager.Checkpoint(checkpointURL)
+			}
+		}
 		return true
+	}
+}
+
+func (p *Pipeline) forwardToProcessing(page *models.Page, fromCache bool) bool {
+	if page == nil {
+		return false
+	}
+
+	select {
+	case p.processingQueue <- page:
+		if fromCache {
+			p.updateStageMetrics("cache", true)
+		} else {
+			p.updateStageMetrics("extraction", true)
+		}
+		return true
+	case <-p.ctx.Done():
+		return false
 	}
 }
 
@@ -519,6 +559,22 @@ func (p *Pipeline) extractionWorker() {
 			}
 
 			domain := extractDomain(task.url)
+			manager := p.resourceManager
+			if manager != nil {
+				cachedPage, hit, err := manager.GetPage(task.url)
+				if err != nil {
+					p.updateStageMetrics("extraction", false)
+					p.sendErrorResult(task.url, "extraction", fmt.Sprintf("cache lookup failed: %v", err), false)
+					continue
+				}
+				if hit && cachedPage != nil {
+					if !p.forwardToProcessing(cachedPage, true) {
+						return
+					}
+					continue
+				}
+			}
+
 			permit, err := p.acquirePermit(task, domain)
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
@@ -534,6 +590,22 @@ func (p *Pipeline) extractionWorker() {
 				continue
 			}
 
+			var slotAcquired bool
+			if manager != nil {
+				if acquireErr := manager.Acquire(p.ctx); acquireErr != nil {
+					if permit != nil {
+						permit.Release()
+					}
+					if errors.Is(acquireErr, context.Canceled) {
+						return
+					}
+					p.updateStageMetrics("extraction", false)
+					p.sendErrorResult(task.url, "extraction", acquireErr.Error(), false)
+					continue
+				}
+				slotAcquired = true
+			}
+
 			start := time.Now()
 			page := p.extractContent(task.url)
 			latency := time.Since(start)
@@ -542,17 +614,32 @@ func (p *Pipeline) extractionWorker() {
 				permit.Release()
 			}
 
+			releaseSlot := func() {
+				if slotAcquired && manager != nil {
+					manager.Release()
+					slotAcquired = false
+				}
+			}
+
 			if page != nil {
+				if manager != nil {
+					if err := manager.StorePage(task.url, page); err != nil {
+						releaseSlot()
+						p.updateStageMetrics("extraction", false)
+						p.sendErrorResult(task.url, "extraction", fmt.Sprintf("cache store failed: %v", err), false)
+						continue
+					}
+				}
+				releaseSlot()
+
 				if p.limiter != nil && domain != "" {
 					p.limiter.Feedback(domain, ratelimit.Feedback{StatusCode: 200, Latency: latency})
 				}
-				select {
-				case p.processingQueue <- page:
-					p.updateStageMetrics("extraction", true)
-				case <-p.ctx.Done():
+				if !p.forwardToProcessing(page, false) {
 					return
 				}
 			} else {
+				releaseSlot()
 				if p.limiter != nil && domain != "" {
 					p.limiter.Feedback(domain, ratelimit.Feedback{StatusCode: 503, Latency: latency, Err: errors.New("extraction failed")})
 				}
@@ -631,14 +718,14 @@ func (p *Pipeline) isValidURL(url string) bool {
 	return url != "" && url != "invalid-url"
 }
 
-func (p *Pipeline) extractContent(url string) *models.Page {
+func (p *Pipeline) extractContent(rawURL string) *models.Page {
 	// Simulate content extraction behavior with controllable scenarios
-	if strings.Contains(url, "fail-extraction") {
+	if strings.Contains(rawURL, "fail-extraction") {
 		time.Sleep(5 * time.Millisecond)
 		return nil
 	}
 
-	if strings.Contains(url, "slow") {
+	if strings.Contains(rawURL, "slow") {
 		time.Sleep(50 * time.Millisecond)
 	} else {
 		time.Sleep(10 * time.Millisecond)
@@ -648,13 +735,27 @@ func (p *Pipeline) extractContent(url string) *models.Page {
 		Title:   "Test Page",
 		Content: "<h1>Test Content</h1>",
 	}
+
+	if parsed, err := url.Parse(rawURL); err == nil {
+		page.URL = parsed
+	}
+	page.CrawledAt = time.Now()
 	return page
 }
 
 func (p *Pipeline) processContent(page *models.Page) *models.CrawlResult {
 	// Simulate content processing
 	time.Sleep(5 * time.Millisecond)
+	if page != nil {
+		page.ProcessedAt = time.Now()
+	}
+
+	resultURL := ""
+	if page != nil && page.URL != nil {
+		resultURL = page.URL.String()
+	}
 	return &models.CrawlResult{
+		URL:     resultURL,
 		Page:    page,
 		Success: true,
 		Stage:   "processing",
@@ -663,6 +764,7 @@ func (p *Pipeline) processContent(page *models.Page) *models.CrawlResult {
 
 func (p *Pipeline) sendErrorResult(url, stage, message string, retry bool) {
 	result := &models.CrawlResult{
+		URL:     url,
 		Error:   models.NewCrawlError(url, stage, errors.New(message)),
 		Success: false,
 		Stage:   stage,
@@ -680,10 +782,14 @@ func (p *Pipeline) updateStageMetrics(stage string, success bool) {
 
 	if success {
 		metrics.Processed++
-		p.metrics.TotalProcessed++
+		if stage != "cache" {
+			p.metrics.TotalProcessed++
+		}
 	} else {
 		metrics.Failed++
-		p.metrics.TotalFailed++
+		if stage != "cache" {
+			p.metrics.TotalFailed++
+		}
 	}
 
 	p.metrics.StageMetrics[stage] = metrics
