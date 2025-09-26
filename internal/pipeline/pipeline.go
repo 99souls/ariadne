@@ -246,7 +246,6 @@ func (p *Pipeline) Stop() {
 
 // (Remaining implementation already present below in original file sections.)
 
-
 // startStages starts all pipeline stage workers
 func (p *Pipeline) startStages() {
 	// Start discovery workers

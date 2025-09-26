@@ -3,23 +3,23 @@
 package ratelimit
 
 import (
-    engmodels "ariadne/packages/engine/models"
-    englimit "ariadne/packages/engine/ratelimit"
+	engmodels "ariadne/packages/engine/models"
+	englimit "ariadne/packages/engine/ratelimit"
 )
 
 // Type aliases for backward compatibility
 type (
-    RateLimiter = englimit.RateLimiter
-    Permit = englimit.Permit
-    Feedback = englimit.Feedback
-    LimiterSnapshot = englimit.LimiterSnapshot
-    DomainSummary = englimit.DomainSummary
-    AdaptiveRateLimiter = englimit.AdaptiveRateLimiter
+	RateLimiter         = englimit.RateLimiter
+	Permit              = englimit.Permit
+	Feedback            = englimit.Feedback
+	LimiterSnapshot     = englimit.LimiterSnapshot
+	DomainSummary       = englimit.DomainSummary
+	AdaptiveRateLimiter = englimit.AdaptiveRateLimiter
 )
 
 var (
-    ErrCircuitOpen = englimit.ErrCircuitOpen
-    NewAdaptiveRateLimiter = func(cfg engmodels.RateLimitConfig) *AdaptiveRateLimiter { return englimit.NewAdaptiveRateLimiter(cfg) }
+	ErrCircuitOpen         = englimit.ErrCircuitOpen
+	NewAdaptiveRateLimiter = func(cfg engmodels.RateLimitConfig) *AdaptiveRateLimiter { return englimit.NewAdaptiveRateLimiter(cfg) }
 )
 
 // Forwarders

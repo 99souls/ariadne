@@ -124,31 +124,31 @@ func TestAssetDownloader(t *testing.T) {
 		}
 	}()
 
-		// Use mock server for deterministic asset content
-		mock := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: *", Status: 200}})
-		defer mock.Close()
+	// Use mock server for deterministic asset content
+	mock := httpmock.NewServer([]httpmock.RouteSpec{{Pattern: "/robots.txt", Body: "User-agent: *", Status: 200}})
+	defer mock.Close()
 
-		t.Run("should download and store assets locally", func(t *testing.T) {
-			asset := &AssetInfo{
-				URL:      mock.URL() + "/robots.txt",
-				Type:     AssetTypeDocument,
-				Filename: "robots.txt",
-				Size:     0,
-			}
-			result, err := downloader.DownloadAsset(asset)
-			if err != nil {
-				 t.Fatalf("DownloadAsset failed: %v", err)
-			}
-			if !fileExists(result.LocalPath) {
-				 t.Error("Downloaded file should exist")
-			}
-			if result.Size == 0 {
-				 t.Error("Asset size should be updated after download")
-			}
-			if !result.Downloaded {
-				 t.Error("Asset should be marked as downloaded")
-			}
-		})
+	t.Run("should download and store assets locally", func(t *testing.T) {
+		asset := &AssetInfo{
+			URL:      mock.URL() + "/robots.txt",
+			Type:     AssetTypeDocument,
+			Filename: "robots.txt",
+			Size:     0,
+		}
+		result, err := downloader.DownloadAsset(asset)
+		if err != nil {
+			t.Fatalf("DownloadAsset failed: %v", err)
+		}
+		if !fileExists(result.LocalPath) {
+			t.Error("Downloaded file should exist")
+		}
+		if result.Size == 0 {
+			t.Error("Asset size should be updated after download")
+		}
+		if !result.Downloaded {
+			t.Error("Asset should be marked as downloaded")
+		}
+	})
 
 	t.Run("should handle download errors gracefully", func(t *testing.T) {
 		// Test with invalid URL

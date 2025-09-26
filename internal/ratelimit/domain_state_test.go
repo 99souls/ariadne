@@ -1,8 +1,8 @@
 package ratelimit
 
 import (
-	"math"
 	"ariadne/pkg/models"
+	"math"
 	"testing"
 	"time"
 )

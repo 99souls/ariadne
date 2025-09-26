@@ -18,7 +18,7 @@ func TestSimplePipeline(t *testing.T) {
 
 	pipeline := NewPipeline(config)
 	defer pipeline.Stop() // Clean up at the end
-	
+
 	// Test with one URL - use longer timeout for processing
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -29,12 +29,12 @@ func TestSimplePipeline(t *testing.T) {
 	// Count results with proper synchronization
 	var resultCount int
 	completed := make(chan bool, 1) // Buffered to prevent blocking
-	
+
 	go func() {
-		defer func() { 
+		defer func() {
 			completed <- true
 		}()
-		
+
 		for result := range results {
 			t.Logf("Received result: stage=%s, success=%v", result.Stage, result.Success)
 			resultCount++
