@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/packages/engine"
-	telemetryhealth "ariadne/packages/engine/telemetry/health"
+	"github.com/99souls/ariadne/engine"
+	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 )
 
 type healthPayload struct {

@@ -8,7 +8,7 @@ Owner: Architecture / Core Engine
 
 Phase 5F elevates `engine` to a **standalone, minimally-coupled Go module** and introduces a first-class **CLI layer** that consumes only its public API. This establishes a clean contract boundary before Phase 6 (CLI polish & UX), reduces coupling, simplifies dependency surfaces, and paves the way for future multi-surface delivery (API server, TUI, hosted service).
 
-Update (No Backwards Compatibility Policy): We explicitly do NOT preserve backwards compatibility with the pre-extraction import paths (`ariadne/packages/engine`). A hard cut (“lift & shift”) is acceptable. This removes the need for forwarders, staged deprecation shims, or migration guards beyond ensuring the legacy tree is fully deleted.
+Update (No Backwards Compatibility Policy): We explicitly do NOT preserve backwards compatibility with the pre-extraction import paths (`github.com/99souls/ariadne/engine`). A hard cut (“lift & shift”) is acceptable. This removes the need for forwarders, staged deprecation shims, or migration guards beyond ensuring the legacy tree is fully deleted.
 
 Primary Outcomes:
 
@@ -140,7 +140,7 @@ Exit Criteria: Plan approved; test failing (red) until modules exist.
 
 Planned: Minimal move + stub/forwarders.
 
-Actual: Entire engine tree copied under `engine/` while original `packages/engine/` left intact (full duplication of business logic + tests). `engine/go.mod` created (canonical path `github.com/99souls/ariadne/engine`). `go.work` present. Import normalization incomplete (many files in `engine/` still import `ariadne/packages/engine/...`). No stub README or forwarder-only reduction yet.
+Actual: Entire engine tree copied under `engine/` while original `packages/engine/` left intact (full duplication of business logic + tests). `engine/go.mod` created (canonical path `github.com/99souls/ariadne/engine`). `go.work` present. Import normalization incomplete (many files in `engine/` still import `github.com/99souls/ariadne/engine/...`). No stub README or forwarder-only reduction yet.
 
 Implications:
 
@@ -161,6 +161,7 @@ Remediation (Revised Wave 2):
 Objective: Eliminate the duplicated legacy tree (`packages/engine`) immediately (no forwarders) after confirming `engine/` tests pass.
 
 Tasks:
+
 - Delete `packages/engine` directory (implementation + tests).
 - Remove any residual references (grep for `packages/engine`).
 - Run full workspace tests to ensure no hidden dependency remained.
@@ -200,7 +201,7 @@ Tasks:
 - Migrate or archive `cmd/scraper` & `cmd/test-phase1`.
   - If kept for historical reference: move to `archive/` with `//go:build ignore`.
 - Remove / migrate any root `internal/*` duplicates now superseded by engine module.
-- Add enforcement test: ensure no imports reference old paths (`ariadne/packages/engine`).
+- Add enforcement test: ensure no imports reference old paths (`github.com/99souls/ariadne/engine`).
 - Add CI check (simple grep) preventing reintroduction of root executables.
 
 Exit Criteria: Root tree = docs + workspace files only (no active code, no legacy commands).
@@ -226,48 +227,48 @@ Tasks:
 
 ## 8. Detailed Task Matrix
 
-| ID  | Task                          | Wave | Owner | Blocking | Result                     |
-| --- | ----------------------------- | ---- | ----- | -------- | -------------------------- |
-| T01 | Create go.work                | 1    | Arch  | None     | Workspace active           |
-| T02 | Init engine/go.mod            | 1    | Arch  | T01      | Independent build          |
-| T03 | Filesystem move               | 1    | Arch  | T01      | New layout                 |
-| T04 | Update imports                | 2    | Dev   | T03      | Builds green               |
-| T05 | (Removed) forwarders (N/A)    | -    | -     | -        | Not applicable             |
-| T06 | Strategy interfaces file      | 3    | Arch  | T04      | Stable extension points    |
-| T07 | Internalize impl packages     | 3    | Arch  | T06      | Reduced surface            |
-| T08 | API doc comments + tiers      | 3    | Docs  | T06      | Stability clarity          |
-| T09 | CLI module skeleton           | 4    | Dev   | T02, RP1 | Basic binary               |
-| T10 | CLI integration test          | 4    | QA    | T09      | Regression guard           |
-| T11 | Metrics/health adapter wiring | 4    | Dev   | T09      | Observability usable       |
-| T12 | (Removed) forwarder removal   | -    | -     | -        | Not applicable             |
-| T13 | Migration guide doc (hard cut)| 5    | Docs  | T07      | User adoption (new path)   |
-| T14 | Tag engine v0 baseline        | 5    | Maint | T07      | Versioned API              |
-| T15 | README embedding example      | 5    | Docs  | T14      | Developer onboarding       |
+| ID  | Task                           | Wave | Owner | Blocking | Result                   |
+| --- | ------------------------------ | ---- | ----- | -------- | ------------------------ |
+| T01 | Create go.work                 | 1    | Arch  | None     | Workspace active         |
+| T02 | Init engine/go.mod             | 1    | Arch  | T01      | Independent build        |
+| T03 | Filesystem move                | 1    | Arch  | T01      | New layout               |
+| T04 | Update imports                 | 2    | Dev   | T03      | Builds green             |
+| T05 | (Removed) forwarders (N/A)     | -    | -     | -        | Not applicable           |
+| T06 | Strategy interfaces file       | 3    | Arch  | T04      | Stable extension points  |
+| T07 | Internalize impl packages      | 3    | Arch  | T06      | Reduced surface          |
+| T08 | API doc comments + tiers       | 3    | Docs  | T06      | Stability clarity        |
+| T09 | CLI module skeleton            | 4    | Dev   | T02, RP1 | Basic binary             |
+| T10 | CLI integration test           | 4    | QA    | T09      | Regression guard         |
+| T11 | Metrics/health adapter wiring  | 4    | Dev   | T09      | Observability usable     |
+| T12 | (Removed) forwarder removal    | -    | -     | -        | Not applicable           |
+| T13 | Migration guide doc (hard cut) | 5    | Docs  | T07      | User adoption (new path) |
+| T14 | Tag engine v0 baseline         | 5    | Maint | T07      | Versioned API            |
+| T15 | README embedding example       | 5    | Docs  | T14      | Developer onboarding     |
 
 ### Root Purge Task Additions
 
-| ID  | Task                                      | Wave | Owner | Blocking | Result                           |
-| --- | ----------------------------------------- | ---- | ----- | -------- | -------------------------------- |
-| RP1 | Move root `main.go`                       | 2.5  | Arch  | T04?\*   | No root executable               |
-| RP2 | Root guard script/test                    | 2.5  | Dev   | RP1      | Prevent regression               |
-| RP3 | Inventory root legacy dirs                | 2.5  | Arch  | RP1      | Disposition list                 |
-| RP4 | (Dropped) Forward root imports (imports already normalized) | - | - | - | Superseded |
-| RP5 | Archive/remove `cmd/scraper` & others     | 3.5  | Arch  | RP3      | Clean root tree                  |
-| RP6 | Enforce no old import paths (test)        | 3.5  | QA    | RP4      | Early failure on drift           |
-| RP7 | CI grep check (no root \*.go)             | 3.5  | Dev   | RP2      | Automated enforcement            |
+| ID  | Task                                                        | Wave | Owner | Blocking | Result                 |
+| --- | ----------------------------------------------------------- | ---- | ----- | -------- | ---------------------- |
+| RP1 | Move root `main.go`                                         | 2.5  | Arch  | T04?\*   | No root executable     |
+| RP2 | Root guard script/test                                      | 2.5  | Dev   | RP1      | Prevent regression     |
+| RP3 | Inventory root legacy dirs                                  | 2.5  | Arch  | RP1      | Disposition list       |
+| RP4 | (Dropped) Forward root imports (imports already normalized) | -    | -     | -        | Superseded             |
+| RP5 | Archive/remove `cmd/scraper` & others                       | 3.5  | Arch  | RP3      | Clean root tree        |
+| RP6 | Enforce no old import paths (test)                          | 3.5  | QA    | RP4      | Early failure on drift |
+| RP7 | CI grep check (no root \*.go)                               | 3.5  | Dev   | RP2      | Automated enforcement  |
 
 \*If sequencing prefers, RP1 can occur immediately after T03 (filesystem move) before full import refactor completes.
 
 ## 9. Risk & Mitigation
 
-| Risk                 | Description                                              | Likelihood | Impact            | Mitigation                                               |
-| -------------------- | -------------------------------------------------------- | ---------- | ----------------- | -------------------------------------------------------- |
-| Hidden cross-imports | Residual code outside engine still referencing old paths | Medium     | Build breaks      | Global grep + CI fail-fast                               |
-| Hard cut breakage    | External (unpublished) consumers break on removal         | High (accepted) | Low (internal) | Document breaking change in CHANGELOG & README          |
-| Over-exposed APIs    | Forget to internalize helpers                            | High       | Future break cost | Wave 3 audit & doc coverage gate                         |
-| CLI config sprawl    | Config duplication between CLI & engine                  | Medium     | Inconsistency     | Single `engine.Config` authoritative + small CLI overlay |
-| Telemetry coupling   | CLI accidentally reimplements health/metrics logic       | Low        | Code duplication  | Provide adapter package or examples                      |
-| Versioning churn     | Frequent API tweaks after tag                            | Medium     | Consumer friction | Delay tag until Wave 5 cleanup complete                  |
+| Risk                 | Description                                              | Likelihood      | Impact            | Mitigation                                               |
+| -------------------- | -------------------------------------------------------- | --------------- | ----------------- | -------------------------------------------------------- |
+| Hidden cross-imports | Residual code outside engine still referencing old paths | Medium          | Build breaks      | Global grep + CI fail-fast                               |
+| Hard cut breakage    | External (unpublished) consumers break on removal        | High (accepted) | Low (internal)    | Document breaking change in CHANGELOG & README           |
+| Over-exposed APIs    | Forget to internalize helpers                            | High            | Future break cost | Wave 3 audit & doc coverage gate                         |
+| CLI config sprawl    | Config duplication between CLI & engine                  | Medium          | Inconsistency     | Single `engine.Config` authoritative + small CLI overlay |
+| Telemetry coupling   | CLI accidentally reimplements health/metrics logic       | Low             | Code duplication  | Provide adapter package or examples                      |
+| Versioning churn     | Frequent API tweaks after tag                            | Medium          | Consumer friction | Delay tag until Wave 5 cleanup complete                  |
 
 ## 10. Acceptance Criteria
 
@@ -321,7 +322,7 @@ Add CI matrix (future):
 Original Import Example:
 
 ```
-import "ariadne/packages/engine"
+import "github.com/99souls/ariadne/engine"
 ```
 
 New Import:
@@ -332,7 +333,7 @@ import "github.com/99souls/ariadne/engine"
 
 Key Changes (Breaking):
 
-- Old path `ariadne/packages/engine` no longer exists (directory deleted).
+- Old path `github.com/99souls/ariadne/engine` no longer exists (directory deleted).
 - Some subpackages may move under `engine/internal/*` (not importable) during pruning.
 - Use `engine.New(cfg)` (or future `engine.NewWithStrategies`) for construction.
 - Metrics/health handlers will be provided outside core (adapters/examples).
