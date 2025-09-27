@@ -32,6 +32,10 @@ type Config struct {
 	// Resume settings
 	Resume         bool
 	CheckpointPath string // Overrides Resources.CheckpointPath if set
+
+	// AssetPolicy defines behavior for asset handling (Phase 5D). Additive; if disabled
+	// the processor behaves as legacy (no strategy invocation). Wiring occurs in Phase 5D iterations.
+	AssetPolicy AssetPolicy
 }
 
 // toPipelineConfig adapts the facade Config to the internal pipeline config.
@@ -99,5 +103,28 @@ func Defaults() Config {
 			MaxInFlight:        16,
 			CheckpointInterval: 50 * time.Millisecond,
 		},
+		AssetPolicy: AssetPolicy{ // conservative defaults
+			Enabled:        false, // off until strategy implemented
+			MaxBytes:       5 * 1024 * 1024, // 5MB per page aggregate cap (initial placeholder)
+			MaxPerPage:     64,
+			InlineMaxBytes: 2048,
+			Optimize:       false,
+			RewritePrefix:  "/assets/",
+			AllowTypes:     []string{"img", "script", "link"},
+		},
 	}
 }
+
+// AssetPolicy configures the asset subsystem when enabled. Iteration 1 surface; enforcement &
+// validation logic comes in later iterations.
+type AssetPolicy struct {
+    Enabled          bool
+    MaxBytes         int64
+    MaxPerPage       int
+    InlineMaxBytes   int64
+    Optimize         bool
+    RewritePrefix    string
+    AllowTypes       []string
+    BlockTypes       []string
+}
+
