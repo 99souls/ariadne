@@ -1,7 +1,7 @@
 # Phase 5F Plan – Engine Module Extraction & CLI Enablement
 
-Status: In Progress – Wave 2 & 2.5 complete; entering Wave 3
-Date: 2025-09-27 (updated post pipeline removal & API automation)
+Status: In Progress – Waves 0–3 COMPLETE; Wave 4 planning
+Date: 2025-09-27 (post Wave 3 API annotation & pruning pass)
 Owner: Architecture / Core Engine
 
 ## 1. Executive Summary
@@ -280,19 +280,21 @@ Exit Criteria Addition (for root module removal path):
 - CI pipelines updated and green across matrix.
 - `ROOT_LAYOUT.md` merged describing rationale + guard instructions.
 
-### Wave 3 – API Surface Audit & Pruning (STARTING)
+### Wave 3 – API Surface Audit & Pruning (COMPLETED)
 
-Status: Candidate list drafted (`engine/API_PRUNING_CANDIDATES.md`). Root & pipeline internalization complete; ready to curate.
+Summary of Achievements:
+1. Candidate list executed: stability annotations applied to engine facade, models, ratelimit, resources, strategies, and config packages.
+2. Consolidated strategy interfaces (`engine/strategies.go`) with allowlist enforcement.
+3. Added export allowlist guard tests for root engine, models, ratelimit, resources, and config packages.
+4. Removed deprecated alias `FetchedPage` (crawler package).
+5. Regenerated & version-locked API report after each major change; drift now detectable.
+6. CHANGELOG & pruning doc updated marking completed TAG items; config annotated Experimental pending future surface reduction (Wave 4 consideration to internalize runtime / AB testing structures).
+7. Root, pipeline, and other implementation packages internalized where planned in this wave (pipeline already internal; further internalization deferred to Wave 4).
 
-Upcoming Tasks:
-
-1. Review & approve candidate actions (KEEP / INT / TAG / REMOVE).
-2. Create `internal/` subpackages and move INT items.
-3. Introduce consolidated strategy interfaces file (`strategies.go`) or re-export strategy package (decision pending).
-4. Add doc comments & stability annotations (Experimental tags) to all remaining exported symbols.
-5. Remove deprecated alias types (e.g., `FetchedPage`).
-6. Update CHANGELOG (Unreleased > Changed) summarizing pruning adjustments.
-7. Add enforcement test ensuring no forbidden internal package imports from CLI / external modules.
+Outstanding (Deferred to Wave 4):
+- Potential internalization of `engine/resources` and selected runtime config / A/B testing types.
+- Telemetry package pruning & annotation pass (metrics/events/tracing final curation). 
+- CLI-facing adapter boundaries for health/metrics to ensure no leakage of internal telemetry packages.
 
 ### Wave 3.5 – Root Purge (Part 2) (PENDING)
 
@@ -486,11 +488,44 @@ Status Legend: (DONE) already completed on branch.
 
 Gate to enter Wave 3: Legacy tree removed (DONE); root main relocated (DONE); root module removed (DONE); CLI skeleton present (PARTIAL – finalize flags UX); pruning list drafted (DONE); legacy pkg/models aliases removed (DONE).
 
-Wave 3 Kickoff Delta:
+Wave 3 Completion Delta:
 
-- Add `strategies.go` consolidating extension interfaces (PENDING)
-- Prune / relocate candidate exports (PENDING)
-- Apply stability annotations across curated surface (PENDING)
+- `strategies.go` added (DONE)
+- Pruning actions (annotation + allowlists) applied (DONE)
+- Stability annotations across curated surface (DONE)
+
+### Wave 4 – CLI Module Bootstrapping & Further Internalization (PLANNING)
+
+Objectives:
+1. Deliver minimal usable CLI (`ariadne crawl`) consuming only curated engine API.
+2. Further shrink engine public surface: evaluate internalization of runtime config manager, A/B test framework, and resource manager (or relocate under `internal/` with facade accessors).
+3. Define & implement telemetry adapter boundary (HTTP metrics/health server lives outside engine core; ensure adapters only depend on stable telemetry interfaces).
+4. Add integration smoke test launching CLI against in-memory site fixture.
+5. Add grep/CI guard for absence of unapproved exports (extend allowlist approach to any new package surfaced during Wave 4).
+
+Planned Tasks (Wave 4 Draft List):
+| ID | Task | Category | Notes |
+|----|------|----------|-------|
+| W4-01 | Create CLI module command scaffold (`ariadne crawl`) | CLI | Basic flags: --seeds, --config, --metrics, --health, --snapshot-interval |
+| W4-02 | Implement graceful shutdown & periodic snapshot emission | CLI | Use context + OS signal trap |
+| W4-03 | Introduce `internal/runtime` relocation for config runtime/A/B test system | API | Replace direct exports with facade accessors or remove if unused |
+| W4-04 | Evaluate internalization or slimming of `resources.Manager` | API | Possibly expose only snapshot via engine facade |
+| W4-05 | Telemetry adapter review & minimal stable interface definition | Telemetry | Mark only required provider accessor stable/experimental |
+| W4-06 | Add CLI integration test with in-memory HTTP fixture | Test | Ensures end-to-end path works |
+| W4-07 | Extend allowlist guards to telemetry packages (if kept public) | Governance | Prevent drift |
+| W4-08 | Update docs (README embedding example + CLI usage) | Docs | Add quickstart snippet |
+| W4-09 | Add CI job for CLI smoke run | CI | Simple run with sample seeds |
+| W4-10 | Prepare pruning list v2 for Wave 5 (leftovers) | Planning | Input to version tagging |
+
+Exit Criteria for Wave 4:
+- CLI command functional with documented flags and snapshot output.
+- No CLI import of `engine/internal/*` (enforced by existing guard plus new test if needed).
+- Runtime config/A-B structures either internalized or explicitly justified to remain (annotated Experimental if remaining).
+- Resource manager decision executed (internalized or retained with minimal stable snapshot exposure).
+- Telemetry public surface documented & annotated; adapters validated.
+- All new/changed exports represented in updated API report; allowlists adjusted intentionally.
+
+Post-Wave 4 Ready State: Tagging preparation (Wave 5) with a narrowed, documented, test-enforced surface.
 
 ---
 
