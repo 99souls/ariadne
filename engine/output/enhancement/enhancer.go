@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"ariadne/packages/engine/output/assembly"
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/output/assembly"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // ContentEnhancementConfig defines configuration for content enhancement

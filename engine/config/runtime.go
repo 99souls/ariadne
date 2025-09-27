@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"ariadne/packages/engine/business/policies"
+	"github.com/99souls/ariadne/engine/business/policies"
 
 	"github.com/fsnotify/fsnotify"
 	"gopkg.in/yaml.v3"

@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	engmodels "ariadne/packages/engine/models"
-	engratelimit "ariadne/packages/engine/ratelimit"
-	engresources "ariadne/packages/engine/resources"
+	engmodels "github.com/99souls/ariadne/engine/models"
+	engratelimit "github.com/99souls/ariadne/engine/ratelimit"
+	engresources "github.com/99souls/ariadne/engine/resources"
 )
 
 // PipelineConfig defines configuration for multi-stage pipeline

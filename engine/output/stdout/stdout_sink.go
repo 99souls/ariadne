@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
-	"ariadne/packages/engine/models"
-	"ariadne/packages/engine/output"
+	"github.com/99souls/ariadne/engine/models"
+	"github.com/99souls/ariadne/engine/output"
 )
 
 // Sink writes each CrawlResult as a compact JSON line to stdout.

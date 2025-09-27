@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // Phase 4.1 TDD Tests: HTML Template System for Web Output

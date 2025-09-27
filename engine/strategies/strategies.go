@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"ariadne/packages/engine/business/policies"
+	"github.com/99souls/ariadne/engine/business/policies"
 )
 
 // Strategy types and enums

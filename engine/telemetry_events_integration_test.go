@@ -1,7 +1,7 @@
 package engine
 
 import (
-	teleevents "ariadne/packages/engine/telemetry/events"
+	teleevents "github.com/99souls/ariadne/engine/telemetry/events"
 	"testing"
 	"time"
 )

@@ -4,7 +4,7 @@ import (
     "sync/atomic"
     "time"
 
-    legacy "ariadne/packages/engine/monitoring"
+    legacy "github.com/99souls/ariadne/engine/monitoring"
 )
 
 // BusinessCollectorAdapter exposes legacy BusinessMetricsCollector data via the new

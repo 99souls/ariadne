@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/packages/engine/business/policies"
-	"ariadne/packages/engine/config"
-	"ariadne/packages/engine/strategies"
+	"github.com/99souls/ariadne/engine/business/policies"
+	"github.com/99souls/ariadne/engine/config"
+	"github.com/99souls/ariadne/engine/strategies"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

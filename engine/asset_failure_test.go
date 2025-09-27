@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
 // TestAssetFailedDownloadMetrics ensures failed counter increments and bytes not counted.

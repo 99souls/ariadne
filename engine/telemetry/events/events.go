@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	metrics "ariadne/packages/engine/telemetry/metrics"
-	tracing "ariadne/packages/engine/telemetry/tracing"
+	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
+	tracing "github.com/99souls/ariadne/engine/telemetry/tracing"
 )
 
 // Category enumerations (align with event-schema.md)

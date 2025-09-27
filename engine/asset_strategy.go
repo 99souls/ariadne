@@ -23,7 +23,7 @@ import (
 	"time"
 	"unicode"
 
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 
 	"github.com/PuerkitoBio/goquery"
 )

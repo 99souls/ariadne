@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"ariadne/packages/engine/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // CompositeSink writes to multiple sinks simultaneously

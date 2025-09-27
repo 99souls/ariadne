@@ -1,7 +1,7 @@
 package engine
 
 import (
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 	"context"
 	"crypto/sha256"
 	"net/url"

@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
 // TestAssetInstrumentationAndDeterminism validates metrics/events and deterministic rewrite output.

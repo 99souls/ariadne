@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 	"sync"
 	"time"
 )

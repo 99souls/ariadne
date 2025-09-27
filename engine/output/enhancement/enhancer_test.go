@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"ariadne/packages/engine/output/assembly"
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/output/assembly"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // Phase 4.3 TDD Tests: Content Enhancement System

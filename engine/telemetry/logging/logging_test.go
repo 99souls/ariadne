@@ -1,7 +1,7 @@
 package logging
 
 import (
-	tracing "ariadne/packages/engine/telemetry/tracing"
+	tracing "github.com/99souls/ariadne/engine/telemetry/tracing"
 	"bytes"
 	"context"
 	"log/slog"

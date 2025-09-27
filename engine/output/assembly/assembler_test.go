@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/packages/engine/output"
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/output"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // Phase 4.2 TDD Tests: Document Assembly System

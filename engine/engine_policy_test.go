@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	engpipeline "ariadne/packages/engine/pipeline"
-	telempolicy "ariadne/packages/engine/telemetry/policy"
+	engpipeline "github.com/99souls/ariadne/engine/pipeline"
+	telempolicy "github.com/99souls/ariadne/engine/telemetry/policy"
 )
 
 // TestPolicyUpdateAffectsPipelineProbe ensures updating TelemetryPolicy changes health classification thresholds.

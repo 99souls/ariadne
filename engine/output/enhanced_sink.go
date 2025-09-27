@@ -3,7 +3,7 @@ package output
 import (
 	"time"
 
-	"ariadne/packages/engine/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // SinkPolicy defines configuration for sink behavior

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/packages/engine/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // TestProcessorInterface validates the core Processor interface contract
