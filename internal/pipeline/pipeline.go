@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"ariadne/internal/resources"
+	engresources "github.com/99souls/ariadne/engine/resources"
 
 	"github.com/99souls/ariadne/engine/ratelimit"
 
@@ -31,7 +31,7 @@ type PipelineConfig struct {
 	RetryBaseDelay   time.Duration         `yaml:"retry_base_delay" json:"retry_base_delay"`
 	RetryMaxDelay    time.Duration         `yaml:"retry_max_delay" json:"retry_max_delay"`
 	RetryMaxAttempts int                   `yaml:"retry_max_attempts" json:"retry_max_attempts"`
-	ResourceManager  *resources.Manager    `yaml:"-" json:"-"`
+	ResourceManager  *engresources.Manager `yaml:"-" json:"-"`
 }
 
 type extractionTask struct {
@@ -102,7 +102,7 @@ type Pipeline struct {
 	retryWG sync.WaitGroup
 
 	limiter         ratelimit.RateLimiter
-	resourceManager *resources.Manager
+	resourceManager *engresources.Manager
 
 	randMu sync.Mutex
 	rand   *rand.Rand

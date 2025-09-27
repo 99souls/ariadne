@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/internal/resources"
+	engresources "github.com/99souls/ariadne/engine/resources"
 
 	"github.com/99souls/ariadne/engine/ratelimit"
 )
@@ -397,7 +397,7 @@ func TestPipelineExtractionRetriesAndFailure(t *testing.T) {
 func TestPipelineResourceCacheHit(t *testing.T) {
 	tempDir := t.TempDir()
 
-	resourceCfg := resources.Config{
+	resourceCfg := engresources.Config{
 		CacheCapacity:      2,
 		MaxInFlight:        4,
 		SpillDirectory:     filepath.Join(tempDir, "spill"),
@@ -405,7 +405,7 @@ func TestPipelineResourceCacheHit(t *testing.T) {
 		CheckpointInterval: 5 * time.Millisecond,
 	}
 
-	manager, err := resources.NewManager(resourceCfg)
+	manager, err := engresources.NewManager(resourceCfg)
 	if err != nil {
 		t.Fatalf("failed to create resource manager: %v", err)
 	}
@@ -457,7 +457,7 @@ func TestPipelineResourceCacheHit(t *testing.T) {
 func TestPipelineResourceSpillover(t *testing.T) {
 	tempDir := t.TempDir()
 
-	resourceCfg := resources.Config{
+	resourceCfg := engresources.Config{
 		CacheCapacity:      1,
 		MaxInFlight:        2,
 		SpillDirectory:     filepath.Join(tempDir, "spill"),
@@ -465,7 +465,7 @@ func TestPipelineResourceSpillover(t *testing.T) {
 		CheckpointInterval: 5 * time.Millisecond,
 	}
 
-	manager, err := resources.NewManager(resourceCfg)
+	manager, err := engresources.NewManager(resourceCfg)
 	if err != nil {
 		t.Fatalf("failed to create resource manager: %v", err)
 	}
@@ -519,7 +519,7 @@ func TestPipelineResourceCheckpointing(t *testing.T) {
 	tempDir := t.TempDir()
 	checkpointPath := filepath.Join(tempDir, "checkpoint.log")
 
-	resourceCfg := resources.Config{
+	resourceCfg := engresources.Config{
 		CacheCapacity:      4,
 		MaxInFlight:        4,
 		SpillDirectory:     filepath.Join(tempDir, "spill"),
@@ -527,7 +527,7 @@ func TestPipelineResourceCheckpointing(t *testing.T) {
 		CheckpointInterval: 1 * time.Millisecond,
 	}
 
-	manager, err := resources.NewManager(resourceCfg)
+	manager, err := engresources.NewManager(resourceCfg)
 	if err != nil {
 		t.Fatalf("failed to create resource manager: %v", err)
 	}
