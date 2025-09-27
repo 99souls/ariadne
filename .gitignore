@@ -1,1 +1,5 @@
 ./ariadne
+# Test files
+test_seeds.txt
+checkpoint.log
+coverage.out
