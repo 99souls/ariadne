@@ -46,7 +46,7 @@ Eliminating the public pipeline entry:
 
 ## Regenerating API Report
 
-Run `make api-report` (after adding the automation script) to rebuild `API_REPORT.md` enumerating exported symbols by stability tier.
+Run `make api-report` to rebuild `API_REPORT.md` (uses the `tools/apireport` module) enumerating exported symbols by stability tier. Internal packages (`engine/internal/*`) are excluded.
 
 ---
 

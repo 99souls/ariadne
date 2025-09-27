@@ -10,14 +10,22 @@ All notable changes to this project will be documented in this file. The format 
 - Integrated workload benchmark (`BenchmarkIntegratedWorkload`) simulating page + asset telemetry mix.
 - CLI module scaffold (`cli/`) with initial crawl command (Phase 5F Wave 2.5 initiation).
 - API pruning candidate list (`engine/API_PRUNING_CANDIDATES.md`) drafted (Wave 3 preparation).
+ - Dedicated API report tooling module (`tools/apireport`) replacing former `cmd/apireport` path.
+ - `ROOT_LAYOUT.md` documenting the Atomic Root Layout invariant (no root module; curated directory whitelist).
 
 ### Breaking
 
 - Removed legacy `packages/engine` tree (hard cut). Old import path `ariadne/packages/engine` no longer exists. Use `github.com/99souls/ariadne/engine`.
+ - Removed public `engine/pipeline` package; orchestration is now internal under `engine/internal/pipeline`.
+ - Removed root Go module (`go.mod` at repo root) – repository now operates purely as a `go.work` workspace of submodules (`engine`, `cli`, `tools/apireport`). Consumers must update any accidental root-module import assumptions.
+ - Root executable entrypoint removed; invoke CLI via `go run ./cli/cmd/ariadne` (or build the binary) instead of `go run .`.
+ - Relocated API report generator from `cmd/apireport` to standalone module `tools/apireport`; any scripts referencing old path must be updated.
 
 ### Changed
 
 - Prometheus timer implementation pre-creates histogram (reduces per-timer allocations).
+ - Makefile & CI workflows now iterate over explicit module list (no implicit root build).
+ - Enforcement tests relocated to `cli/` to guard against importing `engine/internal/*` from the CLI surface.
 
 ### Deferred
 

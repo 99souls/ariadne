@@ -1,92 +1,109 @@
-# ariadne
+# Ariadne
 
-a web scraper of sorts
+Structured, polite web content extraction: point it at seed URLs, it fans out (civilly), pulls pages, normalizes them, extracts the useful bits, and emits structured results you can drop into notes, search indices, or downstream pipelines.
 
-## what it actually does (right now)
+This repository now follows an **Atomic Root Layout**: no root Go module, only curated submodules:
 
-Think: point it at some seed URLs, it fans out (politely), pulls pages, normalizes them, extracts the useful bits, and spits out structured markdown (and later other formats) you can drop into notes, docs, or pipelines.
+- `engine/` – Embeddable library (public API surface)
+- `cli/` – User-facing command (`ariadne`)
+- `tools/apireport/` – API surface reporting utility
 
-Core flow (simplified):
+See `ROOT_LAYOUT.md` for the invariant and allowed top-level entries.
 
-1. seeds in
-2. crawler fetches (respecting domain pacing + robots if configured)
-3. processor extracts title + main content (minimal HTML -> MD pass)
-4. pipeline assembles results + enrichment hooks
-5. output sinks write (stdout JSONL now; richer markdown / html variants wired; pdf planned)
+## Quick Start
 
-## key bits under the hood
+Clone and sync workspace modules:
 
-- polite rate limiting: sliding window + token bucket mash so we don't hammer domains
-- resource manager: tracks seen URLs, spill-to-disk when memory pressure grows, handles resume checkpoints
-- pipeline stages: fetch -> extract -> enhance -> assemble -> emit (each with bounded concurrency + backpressure)
-- output layer: simple sinks now (stdout / markdown compiler), structured so custom sinks are trivial
-- config layering: defaults -> env -> file(s) -> inline overrides (merging logic already in place, more hardening tests coming)
-- telemetry hooks: metrics/tracing scaffolding exists (basic events + health snapshots) — not overexposed yet
-- asset strategy: experimental logic for deciding “is this worth recrawling / enriching” (still being iterated)
-
-## why it exists
-
-Most generic scrapers either: a) dump raw HTML, b) get blocked fast, or c) try to be browsers. This aims for a narrower middle lane: fast structural extraction + markdown quality suitable for knowledge bases, without the overhead of headless everything.
-
-## current status / honesty notes
-
-- duplication: there are legacy paths sitting next to the new `engine/` module while migration settles
-- api stability: not promised yet — names may churn while we prune surface area
-- content extraction: intentionally minimal right now (headline + body). Rich semantics (tables, code fences, nav trimming) queued.
-- pdf: placeholder goal; not wired until markdown fidelity is tightened
-
-## quick taste
-
-Run from repo root (basic stdout sink emitting JSONL of crawl results):
-
-```
-go run . --seeds https://example.com --limit 25
+```bash
+git clone https://github.com/99souls/ariadne.git
+cd ariadne
+go work sync
 ```
 
-You’ll get lines like:
+Run a tiny crawl (stdout JSONL sink):
+
+```bash
+go run ./cli/cmd/ariadne --seeds https://example.com --limit 25
+```
+
+Example output line:
 
 ```json
-{
-  "url": "https://example.com/",
-  "title": "Example Domain",
-  "markdown_excerpt": "# Example Domain..."
-}
+{"url":"https://example.com/","title":"Example Domain","markdown_excerpt":"# Example Domain..."}
 ```
 
-Pipe to a file and you can post-process / pick pages to keep.
+Generate / refresh the API report:
 
-## config sketch (subject to change)
+```bash
+make api-report
+```
 
-| layer    | purpose                             |
-| -------- | ----------------------------------- |
-| defaults | sane crawl + rate limits            |
-| env vars | ops overrides in containers         |
-| yaml/dir | structured site / environment rules |
-| flags    | last-mile tweak                     |
+This invokes the `tools/apireport` module to regenerate `API_REPORT.md` and CI will fail if drift is detected.
 
-Goal: zero required config for a “tiny polite crawl”, progressive enhancement for bigger controlled runs.
+## Core Flow (Simplified)
 
-## roadmap (trimmed)
+1. Seed ingestion
+2. Crawler fetch (rate & domain pacing + robots handling planned)
+3. Content extraction (HTML → minimal markdown projection)
+4. Orchestration & enrichment (internal pipeline – now fully internalized)
+5. Output emission (stdout JSONL; richer markdown / HTML variants in progress)
 
-- finish import path cleanup + remove duplicated legacy tree
-- richer markdown extraction: lists, code blocks, tables, image alt text
-- structured front‑matter (title / canonical / tags)
-- pdf (wkhtmltopdf or headless patch — TBD after markdown pass quality)
-- advanced filtering / inclusion policies (path patterns, content heuristics)
-- smarter change detection + incremental update mode
+## Design Highlights
 
-## contributing (lightweight guidance, not corporate)
+- Adaptive rate limiting (sliding window + token bucket hybrid) per domain
+- Resource manager (seen URL set + spill-to-disk + checkpoint journal) enabling resume mode
+- Internal pipeline stages with bounded concurrency + backpressure coordination
+- Config layering (defaults → env → file(s) → flags) with normalization helpers
+- Telemetry hooks: metrics, tracing, event bus, health snapshots (curated public exposure; internals private)
+- Asset & change strategies (experimental) to reduce redundant fetches
 
-Right now the focus is rapid internal iteration. If you do poke at it:
+## Why Another Crawler?
 
-- keep PRs small
-- add / update the nearest test; no “later” bucket
-- don’t expand the public surface unless there’s a test proving why
+Many scrapers either dump raw HTML (too low-level) or attempt full browser emulation (heavy, slow). Ariadne targets the middle: fast structural extraction + markdown fidelity suitable for knowledge bases and knowledge graph ingestion without headless overhead.
 
-## license
+## Current Status / Honesty Notes
 
-See `LICENSE` in the repo root. Standard permissive. If something feels ambiguous, open a brief issue and we’ll tighten wording.
+- Public surface still being pruned (Wave 3 upcoming)
+- Some exported symbols will gain stability annotations (`API_STABILITY.md` defines tiers)
+- Markdown extraction intentionally minimal (headings + body). Rich elements (lists, tables, code fences) in roadmap.
+- PDF export deferred until markdown fidelity improves.
 
-## vibe check
+## Configuration Layers (Planned Shape)
 
-Goal is usefulness > flash. If something feels over‑engineered, it probably is and should be simplified. If something feels too magic, we likely need one more explicit knob or a doc note.
+| Layer    | Purpose                              |
+| -------- | ------------------------------------ |
+| defaults | sane crawl + rate limits              |
+| env vars | container / ops overrides             |
+| file(s)  | site / environment structured config  |
+| flags    | last-mile operational tweaks          |
+
+Goal: zero mandatory config for a polite starter crawl; progressive opt‑in complexity.
+
+## Roadmap (Trimmed)
+
+- Wave 3: API pruning & stability annotations
+- Enhanced markdown projection (lists, code fences, tables, alt text)
+- Structured front‑matter (canonical URL, tags)
+- Incremental recrawl / change detection mode
+- PDF / alternate output adapters
+
+## Contributing
+
+Lightweight expectations:
+
+- Keep PRs focused & small
+- Add/adjust nearest test with every change
+- Avoid expanding public API without stability rationale & tests
+- Respect Atomic Root Layout (no new top-level code dirs)
+
+## License
+
+See `LICENSE` (permissive). Open an issue for clarifications.
+
+## API Stability & Reporting
+
+`API_STABILITY.md` documents tiers. `make api-report` regenerates `API_REPORT.md`; CI enforces no unintended drift. Internal packages (`engine/internal/*`) are not part of the contract.
+
+## Guiding Principles
+
+Useful > flashy. Explicit over magic. Small, well-documented surfaces > sprawling implicit behavior.

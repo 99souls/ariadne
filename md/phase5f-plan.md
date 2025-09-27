@@ -1,6 +1,6 @@
 # Phase 5F Plan – Engine Module Extraction & CLI Enablement
 
-Status: In Progress – Wave 2 complete; preparing Wave 2.5 / Wave 3
+Status: In Progress – Wave 2 & 2.5 complete; entering Wave 3
 Date: 2025-09-27 (updated post pipeline removal & API automation)
 Owner: Architecture / Core Engine
 
@@ -197,7 +197,7 @@ Tasks:
 
 Exit Criteria: No `packages/engine` directory; `grep -R "packages/engine"` (excluding plan/docs) returns zero occurrences in `.go` sources.
 
-### Wave 2.5 – Root Purge (Part 1) (IN PROGRESS)
+### Wave 2.5 – Root Purge (Part 1) (COMPLETED)
 
 Purpose: Eliminate root runtime entrypoint to prevent dual-path drift.
 
@@ -208,19 +208,15 @@ Tasks:
 - Document change in CHANGELOG (Unreleased: "root executable moved to cli module").
 - Inventory remaining root `cmd/` directories; flag for Wave 3.5 disposition.
 
-Current State:
+Current State (post-completion):
 
-- Root contains no application `main.go` (validated) – only tooling remains.
-- `cmd/apireport` present (exception – to be documented or relocated).
-- Directory whitelist test allows `cmd` temporarily.
+- Root contains no application `main.go` (validated).
+- API report tooling extracted to `tools/apireport` (legacy `cmd/apireport` replaced with build-ignored stub slated for removal).
+- Directory whitelist / boundary test relocated under `cli/`.
+- CHANGELOG updated to reflect breaking removals.
+- `ROOT_LAYOUT.md` authored documenting invariant.
 
-Next Steps:
-
-1. Decide fate/location of tooling (`cmd/apireport`).
-2. Add CHANGELOG note for root purge milestone & pipeline removal.
-3. Add ROOT_LAYOUT.md (may advance from Wave 3.5 sooner).
-
-Exit Criteria: Root contains no executable Go files; tests still green; tooling policy documented.
+Exit Criteria Achieved: Root has no buildable Go sources; tooling isolated; CI updated; API report tooling relocated.
 
 #### Wave 2.5 Extension – Root Module Elimination Feasibility Study
 
@@ -269,13 +265,13 @@ Decision Recommendation: Proceed with Option 1 (full removal) after creating `to
 New Tasks (augment Root Purge):
 | ID | Task | Wave | Owner | Blocking | Result |
 |------|----------------------------------------------------------------------|------|-------|----------|--------|
-| RP2.5a | Create `tools/apireport` module; move code from `cmd/apireport` | 2.5 | Dev | None | Tool isolated |
-| RP2.5b | Relocate enforcement test into `cli/` (path adjust) | 2.5 | QA | RP2.5a? | Guard persists in module |
-| RP2.5c | Update CI workflows (tests, builds, release) to build `cli/cmd/ariadne` and run per-module tests | 2.5 | Dev | RP2.5a | CI green post-removal |
-| RP2.5d | Remove root `go.mod` & `go.sum`; prune Makefile targets accordingly | 2.5 | Dev | RP2.5c | No root module |
-| RP2.5e | Add `ROOT_LAYOUT.md` & guard (optional script) verifying absence of root module & stray code | 2.5 | Docs | RP2.5d | Documented invariant |
-| RP2.5f | Add API report invocation update (`go run ./tools/apireport`) | 2.5 | Dev | RP2.5a | Consistent tooling |
-| RP2.5g | Adjust release workflow binary build commands (`go build ./cli/cmd/ariadne`) | 2.5 | Dev | RP2.5c | Release unaffected |
+| RP2.5a | Create `tools/apireport` module; move code from `cmd/apireport` | 2.5 | Dev | None | DONE |
+| RP2.5b | Relocate enforcement test into `cli/` (path adjust) | 2.5 | QA | RP2.5a? | DONE |
+| RP2.5c | Update CI workflows (tests, builds, release) to build `cli/cmd/ariadne` and run per-module tests | 2.5 | Dev | RP2.5a | DONE |
+| RP2.5d | Remove root `go.mod` & `go.sum`; prune Makefile targets accordingly | 2.5 | Dev | RP2.5c | DONE |
+| RP2.5e | Add `ROOT_LAYOUT.md` & guard (optional script) verifying absence of root module & stray code | 2.5 | Docs | RP2.5d | DONE (doc only; guard script optional deferred) |
+| RP2.5f | Add API report invocation update (`go run ./tools/apireport`) | 2.5 | Dev | RP2.5a | DONE (Makefile target) |
+| RP2.5g | Adjust release workflow binary build commands (`go build ./cli/cmd/ariadne`) | 2.5 | Dev | RP2.5c | DONE |
 
 Exit Criteria Addition (for root module removal path):
 
@@ -284,9 +280,9 @@ Exit Criteria Addition (for root module removal path):
 - CI pipelines updated and green across matrix.
 - `ROOT_LAYOUT.md` merged describing rationale + guard instructions.
 
-### Wave 3 – API Surface Audit & Pruning (NOT STARTED – PREP DONE)
+### Wave 3 – API Surface Audit & Pruning (STARTING)
 
-Status: Candidate list drafted (`engine/API_PRUNING_CANDIDATES.md`).
+Status: Candidate list drafted (`engine/API_PRUNING_CANDIDATES.md`). Root & pipeline internalization complete; ready to curate.
 
 Upcoming Tasks:
 
@@ -469,7 +465,7 @@ Key Changes (Breaking):
 | Config layering  | Single struct vs layered            | Single authoritative struct       | Prevent drift                                     |
 | Version baseline | v0.5.0 vs v0.1.0                    | v0.5.0                            | Reflect maturity while signaling pre-stable       |
 
-## 15. Next Immediate Actions (Updated Post Wave 2 Completion)
+## 15. Next Immediate Actions (Updated Post Wave 2.5 Completion)
 
 Status Legend: (DONE) already completed on branch.
 
@@ -478,19 +474,22 @@ Status Legend: (DONE) already completed on branch.
 3. (DONE) Delete `packages/engine` tree entirely (implementation + tests).
 4. (DONE) Run full workspace tests (`go test ./...`).
 5. (DONE) Relocate root `main.go` (RP1).
-6. Create minimal `cli/go.mod` + placeholder command invoking engine (PENDING – PRIORITY).
+6. Create minimal `cli/go.mod` + placeholder command invoking engine (PENDING – PRIORITY). (Note: CLI scaffold partially present; finalize command ergonomics.)
 7. (DONE) Draft API pruning candidate list.
 8. (DONE) Rewire legacy `ariadne/pkg/models` imports.
 9. (DONE) Delete `pkg/models` directory.
-10. Update CHANGELOG + README with explicit breaking-change notes (PENDING).
+10. Update CHANGELOG + README with explicit breaking-change notes (DONE – verify after merge).
 11. Repurpose or remove `legacy-imports` Make target (DECIDE).
 12. Decide & document policy for tooling directory (`cmd/`).
-13. Add ROOT_LAYOUT.md documenting final whitelist (PENDING).
+13. Add ROOT_LAYOUT.md documenting final whitelist (DONE).
 14. Begin Wave 3 pruning: introduce `strategies.go` and move internal-only exports.
 
-Gate to enter Wave 3: Legacy tree removed (DONE); root main relocated (DONE); CLI skeleton present (PENDING); pruning list drafted (DONE); legacy pkg/models aliases removed (DONE).
+Gate to enter Wave 3: Legacy tree removed (DONE); root main relocated (DONE); root module removed (DONE); CLI skeleton present (PARTIAL – finalize flags UX); pruning list drafted (DONE); legacy pkg/models aliases removed (DONE).
 
-Gate to enter Wave 3: Legacy tree removed; root main relocated; CLI skeleton present; pruning list drafted; legacy pkg/models aliases removed.
+Wave 3 Kickoff Delta:
+- Add `strategies.go` consolidating extension interfaces (PENDING)
+- Prune / relocate candidate exports (PENDING)
+- Apply stability annotations across curated surface (PENDING)
 
 ---
 
