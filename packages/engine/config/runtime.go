@@ -121,7 +121,6 @@ type IntegratedRuntimeSystem struct {
 	configManager  *RuntimeConfigManager
 	hotReloader    *HotReloadSystem
 	versionManager *ConfigVersionManager
-	abTester       *ABTestingFramework
 	mutex          sync.RWMutex
 }
 
@@ -573,7 +572,7 @@ func (abt *ABTestingFramework) RecordTestResult(testID, userID, variant string, 
 
 	// Load existing results
 	if data, err := os.ReadFile(resultsFile); err == nil {
-		json.Unmarshal(data, &results)
+		_ = json.Unmarshal(data, &results) // Ignore unmarshal errors for robustness
 	}
 
 	// Append new result
