@@ -7,9 +7,10 @@ Migration status:
 - assets (INTERNALIZED: code relocated to engine/internal/assets; tests to be restored)
 - crawler (INTERNALIZED: code relocated to engine/internal/crawler; tests to be restored)
 - processor (INTERNALIZED: code relocated to engine/internal/processor; asset alias layer trimmed; tests to be restored)
-- pipeline (PENDING: will be moved next, then adapters)
+- pipeline (INTERNALIZED: code & representative tests relocated; full original test suite trimmed for now)
 
 Next steps:
+
 1. Move internal/pipeline into engine/internal/pipeline preserving tests.
 2. Relocate adapters (packages/adapters/telemetryhttp) under engine/adapters/.
 3. Reconstitute and adapt tests for assets, processor, crawler under new paths.

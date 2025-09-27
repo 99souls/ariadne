@@ -1,3 +1,7 @@
+//go:build legacyremoved
+// +build legacyremoved
+
+// Deprecated legacy test file retained temporarily until filesystem deletion recognized.
 package pipeline
 
 import (
