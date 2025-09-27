@@ -4,28 +4,44 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Removed
+
+- engine: Removed test-only method `(*Engine).HealthEvaluatorForTest` (Wave 3 API pruning). Tests should supply a `HealthSource` stub to HTTP health/readiness handlers instead.
+- engine: Removed exported functional option type `Option`; constructor now uses only `Config` (Wave 3 API pruning).
+- crawler: Removed deprecated alias `FetchedPage` in favor of `FetchResult` (Wave 3 pruning – breaking pre-v1 acceptable).
+
+### Changed
+
+- telemetryhttp: Handlers now accept `HealthHandlerOptions{Source: HealthSource}` instead of a concrete `*engine.Engine` field. The `HealthSource` interface requires only `HealthSnapshot(context.Context)`, enabling simpler test doubles and eliminating the need for a mutable public hook on `Engine`.
+- engine: Added stability annotations (Experimental / Stable) to `Config` fields, `Engine`, snapshots, telemetry methods, and asset subsystem exports (Wave 3).
+- engine: Introduced export allowlist guard test (`engine_allowlist_guard_test.go`) locking current curated root package surface (Wave 3).
+- strategies: Annotated entire package as Experimental and added export allowlist guard (`strategies_allowlist_test.go`).
+- crawler: Added Experimental annotations to `FetchResult`, `FetchPolicy`, and `FetcherStats`.
+
 ### Added
 
 - Adaptive percentage-based tracer (policy-driven sample percent) replacing always-on tracer.
 - Integrated workload benchmark (`BenchmarkIntegratedWorkload`) simulating page + asset telemetry mix.
 - CLI module scaffold (`cli/`) with initial crawl command (Phase 5F Wave 2.5 initiation).
 - API pruning candidate list (`engine/API_PRUNING_CANDIDATES.md`) drafted (Wave 3 preparation).
- - Dedicated API report tooling module (`tools/apireport`) replacing former `cmd/apireport` path.
- - `ROOT_LAYOUT.md` documenting the Atomic Root Layout invariant (no root module; curated directory whitelist).
+- Dedicated API report tooling module (`tools/apireport`) replacing former `cmd/apireport` path.
+- `ROOT_LAYOUT.md` documenting the Atomic Root Layout invariant (no root module; curated directory whitelist).
+- engine: Export allowlist guard for root facade (`TestEngineExportAllowlist`).
+- strategies: Export allowlist guard and comprehensive Experimental doc comments.
 
 ### Breaking
 
 - Removed legacy `packages/engine` tree (hard cut). Old import path `ariadne/packages/engine` no longer exists. Use `github.com/99souls/ariadne/engine`.
- - Removed public `engine/pipeline` package; orchestration is now internal under `engine/internal/pipeline`.
- - Removed root Go module (`go.mod` at repo root) – repository now operates purely as a `go.work` workspace of submodules (`engine`, `cli`, `tools/apireport`). Consumers must update any accidental root-module import assumptions.
- - Root executable entrypoint removed; invoke CLI via `go run ./cli/cmd/ariadne` (or build the binary) instead of `go run .`.
- - Relocated API report generator from `cmd/apireport` to standalone module `tools/apireport`; any scripts referencing old path must be updated.
+- Removed public `engine/pipeline` package; orchestration is now internal under `engine/internal/pipeline`.
+- Removed root Go module (`go.mod` at repo root) – repository now operates purely as a `go.work` workspace of submodules (`engine`, `cli`, `tools/apireport`). Consumers must update any accidental root-module import assumptions.
+- Root executable entrypoint removed; invoke CLI via `go run ./cli/cmd/ariadne` (or build the binary) instead of `go run .`.
+- Relocated API report generator from `cmd/apireport` to standalone module `tools/apireport`; any scripts referencing old path must be updated.
 
 ### Changed
 
 - Prometheus timer implementation pre-creates histogram (reduces per-timer allocations).
- - Makefile & CI workflows now iterate over explicit module list (no implicit root build).
- - Enforcement tests relocated to `cli/` to guard against importing `engine/internal/*` from the CLI surface.
+- Makefile & CI workflows now iterate over explicit module list (no implicit root build).
+- Enforcement tests relocated to `cli/` to guard against importing `engine/internal/*` from the CLI surface.
 
 ### Deferred
 

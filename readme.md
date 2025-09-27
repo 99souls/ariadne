@@ -29,7 +29,11 @@ go run ./cli/cmd/ariadne --seeds https://example.com --limit 25
 Example output line:
 
 ```json
-{"url":"https://example.com/","title":"Example Domain","markdown_excerpt":"# Example Domain..."}
+{
+  "url": "https://example.com/",
+  "title": "Example Domain",
+  "markdown_excerpt": "# Example Domain..."
+}
 ```
 
 Generate / refresh the API report:
@@ -72,10 +76,10 @@ Many scrapers either dump raw HTML (too low-level) or attempt full browser emula
 
 | Layer    | Purpose                              |
 | -------- | ------------------------------------ |
-| defaults | sane crawl + rate limits              |
-| env vars | container / ops overrides             |
-| file(s)  | site / environment structured config  |
-| flags    | last-mile operational tweaks          |
+| defaults | sane crawl + rate limits             |
+| env vars | container / ops overrides            |
+| file(s)  | site / environment structured config |
+| flags    | last-mile operational tweaks         |
 
 Goal: zero mandatory config for a polite starter crawl; progressive opt‑in complexity.
 

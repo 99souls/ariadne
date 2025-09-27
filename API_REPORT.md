@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-27T22:37:56+01:00
+Generated: 2025-09-27T23:08:01+01:00
 
 ## Package `models`
 
@@ -137,18 +137,16 @@ Engine | type | Stable | Engine composes the pipeline, limiter, and resource man
 Engine.AssetEvents | method |  | AssetEvents returns a snapshot copy of collected events.
 Engine.AssetMetricsSnapshot | method |  | AssetMetricsSnapshot returns current aggregated counters (nil if strategy disabled)
 Engine.EventBus | method |  | EventBus exposes the telemetry event bus (non-nil).
-Engine.HealthEvaluatorForTest | method |  | HealthEvaluatorForTest allows tests to replace the evaluator (not concurrency-safe for production use).
 Engine.HealthSnapshot | method |  | HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
 Engine.MetricsProvider | method |  | MetricsProvider returns the active metrics provider (may be nil if disabled).
-Engine.Policy | method |  | Policy returns the current telemetry policy snapshot (never nil; returns default if unset)
+Engine.Policy | method | Experimental | Policy returns the current telemetry policy snapshot.
 Engine.Snapshot | method |  | Snapshot returns a unified state view.
 Engine.Start | method |  | Start begins processing of the provided seed URLs. It returns a read-only results channel.
 Engine.Stop | method |  | Stop gracefully stops the engine and underlying components.
 Engine.Tracer | method |  | Tracer returns the engine's tracer implementation.
-Engine.UpdateTelemetryPolicy | method |  | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
+Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type |  | EngineStrategies defines business logic components for dependency injection
 MaterializedAsset | type |  | MaterializedAsset represents an asset after execution (download / inline / optimization).
-Option | type |  | Option functional option for customization.
 ResourceSnapshot | type | Experimental | ResourceSnapshot surfaces basic cache / spill / checkpoint telemetry.
 ResumeSnapshot | type |  | ResumeSnapshot exposes resume filtering counters.
 Snapshot | type | Stable | Snapshot is a unified view of engine state (initial minimal subset).

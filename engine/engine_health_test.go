@@ -20,9 +20,8 @@ func TestHealthChangeEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("subscribe failed: %v", err)
 	}
-	defer sub.Close()
-
-	var current telemetryhealth.Status = telemetryhealth.StatusHealthy
+	defer func() { _ = sub.Close() }()
+	current := telemetryhealth.StatusHealthy
 	probe := telemetryhealth.ProbeFunc(func(ctx context.Context) telemetryhealth.ProbeResult {
 		return telemetryhealth.ProbeResult{Name: "test", Status: current, CheckedAt: time.Now()}
 	})

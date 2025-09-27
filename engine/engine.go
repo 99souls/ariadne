@@ -21,9 +21,8 @@ import (
 	telemetrytracing "github.com/99souls/ariadne/engine/telemetry/tracing"
 )
 
-// Snapshot is a unified view of engine state (initial minimal subset).
-// Snapshot is a unified stable view of engine state.
-// Stable: Backwards compatible additions only (fields may be appended).
+// Snapshot is a unified view of engine state.
+// Stable: Field additions are allowed; existing fields retain semantics.
 type Snapshot struct {
 	StartedAt time.Time                     `json:"started_at"`
 	Uptime    time.Duration                 `json:"uptime"`
@@ -33,9 +32,8 @@ type Snapshot struct {
 	Resume    *ResumeSnapshot               `json:"resume,omitempty"`
 }
 
-// ResourceSnapshot surfaces basic cache / spill / checkpoint telemetry.
 // ResourceSnapshot summarizes resource manager internal counters.
-// Experimental: May gain or rename fields pending stabilization.
+// Experimental: Field set & naming may change pre-v1.0.
 type ResourceSnapshot struct {
 	CacheEntries     int `json:"cache_entries"`
 	SpillFiles       int `json:"spill_files"`
@@ -43,17 +41,17 @@ type ResourceSnapshot struct {
 	CheckpointQueued int `json:"checkpoint_queued"`
 }
 
-// ResumeSnapshot exposes resume filtering counters.
 // ResumeSnapshot contains resume filter statistics.
-// Experimental.
+// Experimental: Mechanism & counters may change; only present when resume enabled.
 type ResumeSnapshot struct {
 	SeedsBefore int   `json:"seeds_before"`
 	Skipped     int64 `json:"skipped"`
 }
 
-// Engine composes the pipeline, limiter, and resource manager under a single facade.
 // Engine composes all subsystems behind a single facade.
-// Stable: Core lifecycle methods (Start, Stop, Snapshot) and config guarantees.
+// Stable: Core lifecycle methods (Start, Stop, Snapshot, Policy, UpdateTelemetryPolicy) are
+// committed to backwards compatible behavior after v1.0; until then only additive changes
+// should occur.
 type Engine struct {
 	cfg           Config
 	pl            *engpipeline.Pipeline
@@ -84,7 +82,8 @@ type Engine struct {
 	telemetryPolicy atomic.Pointer[telempolicy.TelemetryPolicy]
 }
 
-// Policy returns the current telemetry policy snapshot (never nil; returns default if unset)
+// Policy returns the current telemetry policy snapshot.
+// Experimental: Policy struct shape & semantics may evolve pre-v1.0. Never returns nil.
 func (e *Engine) Policy() telempolicy.TelemetryPolicy {
 	if p := e.telemetryPolicy.Load(); p != nil {
 		return *p
@@ -94,18 +93,12 @@ func (e *Engine) Policy() telempolicy.TelemetryPolicy {
 }
 
 // MetricsProvider returns the active metrics provider (may be nil if disabled).
+// Experimental: Accessor may relocate behind a telemetry facade.
 func (e *Engine) MetricsProvider() telemetrymetrics.Provider { return e.metricsProvider }
 
-// HealthEvaluatorForTest allows tests to replace the evaluator (not concurrency-safe for production use).
-func (e *Engine) HealthEvaluatorForTest(ev *telemetryhealth.Evaluator) {
-	if e == nil || ev == nil {
-		return
-	}
-	e.healthEval = ev
-}
-
 // UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
-// Safe for concurrent use. Probes pick up new thresholds on next evaluation cycle.
+// Experimental: May relocate behind a dedicated telemetry subpackage pre-v1.0.
+// Safe for concurrent use; probes pick up new thresholds on next evaluation cycle.
 func (e *Engine) UpdateTelemetryPolicy(p *telempolicy.TelemetryPolicy) {
 	if e == nil {
 		return
@@ -188,11 +181,14 @@ type resumeState struct {
 	totalBefore int
 }
 
-// Option functional option for customization.
-type Option func(*Config)
+// optionFn is an internal functional option for future extension.
+// (Wave 3) Previously exported as Option; internalized to shrink public surface.
+type optionFn func(*Config)
 
-// New constructs an Engine with supplied config and options.
-func New(cfg Config, opts ...Option) (*Engine, error) {
+// New constructs an Engine with supplied configuration. Functional options were
+// removed (previously ...Option) during Wave 3 pruning; callers now configure
+// exclusively via the Config struct.
+func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	for _, o := range opts {
 		if o != nil {
 			o(&cfg)
@@ -306,7 +302,8 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	return e, nil
 }
 
-// AssetMetricsSnapshot returns current aggregated counters (nil if strategy disabled)
+// AssetMetricsSnapshot returns current aggregated counters (zero-value if strategy disabled).
+// Experimental: Asset subsystem instrumentation may change drastically pre-v1.0.
 func (e *Engine) AssetMetricsSnapshot() AssetMetricsSnapshot {
 	if e.assetMetrics == nil {
 		return AssetMetricsSnapshot{}
@@ -330,7 +327,8 @@ func (c assetEventCollector) Publish(ev AssetEvent) {
 	c.engine.assetEventsMu.Unlock()
 }
 
-// AssetEvents returns a snapshot copy of collected events.
+// AssetEvents returns a snapshot copy of collected asset events.
+// Experimental: Event model & buffering policy may change or become streaming.
 func (e *Engine) AssetEvents() []AssetEvent {
 	e.assetEventsMu.Lock()
 	out := make([]AssetEvent, len(e.assetEvents))
@@ -340,6 +338,7 @@ func (e *Engine) AssetEvents() []AssetEvent {
 }
 
 // HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
+// Experimental: Health snapshot structure & evaluation cadence may change.
 func (e *Engine) HealthSnapshot(ctx context.Context) telemetryhealth.Snapshot {
 	if e.healthEval == nil {
 		return telemetryhealth.Snapshot{}
@@ -373,7 +372,8 @@ func (e *Engine) HealthSnapshot(ctx context.Context) telemetryhealth.Snapshot {
 	return snap
 }
 
-// Start begins processing of the provided seed URLs. It returns a read-only results channel.
+// Start begins processing of the provided seed URLs and returns a read-only results channel.
+// Stable: Contract (non-nil channel on success, error on invalid state) will hold after v1.0.
 func (e *Engine) Start(ctx context.Context, seeds []string) (<-chan *engmodels.CrawlResult, error) {
 	if !e.started.Load() {
 		return nil, errors.New("engine not started")
@@ -414,6 +414,7 @@ func (e *Engine) filterSeeds(seeds []string) []string {
 }
 
 // Stop gracefully stops the engine and underlying components.
+// Stable: Idempotent; safe to call multiple times after v1.0.
 func (e *Engine) Stop() error {
 	if e.pl != nil {
 		e.pl.Stop()
@@ -428,6 +429,7 @@ func (e *Engine) Stop() error {
 }
 
 // Snapshot returns a unified state view.
+// Stable: See Snapshot field stability guarantees.
 func (e *Engine) Snapshot() Snapshot {
 	snap := Snapshot{StartedAt: e.startedAt}
 	if e.startedAt.IsZero() {
@@ -457,22 +459,24 @@ func (e *Engine) Snapshot() Snapshot {
 }
 
 // EventBus exposes the telemetry event bus (non-nil).
+// Experimental: Direct bus exposure may be replaced by subscription APIs.
 func (e *Engine) EventBus() telemEvents.Bus { return e.eventBus }
 
 // Tracer returns the engine's tracer implementation.
+// Experimental: May be superseded by span creation helpers.
 func (e *Engine) Tracer() telemetrytracing.Tracer { return e.tracer }
 
-// EngineStrategies defines business logic components for dependency injection
-// This is the foundation for Phase 5A Step 4: Strategy-Aware Engine Constructor
+// EngineStrategies defines business logic components for dependency injection.
+// Experimental: Placeholder for future strategy extension wiring; not yet integrated.
 type EngineStrategies struct {
 	Fetcher     interface{} // Placeholder for crawler.Fetcher interface
 	Processors  interface{} // Placeholder for []processor.Processor slice
 	OutputSinks interface{} // Placeholder for []output.OutputSink slice
 }
 
-// NewWithStrategies creates an engine with custom business logic strategies
-// This is a foundational implementation for Phase 5A Step 4
-func NewWithStrategies(cfg Config, strategies EngineStrategies, opts ...Option) (*Engine, error) {
+// NewWithStrategies creates an engine with custom business logic strategies.
+// Experimental: Construction path likely to change once strategy integration lands.
+func NewWithStrategies(cfg Config, strategies EngineStrategies, opts ...optionFn) (*Engine, error) {
 	// Build engine using existing constructor
 	engine, err := New(cfg, opts...)
 	if err != nil {

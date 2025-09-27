@@ -58,6 +58,8 @@ func main() {
 		if strings.Contains(p.PkgPath, "/internal/") { // safety
 			continue
 		}
+		// NOTE: Using ast.Package for doc.New; acceptable here for lightweight symbol extraction.
+		//nolint:staticcheck // SA1019: ast.Package deprecation acceptable for this internal tool.
 		docPkg := &ast.Package{Name: p.Name, Files: map[string]*ast.File{}}
 		for i, f := range p.Syntax {
 			key := fmt.Sprintf("file%d", i)

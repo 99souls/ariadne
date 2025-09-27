@@ -32,7 +32,12 @@ cover:
 
 lint:
 	@[ -x $$(command -v golangci-lint) ] || (echo "golangci-lint not found. Install: https://golangci-lint.run/" && exit 1)
-	golangci-lint run ./...
+	@status=0; \
+	for m in $(MODULES); do \
+	  echo "==> lint $$m"; \
+	  (cd $$m && golangci-lint run ./... ) || { status=1; break; }; \
+	done; \
+	exit $$status
 
 vet:
 	@for m in $(MODULES); do echo "==> vet $$m"; (cd $$m && $(GO) vet ./... ) || exit 1; done

@@ -14,20 +14,20 @@ Objective: Reduce public surface to curated, documented contracts. Items below a
 
 ## 1. Facade Package (`engine`)
 
-| Symbol                      | Action | Notes                                                               |
-| --------------------------- | ------ | ------------------------------------------------------------------- |
-| Engine                      | KEEP   | Core lifecycle facade                                               |
-| New                         | KEEP   | Primary constructor                                                 |
-| Option                      | INT    | Only used for future extensibility; can re-expose selectively later |
-| Config.\* (all fields)      | TAG    | Add doc comments + stability (most Experimental pre-v1)             |
-| Snapshot                    | KEEP   | User-facing introspection                                           |
-| ResourceSnapshot            | KEEP   | Part of Snapshot                                                    |
-| ResumeSnapshot              | KEEP   | Part of Snapshot                                                    |
-| AssetStrategy (if exported) | TAG    | Document extension point or replace with more granular interfaces   |
-| MetricsProvider()           | TAG    | Mark Experimental – may move behind separate telemetry subpackage   |
-| UpdateTelemetryPolicy       | TAG    | Experimental (policy model may evolve)                              |
-| Policy()                    | TAG    | Experimental accessor                                               |
-| HealthEvaluatorForTest      | INT    | Test-only; relocate to test utility or build tag                    |
+| Symbol                      | Action     | Notes                                                                                |
+| --------------------------- | ---------- | ------------------------------------------------------------------------------------ |
+| Engine                      | KEEP       | Core lifecycle facade                                                                |
+| New                         | KEEP       | Primary constructor                                                                  |
+| Option                      | INT (DONE) | Only used for future extensibility; internalized (reintroduce selectively if needed) |
+| Config.\* (all fields)      | TAG (DONE) | Experimental annotations added per field (Wave 3)                                    |
+| Snapshot                    | KEEP       | User-facing introspection                                                            |
+| ResourceSnapshot            | KEEP       | Part of Snapshot                                                                     |
+| ResumeSnapshot              | KEEP       | Part of Snapshot                                                                     |
+| AssetStrategy (if exported) | TAG        | Document extension point or replace with more granular interfaces                    |
+| MetricsProvider()           | TAG        | Mark Experimental – may move behind separate telemetry subpackage                    |
+| UpdateTelemetryPolicy       | TAG        | Experimental (policy model may evolve)                                               |
+| Policy()                    | TAG        | Experimental accessor                                                                |
+| HealthEvaluatorForTest      | INT (DONE) | Test-only; relocated (removed from public API; handlers use HealthSource)            |
 
 ## 2. Models Package (`engine/models`)
 
@@ -45,13 +45,13 @@ All current types appear core; propose KEEP with doc comments & stability tags.
 
 ## 3. Crawler Package (`engine/crawler`)
 
-| Symbol                         | Action | Notes                                        |
-| ------------------------------ | ------ | -------------------------------------------- |
-| FetchResult                    | TAG    | Possibly simplify / hide Metadata map pre-v1 |
-| Fetcher (interface)            | KEEP   | Extension point                              |
-| FetchPolicy                    | TAG    | Consider reduction; align with Config fields |
-| FetcherStats                   | TAG    | May shrink; mark Experimental                |
-| Deprecated alias (FetchedPage) | REMOVE | Accept breaking removal now                  |
+| Symbol                         | Action        | Notes                                            |
+| ------------------------------ | ------------- | ------------------------------------------------ |
+| FetchResult                    | TAG           | Possibly simplify / hide Metadata map pre-v1     |
+| Fetcher (interface)            | KEEP          | Extension point                                  |
+| FetchPolicy                    | TAG           | Consider reduction; align with Config fields     |
+| FetcherStats                   | TAG           | May shrink; mark Experimental                    |
+| Deprecated alias (FetchedPage) | REMOVE (DONE) | Removed alias; use FetchResult directly (Wave 3) |
 
 ## 4. Pipeline Package (`engine/pipeline`)
 

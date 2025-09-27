@@ -3,19 +3,25 @@ package telemetryhttp
 // NOTE: relocated from packages/adapters/telemetryhttp (internalization phase)
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync/atomic"
 	"time"
 
-	"github.com/99souls/ariadne/engine"
 	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
 
 // HealthHandlerOptions configures health/readiness handlers.
+// HealthSource abstracts the minimal engine health interface needed by handlers.
+// Any type implementing HealthSnapshot(ctx) can be supplied (including *engine.Engine).
+type HealthSource interface {
+	HealthSnapshot(ctx context.Context) telemetryhealth.Snapshot
+}
+
 type HealthHandlerOptions struct {
-	Engine        *engine.Engine
+	Source        HealthSource
 	IncludeProbes bool
 	Clock         func() time.Time
 }
@@ -61,12 +67,12 @@ func NewHealthHandler(opts HealthHandlerOptions) http.Handler {
 		opts.Clock = time.Now
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if opts.Engine == nil {
+		if opts.Source == nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "engine nil"})
 			return
 		}
-		snap := opts.Engine.HealthSnapshot(r.Context())
+		snap := opts.Source.HealthSnapshot(r.Context())
 		prev, changedAt := defaultTracker.update(string(snap.Overall), opts.Clock())
 		resp := healthResponse{Overall: snap.Overall, Generated: snap.Generated, TTL: snap.TTL}
 		if opts.IncludeProbes {
@@ -89,12 +95,12 @@ func NewReadinessHandler(opts HealthHandlerOptions) http.Handler {
 		opts.Clock = time.Now
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if opts.Engine == nil {
+		if opts.Source == nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "engine nil"})
 			return
 		}
-		snap := opts.Engine.HealthSnapshot(r.Context())
+		snap := opts.Source.HealthSnapshot(r.Context())
 		prev, changedAt := defaultTracker.update(string(snap.Overall), opts.Clock())
 		ready := snap.Overall == telemetryhealth.StatusHealthy || snap.Overall == telemetryhealth.StatusDegraded
 		resp := healthResponse{Overall: snap.Overall, Generated: snap.Generated, TTL: snap.TTL, Ready: &ready}

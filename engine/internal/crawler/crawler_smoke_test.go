@@ -14,9 +14,9 @@ func TestCrawlerBasic(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/":
-			w.Write([]byte(`<html><body><a href="/a">A</a></body></html>`))
+			_, _ = w.Write([]byte(`<html><body><a href="/a">A</a></body></html>`))
 		case "/a":
-			w.Write([]byte(`<html><body><h1>A</h1></body></html>`))
+			_, _ = w.Write([]byte(`<html><body><h1>A</h1></body></html>`))
 		default:
 			http.NotFound(w, r)
 		}

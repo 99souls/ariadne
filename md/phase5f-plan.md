@@ -487,6 +487,7 @@ Status Legend: (DONE) already completed on branch.
 Gate to enter Wave 3: Legacy tree removed (DONE); root main relocated (DONE); root module removed (DONE); CLI skeleton present (PARTIAL – finalize flags UX); pruning list drafted (DONE); legacy pkg/models aliases removed (DONE).
 
 Wave 3 Kickoff Delta:
+
 - Add `strategies.go` consolidating extension interfaces (PENDING)
 - Prune / relocate candidate exports (PENDING)
 - Apply stability annotations across curated surface (PENDING)
