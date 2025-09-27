@@ -13,7 +13,7 @@ import (
 
 	"ariadne/internal/ratelimit"
 	"ariadne/internal/resources"
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // PipelineConfig defines configuration for multi-stage pipeline

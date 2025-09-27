@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"ariadne/internal/crawler"
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 func main() {

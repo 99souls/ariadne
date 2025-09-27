@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // TestCrawlerInitialization validates proper crawler setup

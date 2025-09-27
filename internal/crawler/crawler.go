@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/gocolly/colly/v2/debug"

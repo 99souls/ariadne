@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 func TestManagerCacheStoreAndGet(t *testing.T) {

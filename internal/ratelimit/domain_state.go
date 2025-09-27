@@ -1,7 +1,7 @@
 package ratelimit
 
 import (
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 	"math"
 	"sync"
 	"time"

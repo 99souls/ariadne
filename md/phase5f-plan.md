@@ -264,20 +264,20 @@ Tasks:
 
 ### Root Purge Task Additions
 
-| ID  | Task                                                        | Wave | Owner | Blocking | Result                 |
-| --- | ----------------------------------------------------------- | ---- | ----- | -------- | ---------------------- |
-| RP1 | Move root `main.go`                                         | 2.5  | Arch  | T04?\*   | No root executable     |
-| RP2 | Root guard script/test                                      | 2.5  | Dev   | RP1      | Prevent regression     |
-| RP3 | Inventory root legacy dirs                                  | 2.5  | Arch  | RP1      | Disposition list       |
-| RP4 | (Dropped) Forward root imports (imports already normalized) | -    | -     | -        | Superseded             |
-| RP5 | Archive/remove `cmd/scraper` & others                       | 3.5  | Arch  | RP3      | Clean root tree        |
-| RP6 | Migrate / remove root `internal/` packages                  | 3.5  | Arch  | RP3      | Impl moved under engine/internal  |
-| RP7 | Remove / alias `pkg/` (models & helpers)                    | 3.5  | Arch  | RP6      | No root aliases remain |
-| RP8 | Remove `packages/` adapters (relocate if still needed)      | 3.5  | Arch  | RP6      | Single engine surface  |
-| RP9 | Consolidate test utilities under module-scoped internal     | 3.5  | QA    | RP6      | No root test helpers   |
-| RP10| Enforce no old import paths (test)                          | 3.5  | QA    | RP6      | Early failure on drift |
-| RP11| CI grep check (no root *.go) & directory whitelist          | 3.5  | Dev   | RP2      | Automated enforcement  |
-| RP12| Add ROOT_LAYOUT.md (doc) & update plan                      | 3.5  | Docs  | RP5-RP8  | Stable documentation   |
+| ID   | Task                                                        | Wave | Owner | Blocking | Result                           |
+| ---- | ----------------------------------------------------------- | ---- | ----- | -------- | -------------------------------- |
+| RP1  | Move root `main.go`                                         | 2.5  | Arch  | T04?\*   | No root executable               |
+| RP2  | Root guard script/test                                      | 2.5  | Dev   | RP1      | Prevent regression               |
+| RP3  | Inventory root legacy dirs                                  | 2.5  | Arch  | RP1      | Disposition list                 |
+| RP4  | (Dropped) Forward root imports (imports already normalized) | -    | -     | -        | Superseded                       |
+| RP5  | Archive/remove `cmd/scraper` & others                       | 3.5  | Arch  | RP3      | Clean root tree                  |
+| RP6  | Migrate / remove root `internal/` packages                  | 3.5  | Arch  | RP3      | Impl moved under engine/internal |
+| RP7  | Remove / alias `pkg/` (models & helpers)                    | 3.5  | Arch  | RP6      | DONE: imports rewired; legacy pkg/models removed (residual stub files in progress removal) |
+| RP8  | Remove `packages/` adapters (relocate if still needed)      | 3.5  | Arch  | RP6      | Single engine surface            |
+| RP9  | Consolidate test utilities under module-scoped internal     | 3.5  | QA    | RP6      | No root test helpers             |
+| RP10 | Enforce no old import paths (test)                          | 3.5  | QA    | RP6      | Early failure on drift           |
+| RP11 | CI grep check (no root \*.go) & directory whitelist         | 3.5  | Dev   | RP2      | Automated enforcement            |
+| RP12 | Add ROOT_LAYOUT.md (doc) & update plan                      | 3.5  | Docs  | RP5-RP8  | Stable documentation             |
 
 \*If sequencing prefers, RP1 can occur immediately after T03 (filesystem move) before full import refactor completes.
 
@@ -296,37 +296,37 @@ Tasks:
 
 Engine Module:
 
-* `go build ./...` inside `engine/` succeeds without referencing CLI dependencies.
-* Public API documented (godoc) with stability tags (Experimental vs future Stable).
-* Implementation detail packages moved under `engine/internal/...` and not imported by CLI (enforced by tests & grep guard).
+- `go build ./...` inside `engine/` succeeds without referencing CLI dependencies.
+- Public API documented (godoc) with stability tags (Experimental vs future Stable).
+- Implementation detail packages moved under `engine/internal/...` and not imported by CLI (enforced by tests & grep guard).
 
 CLI Module:
 
-* `ariadne crawl` command runs a crawl against test fixture and exits cleanly.
-* Supports: seeds file, resume, config file, metrics endpoint flag.
-* Emits periodic JSON snapshot (configurable interval) to stderr or log.
-* Imports ONLY `github.com/99souls/ariadne/engine` (and its public packages) – no `engine/internal/` path usage.
+- `ariadne crawl` command runs a crawl against test fixture and exits cleanly.
+- Supports: seeds file, resume, config file, metrics endpoint flag.
+- Emits periodic JSON snapshot (configurable interval) to stderr or log.
+- Imports ONLY `github.com/99souls/ariadne/engine` (and its public packages) – no `engine/internal/` path usage.
 
 Atomic Root Layout:
 
-* Root contains no `internal/`, `pkg/`, `cmd/`, `packages/`, or other legacy code directories.
-* Only code-bearing directories at root: `engine/` and `cli/`.
-* Guard tests fail if any non-test `.go` file appears at root or if disallowed directories reappear.
-* CI script enforces directory whitelist and zero matches for forbidden import paths.
+- Root contains no `internal/`, `pkg/`, `cmd/`, `packages/`, or other legacy code directories.
+- Only code-bearing directories at root: `engine/` and `cli/`.
+- Guard tests fail if any non-test `.go` file appears at root or if disallowed directories reappear.
+- CI script enforces directory whitelist and zero matches for forbidden import paths.
 
 Migration:
 
-* All legacy directories removed or archived with `//go:build ignore` (if historically valuable) under `archive/` (non-built).
-* Root aliases (e.g., `pkg/models`) eliminated; external users must import `github.com/99souls/ariadne/engine/models`.
-* CHANGELOG captures atomic root milestone and breaking removals.
-* Embedding example in README updated to canonical `engine` imports only.
+- All legacy directories removed or archived with `//go:build ignore` (if historically valuable) under `archive/` (non-built).
+- Root aliases (e.g., `pkg/models`) eliminated; external users must import `github.com/99souls/ariadne/engine/models`.
+- CHANGELOG captures atomic root milestone and breaking removals.
+- Embedding example in README updated to canonical `engine` imports only.
 
 Quality Gates:
 
-* Test suite passes across workspace (engine + cli) via `go work` run.
-* Benchmarks (at least one pipeline benchmark) still execute in engine module after internalization.
-* Lint (if configured) passes; no undocumented exported symbols.
-* Guard tests: (1) no root main, (2) no forbidden directories, (3) no internal imports in CLI.
+- Test suite passes across workspace (engine + cli) via `go work` run.
+- Benchmarks (at least one pipeline benchmark) still execute in engine module after internalization.
+- Lint (if configured) passes; no undocumented exported symbols.
+- Guard tests: (1) no root main, (2) no forbidden directories, (3) no internal imports in CLI.
 
 ## 11. Tooling & Automation
 
@@ -386,15 +386,17 @@ Status Legend: (DONE) already completed on branch.
 
 1. (DONE) Normalize `engine/` internal imports (legacy references = 0).
 2. (DONE) Add legacy freeze notice (README-LEGACY.md) – will be removed alongside deletion.
-3. Delete `packages/engine` tree entirely (implementation + tests).
+3. (DONE) Delete `packages/engine` tree entirely (implementation + tests).
 4. Run full workspace tests (`go test ./...`) to confirm no hidden dependency.
 5. Relocate root `main.go` (RP1) to future `cli/` scaffold (start purge early).
 6. Create minimal `cli/go.mod` + placeholder command invoking engine.
-7. Draft API pruning candidate list (prep for Wave 3 internalization) and mark likely `internal/` moves.
+7. (DONE) Draft API pruning candidate list (prep for Wave 3 internalization) and mark likely `internal/` moves.
+8. Rewire legacy `ariadne/pkg/models` imports to `github.com/99souls/ariadne/engine/models` (IN PROGRESS – code rewired, alias package pending deletion).
+9. Delete `pkg/models` directory after confirming no external dependency (PENDING).
 8. Update CHANGELOG + README (Breaking: legacy path removed).
 9. Remove `legacy-imports` target once deletion complete (optional) OR repurpose to assert zero forever.
 
-Gate to enter Wave 3: Legacy tree removed; root main relocated; CLI skeleton present; pruning list drafted.
+Gate to enter Wave 3: Legacy tree removed; root main relocated; CLI skeleton present; pruning list drafted; legacy pkg/models aliases removed.
 
 ---
 

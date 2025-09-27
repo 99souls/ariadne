@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"ariadne/internal/assets"
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"

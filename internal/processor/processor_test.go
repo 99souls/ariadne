@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"ariadne/pkg/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // Phase 2.1 TDD Tests: HTML Content Cleaning
