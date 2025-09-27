@@ -1,6 +1,6 @@
 # Telemetry Architecture Overview (Phase 5E)
 
-Status: Updated (Iterations 1–6 implemented; Iteration 7 Hardening In Progress)
+Status: Complete (Phase 5E) – Hardening + benchmarks finalized
 Date: 2025-09-27
 Related Plan: `phase5e-plan.md`
 
@@ -113,9 +113,8 @@ Key fields from `TelemetryPolicy` → subsystem switches (see `phase5e-plan.md`)
 
 ## 12. Status
 
-Implemented: Metrics Provider, Metrics Adapter, Event Bus, Tracer, Logger, Health Evaluator (+ health status gauge & change events), TelemetryPolicy, HTTP Adapter (/healthz, /readyz, /metrics), OTEL Metrics Bridge (with label & cardinality tracking scaffold), Benchmarks (counter/histogram/timer), SLO baseline document.
-In Progress (Iteration 7): Hardening (race runs, overhead capture, binary size audit, cardinality warnings, doc polish).
-Deferred: Remote subscribers, adaptive sampling, external trace exporter.
+Implemented: Metrics Provider, Metrics Adapter, Event Bus, Tracer (adaptive sampler), Logger, Health Evaluator (+ health status gauge & change events), TelemetryPolicy, HTTP Adapter (/healthz,/readyz,/metrics), OTEL Metrics Bridge (label & cardinality guard), Benchmarks (counter/histogram/timer + integrated workload), SLO baseline & overhead report.
+Deferred: Remote subscribers, error/latency biased sampling boosts, external trace exporter.
 
 ### 13. Adapter Wiring Example
 

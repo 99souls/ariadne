@@ -1,6 +1,6 @@
-# Telemetry Overhead Report (Iteration 7)
+# Telemetry Overhead Report (Phase 5E Final)
 
-Status: In Progress
+Status: Complete
 Date: 2025-09-27
 Related: `phase5e-plan.md`, `benchmark_provider_test.go`
 
@@ -18,17 +18,31 @@ Document measured overhead of telemetry subsystems relative to a baseline to sat
 - Modes: noop (baseline), prom, otel.
 - Timer benchmark includes minimal 1ns sleep to simulate span of work.
 
-## 3. Benchmark Results (Initial Run)
+## 3. Microbenchmark Results (Final)
 
-Initial run on developer machine (see environment captured in benchmark log output). Treat OTEL figures as lower bound (no exporter pipeline hooked yet).
+Updated results after Prometheus timer optimization (histogram reuse) on developer machine (Apple M4 Max, Go 1.25.x). OTEL figures still exclude external exporter pipeline.
 
 | Benchmark        | noop ns/op | prom ns/op | otel ns/op | prom % over noop | otel % over noop | allocs (noop/prom/otel) |
 | ---------------- | ---------: | ---------: | ---------: | ---------------: | ---------------: | ----------------------- |
 | CounterInc       |       0.97 |      57.29 |       4.24 |            5804% |             337% | 0 / 1 / 0               |
 | HistogramObserve |       1.07 |      64.75 |       4.20 |            5971% |             294% | 0 / 1 / 0               |
-| Timer            |      190.1 |      674.9 |      314.8 |             255% |              66% | 0 / 4 / 1               |
+| Timer            |      201.9 |      412.2 |      312.5 |             104% |              55% | 0 / 2 / 1               |
 
-## 4. Interpretation & Preliminary Analysis
+Improvement: Prometheus timer path reduced from ~675ns / 4 allocs to ~412ns / 2 allocs.
+
+## 4. Integrated Workload Benchmark
+
+`BenchmarkIntegratedWorkload` simulates a representative per-page workload (3 stage timers, ~5 assets, occasional failure) to approximate aggregate telemetry overhead.
+
+| Provider | ns/op | B/op | allocs/op |
+| -------- | ----: | ---: | --------: |
+| noop     |   714 |   96 |         6 |
+| prom     |  2779 |  545 |        31 |
+| otel     |  2903 | 1879 |        57 |
+
+Interpretation: Full metrics emission adds ~2.0–2.2µs absolute overhead per simulated page unit of work in this synthetic loop. For high-throughput scenarios (e.g. 10k pages/sec), raw added CPU time remains within budget (<5% of a single core), assuming similar distribution; real workloads will have higher intrinsic processing cost diluting percentage further.
+
+## 5. Interpretation & Analysis
 
 Observations:
 
@@ -47,12 +61,14 @@ Follow-up Profiling Targets:
 2. Investigate fast-path label caching if label-bearing metrics become hot.
 3. Re-run after enabling OTEL exporter to obtain realistic overhead.
 
-## 5. Next Steps
+Threshold Check: Micro + workload results indicate Prometheus + tracing + events (future) likely remain under CPU & memory budgets. Memory alloc focus areas: OTEL provider path allocs (future exporter integration tuning) and Prometheus counter/hist allocation (acceptable for now).
 
-1. Run integrated end-to-end crawl benchmark (future script) for holistic CPU delta.
-2. Update `slo-baselines.md` with overhead actuals (Telemetry Overhead line: PASS / within target preliminarily).
-3. Append summarized overhead table to `phase5e-plan.md` Iteration 7 completion snapshot.
+## 6. SLO Impact
 
-## 6. Change Log
+Telemetry Overhead SLO (<5% CPU, <10% memory) marked Provisionally PASS based on synthetic workload. Production validation deferred to Phase 5F capacity exercises.
 
-- Iteration 7: Initial scaffold with methodology and table.
+## 7. Change Log
+
+- Initial scaffold (Iteration 7)
+- Added timer optimization + updated results
+- Added integrated workload benchmark results & analysis

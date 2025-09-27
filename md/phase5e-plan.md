@@ -246,9 +246,9 @@ Benchmark Extract (ns/op):
 |-----------|-----:|-----:|-----:|-----------------:|-----------------:|
 | CounterInc | 0.97 | 57.29 | 4.24 | 5804% | 337% |
 | HistogramObserve | 1.07 | 64.75 | 4.20 | 5971% | 294% |
-| Timer | 190.1 | 674.9 | 314.8 | 255% | 66% |
+| Timer | 201.9 | 412.2 | 312.5 | 104% | 55% |
 
-Interpretation: Absolute costs per metric op remain low (single-digit to low 10s of ns for counters/histograms). Timer path higher due to time measurement + label processing; Prometheus timer alloc footprint (4 allocs/op) earmarked for later optimization. OTEL numbers exclude exporter network overhead (future external exporter integration may increase costs; guard rails ready).
+Interpretation: Absolute costs per metric op remain low (single-digit to low 10s of ns for counters/histograms). Timer path improved after Prometheus optimization (histogram reuse reduced from ~675ns/4 allocs to ~412ns/2 allocs). OTEL numbers exclude exporter network overhead (future external exporter integration may increase costs; guard rails ready).
 
 All primary exit criteria closed (see Section 2.3). Optional enhancements deferred without blocking core stability.
 

@@ -1,6 +1,6 @@
 # SLO & Performance Baselines (Phase 5E)
 
-Status: Updated (Initial overhead measurements captured)
+Status: Updated (Overhead micro + integrated workload benchmarks captured; provisional PASS)
 Date: 2025-09-27
 Related: `phase5e-plan.md`, `metrics-reference.md`
 
@@ -25,7 +25,7 @@ Codify initial Service Level Objectives (SLOs) and measurement methodologies for
 | Processing Latency | Page p95 (standard fixture corpus) | < 500ms / rolling 1h | Medium             |
 | Rate Limit Latency | Decision p95                       | < 2ms / rolling 1h   | Low (pre-metrics)  |
 | Event Drop Rate    | Dropped / published                | < 0.1% / rolling 1h  | Low (not built)    |
-| Telemetry Overhead | CPU + memory delta vs baseline     | <5% CPU, <10% memory | Low (pre-feature)  |
+| Telemetry Overhead | CPU + memory delta vs baseline     | <5% CPU, <10% memory | Medium (synthetic) |
 | Cache Hit Ratio    | (hits / (hits+misses))             | ≥ 0.7 / rolling 6h   | Medium             |
 
 ## 4. Measurement Mapping (Planned)
@@ -78,4 +78,4 @@ Collect: ns/op, B/op, allocs/op, CPU utilization sample.
 
 ## 10. Status
 
-Updated – Instrumentation groundwork (Iterations 1–6) complete; initial overhead benchmarks (Iteration 7) recorded in `telemetry-overhead.md`. Pending: optional integrated workload validation before promoting SLOs from draft to provisional.
+Updated – Instrumentation groundwork (Iterations 1–6) complete; micro + integrated workload benchmarks recorded (Iteration 7 + post-optimization). Telemetry Overhead SLO provisionally PASS pending real workload validation in Phase 5F.
