@@ -1,6 +1,6 @@
 # Operator Telemetry Guide (Phase 5E)
 
-Status: Draft
+Status: Updated (Iteration 7 Hardening)
 Date: 2025-09-27
 Related: `phase5e-plan.md`, `metrics-reference.md`, `event-schema.md`, `tracing-model.md`
 
@@ -12,13 +12,14 @@ Provide operational runbook for enabling, configuring, and interpreting Ariadne 
 
 ## 2. Quick Start
 
-1. Enable metrics & event bus in config:
+1. Enable metrics & event bus in config (Prometheus backend default):
 
 ```
 telemetry:
   metricsEnabled: true
+  metricsBackend: prom        # prom | otel | noop (otel = experimental; Iteration 7 adds label + cardinality guard)
   eventBusEnabled: true
-  prometheusEndpoint: ":9090"
+  prometheusEndpoint: ":9090" # still required for /metrics exposure when using prom backend
 ```
 
 2. (Optional) Enable tracing (20% sampling):
@@ -30,6 +31,8 @@ telemetry:
 ```
 
 3. Start engine and run the telemetry HTTP adapter (or integrated main) to expose `/metrics`, `/healthz`, `/readyz`.
+
+If `metricsBackend: otel` is selected an OpenTelemetry in-process meter is used; you must configure exporters externally (future iteration will surface hooks). Label support is now present (Iteration 6/7) with internal cardinality tracking and a one-time warning counter (`ariadne_internal_cardinality_exceeded_total`). Choosing `noop` forces a no‑op provider even if `metricsEnabled: true` (useful for test isolation).
 
 ## 3. Key Dashboards (Recommended Panels)
 

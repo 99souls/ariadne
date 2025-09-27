@@ -1,6 +1,6 @@
 # SLO & Performance Baselines (Phase 5E)
 
-Status: Draft
+Status: Updated (Initial overhead measurements captured)
 Date: 2025-09-27
 Related: `phase5e-plan.md`, `metrics-reference.md`
 
@@ -78,4 +78,4 @@ Collect: ns/op, B/op, allocs/op, CPU utilization sample.
 
 ## 10. Status
 
-Draft – finalize after instrumentation groundwork (Iterations 1–3) and overhead measurements (Iteration 5).
+Updated – Instrumentation groundwork (Iterations 1–6) complete; initial overhead benchmarks (Iteration 7) recorded in `telemetry-overhead.md`. Pending: optional integrated workload validation before promoting SLOs from draft to provisional.

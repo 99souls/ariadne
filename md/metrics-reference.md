@@ -1,6 +1,6 @@
 # Metrics Reference (Phase 5E)
 
-Status: Draft
+Status: Updated (Iteration 7 hardening in progress)
 Date: 2025-09-27
 Related: `phase5e-plan.md`, `telemetry-architecture.md`
 
@@ -30,27 +30,28 @@ Units / suffixes:
 
 (Will be bound to public metric names during Iteration 1)
 
-| Internal Field        | Proposed Metric Name                         | Type      | Labels                  | Description                        |
-| --------------------- | -------------------------------------------- | --------- | ----------------------- | ---------------------------------- |
-| asset.discovered      | ariadne_assets_discovered_total              | counter   | component="asset"       | Candidate asset refs found         |
-| asset.selected        | ariadne_assets_selected_total                | counter   | component="asset"       | Refs selected after policy         |
-| asset.skipped         | ariadne_assets_skipped_total                 | counter   | reason                  | Skipped per policy (limit/type)    |
-| asset.downloaded      | ariadne_assets_downloaded_total              | counter   | status="success"        | Successful downloads               |
-| asset.failed          | ariadne_assets_failed_total                  | counter   | error_class             | Failed download attempts           |
-| asset.inlined         | ariadne_assets_inlined_total                 | counter   | -                       | Inlined small assets               |
-| asset.optimized       | ariadne_assets_optimized_total               | counter   | optimization            | Assets where optimization occurred |
-| asset.bytesIn         | ariadne_assets_bytes_in_total                | counter   | -                       | Raw bytes downloaded               |
-| asset.bytesOut        | ariadne_assets_bytes_out_total               | counter   | -                       | Bytes after optimization           |
-| asset.rewriteFailures | ariadne_assets_rewrite_failures_total        | counter   | -                       | Rewrite stage failures             |
-| pipeline.pages        | ariadne_pipeline_pages_processed_total       | counter   | outcome (success/error) | Pages fully processed              |
-| pipeline.errors       | ariadne_pipeline_errors_total                | counter   | stage                   | Processing errors                  |
-| rate_limit.decisions  | ariadne_rate_limit_decisions_total           | counter   | result (allow/deny)     | Rate limit decisions               |
-| rate_limit.latency    | ariadne_rate_limit_decision_duration_seconds | histogram | -                       | Decision latency distribution      |
-| resources.cacheHits   | ariadne_resources_cache_hits_total           | counter   | tier (memory/disk)      | Cache hits                         |
-| resources.cacheMisses | ariadne_resources_cache_misses_total         | counter   | tier                    | Cache misses                       |
-| config.reloads        | ariadne_config_reloads_total                 | counter   | status (success/fail)   | Dynamic config reload attempts     |
-| events.dropped        | ariadne_events_dropped_total                 | counter   | subscriber              | Dropped events per subscriber      |
-| events.published      | ariadne_events_published_total               | counter   | -                       | Total events published (fan-out)   |
+| Internal Field               | Proposed Metric Name                         | Type      | Labels                  | Description                                                      |
+| ---------------------------- | -------------------------------------------- | --------- | ----------------------- | ---------------------------------------------------------------- |
+| asset.discovered             | ariadne_assets_discovered_total              | counter   | component="asset"       | Candidate asset refs found                                       |
+| asset.selected               | ariadne_assets_selected_total                | counter   | component="asset"       | Refs selected after policy                                       |
+| asset.skipped                | ariadne_assets_skipped_total                 | counter   | reason                  | Skipped per policy (limit/type)                                  |
+| asset.downloaded             | ariadne_assets_downloaded_total              | counter   | status="success"        | Successful downloads                                             |
+| asset.failed                 | ariadne_assets_failed_total                  | counter   | error_class             | Failed download attempts                                         |
+| asset.inlined                | ariadne_assets_inlined_total                 | counter   | -                       | Inlined small assets                                             |
+| asset.optimized              | ariadne_assets_optimized_total               | counter   | optimization            | Assets where optimization occurred                               |
+| asset.bytesIn                | ariadne_assets_bytes_in_total                | counter   | -                       | Raw bytes downloaded                                             |
+| asset.bytesOut               | ariadne_assets_bytes_out_total               | counter   | -                       | Bytes after optimization                                         |
+| asset.rewriteFailures        | ariadne_assets_rewrite_failures_total        | counter   | -                       | Rewrite stage failures                                           |
+| pipeline.pages               | ariadne_pipeline_pages_processed_total       | counter   | outcome (success/error) | Pages fully processed                                            |
+| pipeline.errors              | ariadne_pipeline_errors_total                | counter   | stage                   | Processing errors                                                |
+| rate_limit.decisions         | ariadne_rate_limit_decisions_total           | counter   | result (allow/deny)     | Rate limit decisions                                             |
+| rate_limit.latency           | ariadne_rate_limit_decision_duration_seconds | histogram | -                       | Decision latency distribution                                    |
+| resources.cacheHits          | ariadne_resources_cache_hits_total           | counter   | tier (memory/disk)      | Cache hits                                                       |
+| resources.cacheMisses        | ariadne_resources_cache_misses_total         | counter   | tier                    | Cache misses                                                     |
+| config.reloads               | ariadne_config_reloads_total                 | counter   | status (success/fail)   | Dynamic config reload attempts                                   |
+| events.dropped               | ariadne_events_dropped_total                 | counter   | subscriber              | Dropped events per subscriber                                    |
+| events.published             | ariadne_events_published_total               | counter   | -                       | Total events published (fan-out)                                 |
+| internal.cardinalityExceeded | ariadne_internal_cardinality_exceeded_total  | counter   | metric                  | Metrics whose label cardinality exceeded limit (once per metric) |
 
 ## 3. Histograms (Initial Buckets Draft)
 
@@ -118,7 +119,7 @@ Future phases may add: distributed shard metrics (shard_id label), exporter heal
 
 ## 11. Status
 
-Draft – Iterations 1–4 implemented metrics provider, event bus counters, tracing/logging, and health status gauge.
+Updated – Iterations 1–6 delivered providers (prom, otel), event bus, tracing/logging, health evaluator; Iteration 7 adds OTEL cardinality guard (counter + one-time warning) and benchmark expansion.
 
 ### Health Metric Rationale
 
