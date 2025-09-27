@@ -1,8 +1,9 @@
 package engine
 
 import (
-    "context"
-    engmodels "github.com/99souls/ariadne/engine/models"
+	"context"
+
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
 // strategies.go consolidates primary extension point interfaces for easier discovery.
@@ -10,19 +11,23 @@ import (
 
 // Fetcher defines how pages are fetched.
 // Experimental: May add richer metadata result.
-type Fetcher interface { Fetch(ctx context.Context, url string) (*engmodels.Page, error) }
+type Fetcher interface {
+	Fetch(ctx context.Context, url string) (*engmodels.Page, error)
+}
 
 // Processor transforms a fetched page into enriched content.
 // Experimental: May gain streaming hooks.
-type Processor interface { Process(ctx context.Context, page *engmodels.Page) (*engmodels.Page, error) }
+type Processor interface {
+	Process(ctx context.Context, page *engmodels.Page) (*engmodels.Page, error)
+}
 
 // OutputSink consumes processed pages.
 // Experimental: Flush/Close semantics may narrow; prefer facade-managed lifecycle.
 type OutputSink interface {
-    Name() string
-    Write(ctx context.Context, page *engmodels.Page) error
-    Flush(ctx context.Context) error
-    Close(ctx context.Context) error
+	Name() string
+	Write(ctx context.Context, page *engmodels.Page) error
+	Flush(ctx context.Context) error
+	Close(ctx context.Context) error
 }
 
 // AssetStrategy manages asset discovery and transformation phases.

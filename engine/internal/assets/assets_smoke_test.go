@@ -25,7 +25,7 @@ func TestDiscoverAssetsBasic(t *testing.T) {
 			haveJS = true
 		}
 	}
-       if !haveCSS || !haveImg || !havePDF || !haveJS {
-	       t.Fatalf("missing expected asset types: css=%v img=%v pdf=%v js=%v", haveCSS, haveImg, havePDF, haveJS)
-       }
+	if !haveCSS || !haveImg || !havePDF || !haveJS {
+		t.Fatalf("missing expected asset types: css=%v img=%v pdf=%v js=%v", haveCSS, haveImg, havePDF, haveJS)
+	}
 }

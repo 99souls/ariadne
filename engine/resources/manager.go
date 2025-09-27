@@ -1,7 +1,6 @@
 package resources
 
 import (
-	engmodels "github.com/99souls/ariadne/engine/models"
 	"bufio"
 	"container/list"
 	"context"
@@ -13,6 +12,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
 // Config controls resource management features such as caching, spillover, and checkpoints.

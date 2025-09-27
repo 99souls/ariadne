@@ -23,7 +23,7 @@ Objective: Reduce public surface to curated, documented contracts. Items below a
 | Snapshot                    | KEEP       | User-facing introspection                                                            |
 | ResourceSnapshot            | KEEP       | Part of Snapshot                                                                     |
 | ResumeSnapshot              | KEEP       | Part of Snapshot                                                                     |
-| AssetStrategy (if exported) | TAG (DONE) | Consolidated & annotated in strategies.go                                           |
+| AssetStrategy (if exported) | TAG (DONE) | Consolidated & annotated in strategies.go                                            |
 | MetricsProvider()           | TAG        | Mark Experimental – may move behind separate telemetry subpackage                    |
 | UpdateTelemetryPolicy       | TAG        | Experimental (policy model may evolve)                                               |
 | Policy()                    | TAG        | Experimental accessor                                                                |
