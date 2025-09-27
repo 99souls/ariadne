@@ -32,7 +32,7 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 				},
 				LinkRules: &policies.LinkFollowingPolicy{
 					FollowExternalLinks: true,
-					MaxDepth:           10,
+					MaxDepth:            10,
 				},
 				ContentRules: &policies.ContentSelectionPolicy{
 					DefaultSelectors: []string{".main", ".content", "article"},
@@ -55,13 +55,13 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 				ProcessingSteps:        []string{"extract", "clean", "enhance", "validate"},
 			},
 			OutputPolicy: &policies.OutputBusinessPolicy{
-				DefaultFormat:   "json",
-				Compression:     true,
-				RoutingRules:    map[string]string{
-					"news":     "news-sink",
-					"blog":     "blog-sink",
+				DefaultFormat: "json",
+				Compression:   true,
+				RoutingRules: map[string]string{
+					"news":         "news-sink",
+					"blog":         "blog-sink",
 					"high-quality": "premium-sink",
-					"default":  "main-sink",
+					"default":      "main-sink",
 				},
 				QualityGates: []string{"word-count", "content-quality", "metadata-completeness"},
 			},
@@ -95,22 +95,22 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 		assert.Equal(t, 3, fetchingStrategy.RetryConfig.MaxRetries)
 		assert.Equal(t, 2*time.Second, fetchingStrategy.RetryConfig.InitialDelay)
 		assert.Equal(t, 2.5, fetchingStrategy.RetryConfig.BackoffFactor)
-		
+
 		// High concurrency should trigger parallel and adaptive strategies
 		assert.Contains(t, fetchingStrategy.Strategies, ParallelFetching)
 		assert.Contains(t, fetchingStrategy.Strategies, FallbackFetching)
-		
+
 		// Verify processing strategy composition
 		processingStrategy := composedStrategies.ProcessingStrategy
 		assert.Equal(t, 0.75, processingStrategy.QualityThreshold)
 		assert.Equal(t, []string{"extract", "clean", "enhance", "validate"}, processingStrategy.Steps)
-		
+
 		// Complex processing with high concurrency should use parallel processing
 		assert.Contains(t, processingStrategy.Strategies, ParallelProcessing)
 		assert.Contains(t, processingStrategy.Strategies, ConditionalProcessing)
 		assert.True(t, processingStrategy.ParallelSteps)
 		assert.Equal(t, 7, processingStrategy.Concurrency) // Half of fetching concurrency
-		
+
 		// Verify conditional rules were created
 		assert.NotEmpty(t, processingStrategy.ConditionalRules)
 		assert.Contains(t, processingStrategy.ConditionalRules, "high-quality")
@@ -126,10 +126,10 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 			"high-quality": "premium-sink",
 			"default":      "main-sink",
 		}, outputStrategy.RoutingRules)
-		
+
 		// Multiple routing rules should use conditional routing
 		assert.Contains(t, outputStrategy.Strategies, ConditionalRouting)
-		
+
 		// High concurrency should add multi-sink support
 		assert.Contains(t, outputStrategy.Strategies, MultiSinkOutput)
 		assert.NotNil(t, outputStrategy.MultiSinkConfig)
@@ -148,18 +148,18 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 				SiteRules: map[string]*policies.SitePolicy{
 					"fast-site.com": {
 						AllowedDomains: []string{"fast-site.com"},
-						MaxDepth:       2, // Shallow depth for speed
+						MaxDepth:       2,                     // Shallow depth for speed
 						Delay:          50 * time.Millisecond, // Low delay
 					},
 				},
 				LinkRules: &policies.LinkFollowingPolicy{
 					FollowExternalLinks: false, // Skip externals for speed
-					MaxDepth:           3,      // Low depth
+					MaxDepth:            3,     // Low depth
 				},
 			},
 			ProcessingPolicy: &policies.ProcessingBusinessPolicy{
-				QualityThreshold:       0.3, // Low threshold for speed
-				ProcessingSteps:        []string{"extract"}, // Minimal processing
+				QualityThreshold: 0.3,                 // Low threshold for speed
+				ProcessingSteps:  []string{"extract"}, // Minimal processing
 			},
 			OutputPolicy: &policies.OutputBusinessPolicy{
 				DefaultFormat: "text", // Simple format
@@ -167,7 +167,7 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 				RoutingRules:  map[string]string{"default": "fast-sink"},
 			},
 			GlobalPolicy: &policies.GlobalBusinessPolicy{
-				MaxConcurrency: 50, // High concurrency for speed
+				MaxConcurrency: 50,               // High concurrency for speed
 				Timeout:        10 * time.Second, // Short timeout
 				RetryPolicy: &policies.RetryPolicy{
 					MaxRetries:    1, // Minimal retries
@@ -187,7 +187,7 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 
 		// Verify optimization applied reasonable limits
 		assert.True(t, optimizedStrategies.FetchingStrategy.Concurrency <= 50)
-		assert.True(t, optimizedStrategies.FetchingStrategy.Timeout >= 5*time.Second) // Minimum safety timeout
+		assert.True(t, optimizedStrategies.FetchingStrategy.Timeout >= 5*time.Second)  // Minimum safety timeout
 		assert.True(t, optimizedStrategies.ProcessingStrategy.QualityThreshold >= 0.5) // Reasonable minimum
 
 		// Verify optimization metadata
@@ -239,10 +239,10 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 		monitor.RecordFetchingPerformance("parallel", 2*time.Second, true)
 		monitor.RecordFetchingPerformance("parallel", 3*time.Second, true)
 		monitor.RecordFetchingPerformance("sequential", 5*time.Second, false)
-		
+
 		monitor.RecordProcessingPerformance("parallel", 1*time.Second, 0.85)
 		monitor.RecordProcessingPerformance("conditional", 800*time.Millisecond, 0.92)
-		
+
 		monitor.RecordOutputPerformance("conditional_routing", 200*time.Millisecond, true)
 		monitor.RecordOutputPerformance("multi_sink", 500*time.Millisecond, true)
 
@@ -263,7 +263,7 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 		// Test performance analysis
 		recommendations := monitor.AnalyzePerformance()
 		assert.NotNil(t, recommendations)
-		
+
 		// Should suggest retry logic for low success rate strategies
 		foundRetryRecommendation := false
 		for _, suggestion := range recommendations.Suggestions {
@@ -298,7 +298,7 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 
 		// Create adaptive manager and simulate business feedback
 		manager := NewAdaptiveStrategyManager()
-		
+
 		// Test poor performance feedback (should reduce concurrency)
 		poorFeedback := &PerformanceFeedback{
 			SuccessRate: 0.85, // Below 0.9 threshold
@@ -308,7 +308,7 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 
 		adjustedStrategy, err := manager.AdjustStrategy(composedStrategies, poorFeedback)
 		require.NoError(t, err)
-		
+
 		// Should have reduced concurrency due to poor performance
 		assert.True(t, adjustedStrategy.FetchingStrategy.Concurrency < composedStrategies.FetchingStrategy.Concurrency)
 
@@ -321,10 +321,10 @@ func TestStrategyBusinessPolicyIntegration(t *testing.T) {
 
 		reAdjustedStrategy, err := manager.AdjustStrategy(adjustedStrategy, excellentFeedback)
 		require.NoError(t, err)
-		
+
 		// Should have increased concurrency due to excellent performance and available resources
 		assert.True(t, reAdjustedStrategy.FetchingStrategy.Concurrency > adjustedStrategy.FetchingStrategy.Concurrency)
-		
+
 		// Should not exceed the maximum configured concurrency
 		assert.True(t, reAdjustedStrategy.FetchingStrategy.Concurrency <= composedStrategies.FetchingStrategy.AdaptiveConfig.MaxConcurrency)
 	})

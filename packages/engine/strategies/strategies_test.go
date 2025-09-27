@@ -27,7 +27,7 @@ func TestStrategyComposer(t *testing.T) {
 				},
 				LinkRules: &policies.LinkFollowingPolicy{
 					FollowExternalLinks: true,
-					MaxDepth:           5,
+					MaxDepth:            5,
 				},
 				ContentRules: &policies.ContentSelectionPolicy{
 					DefaultSelectors: []string{".content", ".article"},
@@ -37,7 +37,7 @@ func TestStrategyComposer(t *testing.T) {
 				},
 				RateRules: &policies.RateLimitingPolicy{
 					DefaultDelay: 1 * time.Second,
-					SiteDelays:   map[string]time.Duration{
+					SiteDelays: map[string]time.Duration{
 						"news.com": 500 * time.Millisecond,
 					},
 				},
@@ -48,9 +48,9 @@ func TestStrategyComposer(t *testing.T) {
 				ProcessingSteps:        []string{"extract", "clean", "validate"},
 			},
 			OutputPolicy: &policies.OutputBusinessPolicy{
-				DefaultFormat:   "json",
-				Compression:     true,
-				RoutingRules:    map[string]string{
+				DefaultFormat: "json",
+				Compression:   true,
+				RoutingRules: map[string]string{
 					"news":    "news-sink",
 					"default": "main-sink",
 				},
@@ -71,23 +71,23 @@ func TestStrategyComposer(t *testing.T) {
 		composedStrategies, err := composer.ComposeStrategies(businessPolicies)
 		assert.NoError(t, err)
 		assert.NotNil(t, composedStrategies)
-		
+
 		// Verify strategy composition structure
 		assert.NotNil(t, composedStrategies.FetchingStrategy)
 		assert.NotNil(t, composedStrategies.ProcessingStrategy)
 		assert.NotNil(t, composedStrategies.OutputStrategy)
-		
+
 		// Verify fetching strategy configuration
 		assert.Equal(t, 10, composedStrategies.FetchingStrategy.Concurrency)
 		assert.Equal(t, 30*time.Second, composedStrategies.FetchingStrategy.Timeout)
 		assert.True(t, composedStrategies.FetchingStrategy.RetryEnabled)
-		
+
 		// Verify processing strategy configuration
 		assert.Equal(t, 0.7, composedStrategies.ProcessingStrategy.QualityThreshold)
 		assert.Contains(t, composedStrategies.ProcessingStrategy.Steps, "extract")
 		assert.Contains(t, composedStrategies.ProcessingStrategy.Steps, "clean")
 		assert.Contains(t, composedStrategies.ProcessingStrategy.Steps, "validate")
-		
+
 		// Verify output strategy configuration
 		assert.Equal(t, "json", composedStrategies.OutputStrategy.DefaultFormat)
 		assert.True(t, composedStrategies.OutputStrategy.CompressionEnabled)
@@ -110,14 +110,14 @@ func TestStrategyComposer(t *testing.T) {
 			ProcessingStrategy: ComposedProcessingStrategy{
 				Strategies:       []ProcessingStrategyType{SequentialProcessing, ConditionalProcessing},
 				QualityThreshold: 0.8,
-				Steps:           []string{"extract", "validate"},
-				ParallelSteps:   false,
+				Steps:            []string{"extract", "validate"},
+				ParallelSteps:    false,
 			},
 			OutputStrategy: ComposedOutputStrategy{
-				Strategies:        []OutputStrategyType{ConditionalRouting, MultiSinkOutput},
-				DefaultFormat:     "json",
+				Strategies:         []OutputStrategyType{ConditionalRouting, MultiSinkOutput},
+				DefaultFormat:      "json",
 				CompressionEnabled: true,
-				RoutingRules:      map[string]string{"news": "news-sink"},
+				RoutingRules:       map[string]string{"news": "news-sink"},
 			},
 		}
 
@@ -140,16 +140,16 @@ func TestStrategyComposer(t *testing.T) {
 		originalComposition := &ComposedStrategies{
 			FetchingStrategy: ComposedFetchingStrategy{
 				Strategies:  []FetchingStrategyType{ParallelFetching},
-				Concurrency: 100, // Very high concurrency
+				Concurrency: 100,             // Very high concurrency
 				Timeout:     1 * time.Second, // Very short timeout
 			},
 			ProcessingStrategy: ComposedProcessingStrategy{
 				Strategies:       []ProcessingStrategyType{SequentialProcessing},
 				QualityThreshold: 0.1, // Very low threshold
-				ParallelSteps:   false,
+				ParallelSteps:    false,
 			},
 			OutputStrategy: ComposedOutputStrategy{
-				Strategies:        []OutputStrategyType{SimpleOutput},
+				Strategies:         []OutputStrategyType{SimpleOutput},
 				CompressionEnabled: false,
 			},
 		}
@@ -157,10 +157,10 @@ func TestStrategyComposer(t *testing.T) {
 		optimizedComposition, err := composer.OptimizeComposition(originalComposition)
 		assert.NoError(t, err)
 		assert.NotNil(t, optimizedComposition)
-		
+
 		// Verify optimization occurred
-		assert.True(t, optimizedComposition.FetchingStrategy.Concurrency <= 50) // Reasonable concurrency
-		assert.True(t, optimizedComposition.FetchingStrategy.Timeout >= 5*time.Second) // Reasonable timeout
+		assert.True(t, optimizedComposition.FetchingStrategy.Concurrency <= 50)         // Reasonable concurrency
+		assert.True(t, optimizedComposition.FetchingStrategy.Timeout >= 5*time.Second)  // Reasonable timeout
 		assert.True(t, optimizedComposition.ProcessingStrategy.QualityThreshold >= 0.5) // Reasonable threshold
 	})
 }
@@ -180,8 +180,8 @@ func TestComposedFetchingStrategy(t *testing.T) {
 
 	t.Run("fallback_fetching_strategy", func(t *testing.T) {
 		strategy := ComposedFetchingStrategy{
-			Strategies:  []FetchingStrategyType{ParallelFetching, FallbackFetching},
-			Concurrency: 3,
+			Strategies:   []FetchingStrategyType{ParallelFetching, FallbackFetching},
+			Concurrency:  3,
 			RetryEnabled: true,
 			RetryConfig: RetryConfiguration{
 				MaxRetries:    2,
@@ -219,9 +219,9 @@ func TestComposedProcessingStrategy(t *testing.T) {
 	t.Run("sequential_processing_strategy", func(t *testing.T) {
 		strategy := ComposedProcessingStrategy{
 			Strategies:       []ProcessingStrategyType{SequentialProcessing},
-			Steps:           []string{"extract", "clean", "transform"},
+			Steps:            []string{"extract", "clean", "transform"},
 			QualityThreshold: 0.8,
-			ParallelSteps:   false,
+			ParallelSteps:    false,
 		}
 
 		assert.Contains(t, strategy.Strategies, SequentialProcessing)
@@ -233,7 +233,7 @@ func TestComposedProcessingStrategy(t *testing.T) {
 	t.Run("parallel_processing_strategy", func(t *testing.T) {
 		strategy := ComposedProcessingStrategy{
 			Strategies:    []ProcessingStrategyType{ParallelProcessing},
-			Steps:        []string{"extract", "validate"},
+			Steps:         []string{"extract", "validate"},
 			ParallelSteps: true,
 			Concurrency:   4,
 		}
@@ -268,8 +268,8 @@ func TestComposedProcessingStrategy(t *testing.T) {
 func TestComposedOutputStrategy(t *testing.T) {
 	t.Run("simple_output_strategy", func(t *testing.T) {
 		strategy := ComposedOutputStrategy{
-			Strategies:        []OutputStrategyType{SimpleOutput},
-			DefaultFormat:     "json",
+			Strategies:         []OutputStrategyType{SimpleOutput},
+			DefaultFormat:      "json",
 			CompressionEnabled: false,
 		}
 
@@ -315,7 +315,7 @@ func TestComposedOutputStrategy(t *testing.T) {
 func TestStrategyExecution(t *testing.T) {
 	t.Run("execute_composed_strategy", func(t *testing.T) {
 		ctx := context.Background()
-		
+
 		composedStrategies := &ComposedStrategies{
 			FetchingStrategy: ComposedFetchingStrategy{
 				Strategies:  []FetchingStrategyType{ParallelFetching},
@@ -324,7 +324,7 @@ func TestStrategyExecution(t *testing.T) {
 			},
 			ProcessingStrategy: ComposedProcessingStrategy{
 				Strategies:       []ProcessingStrategyType{SequentialProcessing},
-				Steps:           []string{"extract", "clean"},
+				Steps:            []string{"extract", "clean"},
 				QualityThreshold: 0.6,
 			},
 			OutputStrategy: ComposedOutputStrategy{
@@ -443,7 +443,7 @@ func TestStrategyOptimization(t *testing.T) {
 func TestErrorHandling(t *testing.T) {
 	t.Run("invalid_policy_handling", func(t *testing.T) {
 		composer := NewStrategyComposer()
-		
+
 		invalidPolicies := &policies.BusinessPolicies{
 			GlobalPolicy: &policies.GlobalBusinessPolicy{
 				MaxConcurrency: -1, // Invalid
@@ -458,7 +458,7 @@ func TestErrorHandling(t *testing.T) {
 
 	t.Run("composition_conflict_detection", func(t *testing.T) {
 		composer := NewStrategyComposer()
-		
+
 		conflictingComposition := &ComposedStrategies{
 			FetchingStrategy: ComposedFetchingStrategy{
 				Strategies:  []FetchingStrategyType{ParallelFetching, SequentialFetching}, // Conflicting
@@ -480,10 +480,10 @@ func TestErrorHandling(t *testing.T) {
 
 	t.Run("resource_constraint_validation", func(t *testing.T) {
 		composer := NewStrategyComposer()
-		
+
 		resourceExceedingComposition := &ComposedStrategies{
 			FetchingStrategy: ComposedFetchingStrategy{
-				Concurrency: 1000, // Exceeds reasonable limits
+				Concurrency: 1000,             // Exceeds reasonable limits
 				Timeout:     10 * time.Second, // Valid timeout
 			},
 			ProcessingStrategy: ComposedProcessingStrategy{
