@@ -23,10 +23,17 @@ race:
 
 cover:
 	@rm -f coverage.out
-	@for m in $(MODULES); do \
+	@first=1; \
+	for m in $(MODULES); do \
 		echo "==> cover $$m"; \
-		(cd $$m && $(GO) test -coverprofile=coverage.tmp -cover ./... ) || exit 1; \
-		cat $$m/coverage.tmp >> coverage.out; rm $$m/coverage.tmp; \
+		(cd $$m && $(GO) test -covermode=atomic -coverprofile=coverage.tmp ./... ) || exit 1; \
+		if [ $$first -eq 1 ]; then \
+			cat $$m/coverage.tmp > coverage.out; \
+			first=0; \
+		else \
+			tail -n +2 $$m/coverage.tmp >> coverage.out; \
+		fi; \
+		rm $$m/coverage.tmp; \
 	done; \
 	$(GO) tool cover -func=coverage.out | tail -n 1
 
