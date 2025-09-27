@@ -36,6 +36,14 @@ type Config struct {
 	// AssetPolicy defines behavior for asset handling (Phase 5D). Additive; if disabled
 	// the processor behaves as legacy (no strategy invocation). Wiring occurs in Phase 5D iterations.
 	AssetPolicy AssetPolicy
+
+	// --- Phase 5E (Telemetry) incremental surface ---
+	// MetricsEnabled toggles the new metrics provider wiring (prometheus export) when true.
+	// Default remains false to avoid changing existing behavior unless explicitly enabled.
+	MetricsEnabled bool
+	// PrometheusListenAddr optional address for metrics HTTP exposure (e.g. ":2112").
+	// If empty and MetricsEnabled is true, metrics are still collected but caller must expose handler.
+	PrometheusListenAddr string
 }
 
 // toPipelineConfig adapts the facade Config to the internal pipeline config.
@@ -115,6 +123,9 @@ func Defaults() Config {
 			AllowTypes:     []string{"img", "script", "stylesheet"},
 			MaxConcurrent:  4, // Iteration 7: default worker pool size
 		},
+		// Telemetry defaults (Phase 5E): remain disabled to preserve prior footprint
+		MetricsEnabled:       false,
+		PrometheusListenAddr: "",
 	}
 }
 

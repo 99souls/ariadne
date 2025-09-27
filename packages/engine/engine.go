@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	engpipeline "ariadne/packages/engine/pipeline"
 	engratelimit "ariadne/packages/engine/ratelimit"
 	engresources "ariadne/packages/engine/resources"
+	telemetrymetrics "ariadne/packages/engine/telemetry/metrics"
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).
@@ -52,6 +54,10 @@ type Engine struct {
 	assetStrategy AssetStrategy
 	assetMetrics  *AssetMetrics
 	assetEvents   []AssetEvent // simple in-memory buffer for now (Iteration 6 minimal impl)
+	assetEventsMu sync.Mutex   // Iteration 7 part 2: protect slice under concurrency
+
+	// Phase 5E: metrics provider (initially optional; nil if disabled)
+	metricsProvider telemetrymetrics.Provider
 }
 
 type resumeState struct {
@@ -95,6 +101,15 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	pl := engpipeline.NewPipeline(pc)
 
 	e := &Engine{cfg: cfg, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
+
+	// Phase 5E Iteration 1: initialize metrics provider if enabled (non-invasive wiring)
+	if cfg.MetricsEnabled {
+		// For now always use Prometheus provider. Future: allow injection / selection.
+		p := telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
+		e.metricsProvider = p
+		// NOTE: Exposing handler or starting HTTP server is responsibility of caller to avoid
+		// unilaterally opening ports. If PrometheusListenAddr is set future iteration may spawn server.
+	}
 
 	// Phase 5D Iteration 5: initialize asset strategy if enabled
 	if cfg.AssetPolicy.Enabled {
@@ -151,16 +166,20 @@ func (c assetEventCollector) Publish(ev AssetEvent) {
 		return
 	}
 	// Append with simple cap to prevent unbounded growth (keep last 1024)
+	c.engine.assetEventsMu.Lock()
 	c.engine.assetEvents = append(c.engine.assetEvents, ev)
 	if len(c.engine.assetEvents) > 1024 {
 		c.engine.assetEvents = c.engine.assetEvents[len(c.engine.assetEvents)-1024:]
 	}
+	c.engine.assetEventsMu.Unlock()
 }
 
 // AssetEvents returns a snapshot copy of collected events.
 func (e *Engine) AssetEvents() []AssetEvent {
+	e.assetEventsMu.Lock()
 	out := make([]AssetEvent, len(e.assetEvents))
 	copy(out, e.assetEvents)
+	e.assetEventsMu.Unlock()
 	return out
 }
 
