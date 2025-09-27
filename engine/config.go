@@ -1,10 +1,11 @@
 package engine
 
 import (
-	engpipeline "github.com/99souls/ariadne/engine/pipeline"
-	engresources "github.com/99souls/ariadne/engine/resources"
-	"github.com/99souls/ariadne/engine/models"
 	"time"
+
+	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
+	"github.com/99souls/ariadne/engine/models"
+	engresources "github.com/99souls/ariadne/engine/resources"
 )
 
 // Config is the public configuration surface for the Engine facade. It intentionally

@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
 	engmodels "github.com/99souls/ariadne/engine/models"
-	engpipeline "github.com/99souls/ariadne/engine/pipeline"
 	engratelimit "github.com/99souls/ariadne/engine/ratelimit"
 	engresources "github.com/99souls/ariadne/engine/resources"
 	telemEvents "github.com/99souls/ariadne/engine/telemetry/events"
@@ -22,6 +22,8 @@ import (
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).
+// Snapshot is a unified stable view of engine state.
+// Stable: Backwards compatible additions only (fields may be appended).
 type Snapshot struct {
 	StartedAt time.Time                     `json:"started_at"`
 	Uptime    time.Duration                 `json:"uptime"`
@@ -32,6 +34,8 @@ type Snapshot struct {
 }
 
 // ResourceSnapshot surfaces basic cache / spill / checkpoint telemetry.
+// ResourceSnapshot summarizes resource manager internal counters.
+// Experimental: May gain or rename fields pending stabilization.
 type ResourceSnapshot struct {
 	CacheEntries     int `json:"cache_entries"`
 	SpillFiles       int `json:"spill_files"`
@@ -40,12 +44,16 @@ type ResourceSnapshot struct {
 }
 
 // ResumeSnapshot exposes resume filtering counters.
+// ResumeSnapshot contains resume filter statistics.
+// Experimental.
 type ResumeSnapshot struct {
 	SeedsBefore int   `json:"seeds_before"`
 	Skipped     int64 `json:"skipped"`
 }
 
 // Engine composes the pipeline, limiter, and resource manager under a single facade.
+// Engine composes all subsystems behind a single facade.
+// Stable: Core lifecycle methods (Start, Stop, Snapshot) and config guarantees.
 type Engine struct {
 	cfg           Config
 	pl            *engpipeline.Pipeline

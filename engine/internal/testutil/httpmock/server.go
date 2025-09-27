@@ -1,5 +1,4 @@
 package httpmock
-package httpmock
 
 import (
 	"context"

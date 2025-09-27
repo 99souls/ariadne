@@ -1,77 +1,53 @@
-# Engine Package (Proposed Extraction)
+# Engine Package
 
-This package will encapsulate the reusable, headless crawling and processing engine logic, separating it from any CLI/TUI or distribution concerns.
+The `engine` package is the public, façade-oriented entry point for embedding Ariadne's crawling and processing capabilities. Implementation details (pipeline orchestration, rate limiting primitives, resource coordination, asset rewriting, telemetry internals) now live exclusively under `engine/internal/*` and are not part of the supported API surface.
 
-## Goals
+## Current Architecture (Post Phase 5)
 
-- Provide a stable Go API for embedding the site scraping pipeline in other applications.
-- Isolate business logic (discovery, rate limiting, extraction, processing, asset handling) from presentation and interface layers.
-- Enable future packages like `tui`, `cli`, or `api` to depend on `engine` without import cycles or leaking internal details.
+Public (importable) surface:
 
-## Candidate Migrations
+- `engine` (facade: construction, lifecycle, snapshotting, telemetry policy, health evaluation, asset strategy enablement)
+- `engine/config` (configuration structs & normalization helpers)
+- `engine/models` (data structures: Page, CrawlResult, errors)
+- `engine/ratelimit` (adaptive limiter interfaces & snapshots)
+- `engine/resources` (resource manager configuration & high-level stats)
 
-The following internal packages are prime candidates to move (with minimal or no exported surface changes) into `packages/engine`:
+Internal-only (subject to change without notice):
 
-| Current Path         | New Path (Proposed)         | Notes                                                                               |
-| -------------------- | --------------------------- | ----------------------------------------------------------------------------------- |
-| `pkg/models`         | `packages/engine/models`    | Public data structures. Keep backward compatibility via re-export stubs if needed.  |
-| `internal/pipeline`  | `packages/engine/pipeline`  | Core multi-stage pipeline. Export high-level orchestration API.                     |
-| `internal/ratelimit` | `packages/engine/ratelimit` | Adaptive limiter. Will become public API surface (careful versioning).              |
-| `internal/processor` | `packages/engine/processor` | Content extraction & markdown conversion. Audit for internal-only helpers.          |
-| `internal/assets`    | `packages/engine/assets`    | Asset discovery/downloading/rewriting. Consider making downloader interface-driven. |
-| `internal/crawler`   | `packages/engine/crawler`   | URL discovery and queue management.                                                 |
-| `internal/config`    | `packages/engine/config`    | Configuration loader & defaults. Possibly unify with models.                        |
-| `internal/output`    | `packages/engine/output`    | Future output pipeline components.                                                  |
+- `engine/internal/pipeline` (multi-stage orchestration, retries, backpressure)
+- `engine/internal/*` (crawler, processor, downloader/assets, telemetry subsystem wiring, test utilities)
 
-## Architectural Approach
+The former public `engine/pipeline` package has been fully removed. All orchestration now occurs behind the facade; direct pipeline construction and tests were migrated internally to preserve behavior and coverage.
 
-1. Introduce `packages/engine` as a new module layer WITHOUT moving code initially.
-2. Define a cohesive `Engine` facade interface that composes pipeline + limiter + configuration.
-3. Incrementally relocate packages from `internal/` preserving import paths temporarily via forwarding shims (type aliases) to avoid massive single diff.
-4. Once stability is confirmed, deprecate old `internal/*` entry points and update imports.
-5. Add versioning strategy (semver tags at repo root) documenting public API expectations.
+## Stability Policy
 
-## Engine Facade (Draft)
+See `API_STABILITY.md` for detailed stability tiers. In summary:
 
-```go
-// packages/engine/engine.go (future)
-package engine
+- Facade lifecycle (`New`, `Start`, `Stop`, `Snapshot`) is Stable.
+- Core worker sizing & rate/resource toggle fields in `Config` are Stable.
+- Resume, asset policy, metrics backend knobs are Experimental (shape may evolve).
+- Internal packages provide no compatibility guarantees.
 
-type Engine struct {
-    cfg    Config
-    pl     *pipeline.Pipeline
-    limiter ratelimit.RateLimiter
-}
+## Testing Strategy
 
-func New(cfg Config) (*Engine, error) { /* wire components */ }
-func (e *Engine) Start(ctx context.Context, seeds []string) error { /* start discovery */ }
-func (e *Engine) Stop(ctx context.Context) error { return e.pl.Stop() }
-func (e *Engine) Snapshot() Snapshot { /* aggregate stats */ }
-```
+Behavioral and stress tests for backpressure, graceful shutdown, metrics aggregation, rate limiting feedback, and asset strategy integration reside under `engine/internal/pipeline/*_test.go` to validate invariants while keeping implementation private. Facade integration tests (e.g. `engine_integration_test.go`, `resume_integration_test.go`) ensure public contract correctness.
 
-## Migration Strategy
+## Telemetry & Observability
 
-Phase 0 (Now): Document plan and create engine package scaffold.  
-Phase 1: Define facade interfaces + minimal wiring referencing existing `internal/*` packages.  
-Phase 2: Move stateless/shared models (`pkg/models` → `packages/engine/models`). Provide re-export file at `pkg/models` to maintain compatibility.  
-Phase 3: Relocate `ratelimit` & `pipeline` (lowest external dependencies).  
-Phase 4: Move `processor`, `assets`, `crawler` with careful public function curation.  
-Phase 5: Remove/alias deprecated imports; update `go vet` & tests.  
-Phase 6: Introduce TUI/CLI packages consuming the engine.
+The engine wires an adaptive tracer, metrics provider (Prometheus or OpenTelemetry), event bus, and health evaluator. Policy-driven thresholds (failure ratios, probe TTLs, resource backlog) are configurable via `UpdateTelemetryPolicy` and reflected in `HealthSnapshot` plus metrics gauges.
 
-## Open Questions
+## Rationale for Internalization
 
-- Do we want a separate Go module (multi-module repo) or a single module with subpackages? (Recommendation: stay single-module initially for simplicity.)
-- Which APIs become officially supported vs. experimental? Need doc tags.
-- How will configuration validation errors be surfaced (error types vs. sentinel errors)?
+Eliminating the public pipeline entry:
 
-## Immediate Next Steps
+1. Prevents accidental tight coupling to orchestration internals.
+2. Enables iterative evolution (stage composition, concurrency control, retry semantics) without breaking downstream users.
+3. Simplifies API surface and documentation for the first tagged release (`v0.1.0`).
 
-1. Approve directory strategy (`packages/engine`).
-2. Add draft `engine.go` defining interface skeletons.
-3. Create compatibility plan for `pkg/models` re-export.
-4. Start with non-invasive facade referencing `internal/*` to prove layering.
+## Regenerating API Report
+
+Run `make api-report` (after adding the automation script) to rebuild `API_REPORT.md` enumerating exported symbols by stability tier.
 
 ---
 
-This README is a living document and will evolve as the extraction proceeds.
+This README reflects the post-internalization architecture and will evolve ahead of the `v0.1.0` tag.

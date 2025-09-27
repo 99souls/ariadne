@@ -11,17 +11,15 @@ import (
 func TestRootDirectoryWhitelist(t *testing.T) {
 	allowed := map[string]struct{}{
 		"engine": {}, "cli": {}, "md": {},
+		// Build / developer tooling commands (API report generator, etc.)
+		"cmd": {},
 		// Non-code / metadata directories permitted:
 		".git": {}, ".github": {},
 	}
 
 	// Transitional legacy directories still pending full migration. List has shrunk
 	// after removal of packages/adapters (telemetryhttp) and legacy pipeline stubs.
-	transitional := map[string]struct{}{
-		"internal": {}, // remaining legacy (config/output) – schedule deletion after migration
-		"cmd":      {}, // old experimental commands scheduled for deletion
-		"test":     {}, // root test harness utilities (may relocate under engine/)
-	}
+	transitional := map[string]struct{}{}
 
 	entries, err := os.ReadDir(".")
 	if err != nil {

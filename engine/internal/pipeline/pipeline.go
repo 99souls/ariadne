@@ -32,6 +32,10 @@ type PipelineConfig struct {
 	RetryMaxDelay    time.Duration         `yaml:"retry_max_delay" json:"retry_max_delay"`
 	RetryMaxAttempts int                   `yaml:"retry_max_attempts" json:"retry_max_attempts"`
 	ResourceManager  *engresources.Manager `yaml:"-" json:"-"`
+
+	// AssetProcessingHook allows the engine to inject page mutation logic after extraction
+	// but before result emission (e.g., asset strategy rewrite). Optional.
+	AssetProcessingHook func(ctx context.Context, page *models.Page) (*models.Page, error) `yaml:"-" json:"-"`
 }
 
 type extractionTask struct {
@@ -130,12 +134,25 @@ func (p *Pipeline) ProcessURLs(ctx context.Context, urls []string) <-chan *model
 	}()
 	return p.results
 }
+
+// Metrics returns a snapshot copy of current aggregate metrics (duration updated).
 func (p *Pipeline) Metrics() *PipelineMetrics {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	m := *p.metrics
-	m.Duration = time.Since(m.StartTime)
-	return &m
+	cp := *p.metrics
+	cp.Duration = time.Since(cp.StartTime)
+	return &cp
+}
+
+// SetMetricsForTest injects synthetic counters for tests (not for production use).
+func (p *Pipeline) SetMetricsForTest(m *PipelineMetrics) {
+	if p == nil || m == nil {
+		return
+	}
+	p.mutex.Lock()
+	p.metrics.TotalProcessed = m.TotalProcessed
+	p.metrics.TotalFailed = m.TotalFailed
+	p.mutex.Unlock()
 }
 func (p *Pipeline) Stop() {
 	p.cancel()
@@ -544,14 +561,24 @@ func (p *Pipeline) extractContent(rawURL string) *models.Page {
 }
 func (p *Pipeline) processContent(page *models.Page) *models.CrawlResult {
 	time.Sleep(5 * time.Millisecond)
+	var processedPage *models.Page
 	if page != nil {
 		page.ProcessedAt = time.Now()
+		processedPage = page
+		if p.config.AssetProcessingHook != nil {
+			ctx, cancel := context.WithTimeout(p.ctx, 5*time.Second)
+			mutated, err := p.config.AssetProcessingHook(ctx, processedPage)
+			cancel()
+			if err == nil && mutated != nil {
+				processedPage = mutated
+			}
+		}
 	}
 	resultURL := ""
-	if page != nil && page.URL != nil {
-		resultURL = page.URL.String()
+	if processedPage != nil && processedPage.URL != nil {
+		resultURL = processedPage.URL.String()
 	}
-	return &models.CrawlResult{URL: resultURL, Page: page, Success: true, Stage: "processing"}
+	return &models.CrawlResult{URL: resultURL, Page: processedPage, Success: true, Stage: "processing"}
 }
 func (p *Pipeline) sendErrorResult(u, stage, msg string, retry bool) {
 	result := &models.CrawlResult{URL: u, Error: models.NewCrawlError(u, stage, errors.New(msg)), Success: false, Stage: stage, Retry: retry}

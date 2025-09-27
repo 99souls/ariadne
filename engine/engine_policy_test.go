@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	engpipeline "github.com/99souls/ariadne/engine/pipeline"
+	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
 	telempolicy "github.com/99souls/ariadne/engine/telemetry/policy"
 )
 

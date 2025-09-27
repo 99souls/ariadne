@@ -35,6 +35,11 @@ ci: tidy vet test race
 snapshot:
 	$(GO) run . -seeds https://example.com -snapshot-interval 5s -checkpoint checkpoint.log | head -n 5
 
+api-report:
+	@echo "Generating API_REPORT.md" >&2
+	$(GO) run ./cmd/apireport -out API_REPORT.md
+	@echo "Done" >&2
+
 # Assert zero occurrences of removed legacy path
 legacy-imports:
 	@echo "Verifying legacy path 'ariadne/packages/engine' is absent" >&2
