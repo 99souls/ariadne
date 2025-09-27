@@ -90,7 +90,7 @@ Intent: Evaluate each for public necessity.
 | telemetry/health  | INT    | Expose only summarized status via facade Policy/Snapshot |
 | telemetry/policy  | TAG    | Experimental; subject to field renames                   |
 | telemetry/logging | INT    | Internal logging integration                             |
-| Package | Action | Notes                                                    |
+| Package           | Action | Notes                                                    |
 | ----------------- | ------ | -------------------------------------------------------- |
 | telemetry/metrics | TAG    | Provider selection API may churn                         |
 | telemetry/events  | INT    | Internal bus (no stable contract yet)                    |

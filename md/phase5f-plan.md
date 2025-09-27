@@ -283,6 +283,7 @@ Exit Criteria Addition (for root module removal path):
 ### Wave 3 – API Surface Audit & Pruning (COMPLETED)
 
 Summary of Achievements:
+
 1. Candidate list executed: stability annotations applied to engine facade, models, ratelimit, resources, strategies, and config packages.
 2. Consolidated strategy interfaces (`engine/strategies.go`) with allowlist enforcement.
 3. Added export allowlist guard tests for root engine, models, ratelimit, resources, and config packages.
@@ -292,8 +293,9 @@ Summary of Achievements:
 7. Root, pipeline, and other implementation packages internalized where planned in this wave (pipeline already internal; further internalization deferred to Wave 4).
 
 Outstanding (Deferred to Wave 4):
+
 - Potential internalization of `engine/resources` and selected runtime config / A/B testing types.
-- Telemetry package pruning & annotation pass (metrics/events/tracing final curation). 
+- Telemetry package pruning & annotation pass (metrics/events/tracing final curation).
 - CLI-facing adapter boundaries for health/metrics to ensure no leakage of internal telemetry packages.
 
 ### Wave 3.5 – Root Purge (Part 2) (PENDING)
@@ -497,6 +499,7 @@ Wave 3 Completion Delta:
 ### Wave 4 – CLI Module Bootstrapping & Further Internalization (PLANNING)
 
 Objectives:
+
 1. Deliver minimal usable CLI (`ariadne crawl`) consuming only curated engine API.
 2. Further shrink engine public surface: evaluate internalization of runtime config manager, A/B test framework, and resource manager (or relocate under `internal/` with facade accessors).
 3. Define & implement telemetry adapter boundary (HTTP metrics/health server lives outside engine core; ensure adapters only depend on stable telemetry interfaces).
@@ -518,6 +521,7 @@ Planned Tasks (Wave 4 Draft List):
 | W4-10 | Prepare pruning list v2 for Wave 5 (leftovers) | Planning | Input to version tagging |
 
 Exit Criteria for Wave 4:
+
 - CLI command functional with documented flags and snapshot output.
 - No CLI import of `engine/internal/*` (enforced by existing guard plus new test if needed).
 - Runtime config/A-B structures either internalized or explicitly justified to remain (annotated Experimental if remaining).
