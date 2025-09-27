@@ -1,7 +1,7 @@
 # Phase 5F Plan – Engine Module Extraction & CLI Enablement
 
-Status: Draft (Pending Approval)
-Date: 2025-09-27
+Status: In Progress (post unplanned big-bang merge of engine-migration)
+Date: 2025-09-27 (updated)
 Owner: Architecture / Core Engine
 
 ## 1. Executive Summary
@@ -18,7 +18,7 @@ Primary Outcomes:
 
 ## 2. Problem Statement
 
-Current state (post-Phase 5E):
+Current state (post-Phase 5E + ad-hoc full engine duplication merge):
 
 - `packages/engine` acts as a facade but still resides inside the monolithic `ariadne` module.
 - Business logic (crawler, processor, assets, pipeline, rate limiting, resources) already colocated under `packages/engine/`, reducing extraction friction.
@@ -134,24 +134,34 @@ Tasks:
 
 Exit Criteria: Plan approved; test failing (red) until modules exist.
 
-### Wave 1 – Module Skeleton
+### Wave 1 – Module Skeleton (Actual vs Plan)
 
-Tasks:
+Planned: Minimal move + stub/forwarders.
 
-- Move `packages/engine` → `engine/` (filesystem move only).
-- Create `engine/go.mod` with module path `github.com/99souls/ariadne/engine` (adjust to canonical repo path; placeholder if private).
-- Add `go.work` at repo root with `use ./engine` and root module (renamed or retained for CLI/dev tooling).
-- Run `go vet`, `go test ./...` inside engine module.
+Actual: Entire engine tree copied under `engine/` while original `packages/engine/` left intact (full duplication of business logic + tests). `engine/go.mod` created (canonical path `github.com/99souls/ariadne/engine`). `go.work` present. Import normalization incomplete (many files in `engine/` still import `ariadne/packages/engine/...`). No stub README or forwarder-only reduction yet.
 
-Risk Mitigation: Leave original `packages/engine` directory as stub with `README-MOVED.md` + forwarding build tags (very short-lived) for clarity.
+Implications:
+- Faster availability of isolated module path.
+- Elevated drift risk (two authoritative copies) until deduplication.
+- Larger immediate surface for API pruning work.
 
-### Wave 2 – Import Path Refactor
+Remediation (Wave 2A/2B):
+1. Decide authoritative source (`engine/`).
+2. Add `packages/engine/README-LEGACY.md` freeze notice.
+3. Normalize imports inside `engine/` to canonical module path only.
+4. Introduce grep-based CI guard that counts legacy path occurrences; enforce monotonic decline.
+5. Convert legacy tree to thin forwarders or remove once stability acceptable.
 
-Tasks:
+### Wave 2 – Import Path Refactor (Revised Split)
 
-- Update all internal repo imports from `ariadne/packages/engine/...` → `github.com/99souls/ariadne/engine/...`.
-- Introduce temporary forwarding aliases (one file per old path) using `// Deprecated: moved` + type/function re-exports (remove by Wave 5).
-- Ensure tests pass across workspace via `go.work` root invocation.
+Wave 2A (Normalization):
+- Rewrite imports inside `engine/` to drop `ariadne/packages/engine` references.
+- Add legacy path grep gate in CI / Makefile (`make legacy-imports`).
+
+Wave 2B (Forwarders & Dedup):
+- Replace bodies of `packages/engine` with forwarders OR delete if safe.
+- Remove duplicate tests to reduce runtime (keep engine/ versions).
+- Validate `go test ./...` parity post-prune.
 
 ### Wave 2.5 – Root Purge (Part 1)
 
@@ -338,14 +348,17 @@ Key Changes:
 | Config layering  | Single struct vs layered            | Single authoritative struct       | Prevent drift                                     |
 | Version baseline | v0.5.0 vs v0.1.0                    | v0.5.0                            | Reflect maturity while signaling pre-stable       |
 
-## 15. Next Immediate Actions (Post-Approval Checklist)
+## 15. Next Immediate Actions (Updated After Big-Bang Merge)
 
-1. Create `go.work` + initialize `engine/go.mod` (Wave 1)
-2. Filesystem move & root import refactor (Waves 1–2)
-3. Add forwarders + update tests (Wave 2)
-4. API audit & internalization (Wave 3)
-5. Bootstrap CLI module + minimal command (Wave 4)
-6. Remove forwarders & tag baseline (Waves 5–6)
+1. Wave 2A: Normalize `engine/` internal imports (zero references to `ariadne/packages/engine`).
+2. Add `packages/engine/README-LEGACY.md` clarifying freeze & upcoming removal.
+3. Add Make target + script `legacy-imports` to count legacy path occurrences.
+4. Wave 2B: Convert / remove duplicated legacy packages (start with telemetry & pipeline to cut test duplication).
+5. Relocate root `main.go` (RP1) into future CLI scaffold (even minimal placeholder) to start root purge.
+6. Draft API pruning candidate list (prep for Wave 3 internalization).
+7. Add CI guard (grep) failing if legacy import count increases.
+
+Gate to enter Wave 3: engine internally clean + legacy tree reduced to forwarders only (or removed) + root main relocated.
 
 ---
 
