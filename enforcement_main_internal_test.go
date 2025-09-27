@@ -10,12 +10,13 @@ import (
 // any internal implementation packages. This guards the architectural boundary
 // established in P5 and formalized in P6.
 func TestNoInternalImports(t *testing.T) {
-    data, err := os.ReadFile("main.go")
+    path := "cli/cmd/ariadne/main.go"
+    data, err := os.ReadFile(path)
     if err != nil {
-        t.Fatalf("read main.go: %v", err)
+        t.Fatalf("read %s: %v", path, err)
     }
     content := string(data)
-    if strings.Contains(content, "\"ariadne/internal/") {
-        t.Fatalf("main.go imports internal/*; migrate to engine facade only")
+    if strings.Contains(content, "\t\"github.com/99souls/ariadne/engine/internal/") || strings.Contains(content, "\t\"ariadne/internal/") {
+        t.Fatalf("%s imports internal/* packages; CLI must only use public engine API", path)
     }
 }
