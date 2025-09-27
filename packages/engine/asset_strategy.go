@@ -159,9 +159,13 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 	var refs []AssetRef
 	seen := make(map[string]struct{})
 	add := func(r AssetRef) {
-		if r.URL == "" { return }
+		if r.URL == "" {
+			return
+		}
 		key := r.Type + "|" + r.URL
-		if _, ok := seen[key]; ok { return }
+		if _, ok := seen[key]; ok {
+			return
+		}
 		seen[key] = struct{}{}
 		refs = append(refs, r)
 	}
@@ -206,12 +210,18 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 	// <source srcset> inside <picture> or media elements (treat like img)
 	doc.Find("source[srcset]").Each(func(_ int, sel *goquery.Selection) {
 		v, _ := sel.Attr("srcset")
-		if v == "" { return }
+		if v == "" {
+			return
+		}
 		first := strings.TrimSpace(strings.Split(v, ",")[0])
 		parts := strings.Fields(first)
-		if len(parts) > 0 { first = parts[0] }
+		if len(parts) > 0 {
+			first = parts[0]
+		}
 		abs := resolve(first)
-		if abs == "" { return }
+		if abs == "" {
+			return
+		}
 		add(AssetRef{URL: abs, Type: "img", Attr: "srcset", Original: first})
 	})
 	// video/audio sources
@@ -240,18 +250,26 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 	// Preload hints: map underlying type via 'as'
 	doc.Find("link[rel='preload'][as][href]").Each(func(_ int, sel *goquery.Selection) {
 		v, _ := sel.Attr("href")
-		if v == "" { return }
+		if v == "" {
+			return
+		}
 		asVal, _ := sel.Attr("as")
 		asVal = strings.ToLower(asVal)
 		var t string
 		switch asVal {
-		case "image": t = "img"
-		case "script": t = "script"
-		case "style", "stylesheet": t = "stylesheet"
-		default: return
+		case "image":
+			t = "img"
+		case "script":
+			t = "script"
+		case "style", "stylesheet":
+			t = "stylesheet"
+		default:
+			return
 		}
 		abs := resolve(v)
-		if abs == "" { return }
+		if abs == "" {
+			return
+		}
 		add(AssetRef{URL: abs, Type: t, Attr: "href", Original: v})
 	})
 	doc.Find("script[src]").Each(func(_ int, sel *goquery.Selection) {
@@ -268,13 +286,17 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 	// Document assets via anchors (pdf/doc* etc.) – discovery only (policy may skip)
 	doc.Find("a[href]").Each(func(_ int, sel *goquery.Selection) {
 		v, _ := sel.Attr("href")
-		if v == "" { return }
+		if v == "" {
+			return
+		}
 		lower := strings.ToLower(v)
-		if !(strings.HasSuffix(lower, ".pdf") || strings.HasSuffix(lower, ".doc") || strings.HasSuffix(lower, ".docx") || strings.HasSuffix(lower, ".ppt") || strings.HasSuffix(lower, ".pptx") || strings.HasSuffix(lower, ".xls") || strings.HasSuffix(lower, ".xlsx")) {
+		if !isDocLike(lower) {
 			return
 		}
 		abs := resolve(v)
-		if abs == "" { return }
+		if abs == "" {
+			return
+		}
 		add(AssetRef{URL: abs, Type: "doc", Attr: "href", Original: v})
 	})
 	if s.metrics != nil {
@@ -553,6 +575,18 @@ func collapseSpaces(in []byte) []byte {
 		b.WriteRune(r)
 	}
 	return []byte(b.String())
+}
+
+// isDocLike returns true if the URL (lower-cased) ends with a recognized document extension.
+// Extracted to simplify conditional logic (lint: De Morgan's law suggestion).
+func isDocLike(lower string) bool {
+	return strings.HasSuffix(lower, ".pdf") ||
+		strings.HasSuffix(lower, ".doc") ||
+		strings.HasSuffix(lower, ".docx") ||
+		strings.HasSuffix(lower, ".ppt") ||
+		strings.HasSuffix(lower, ".pptx") ||
+		strings.HasSuffix(lower, ".xls") ||
+		strings.HasSuffix(lower, ".xlsx")
 }
 
 // --- Internal fetch layer (Iteration 4 testability enhancement) ---
