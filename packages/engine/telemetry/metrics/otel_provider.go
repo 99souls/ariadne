@@ -33,7 +33,7 @@ func NewOTelProvider(opts OTelProviderOptions) Provider {
 	if limit <= 0 {
 		limit = 100
 	}
-	warnCtr, _ := meter.Float64Counter("ariadne.internal.cardinality_exceeded.total", metric.WithDescription("count of metrics whose label cardinality exceeded limit"))
+	warnCtr, _ := meter.Float64Counter("ariadne.internal.cardinality_exceeded.total", metric.WithDescription("count of metrics whose label cardinality exceeded limit (mirrors Prometheus counter)"))
 	return &otelProvider{mp: mp, meter: meter, cardLimit: limit, cardinality: make(map[string]map[string]struct{}), exceededOnce: make(map[string]struct{}), warnCounter: warnCtr}
 }
 
