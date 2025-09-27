@@ -87,21 +87,15 @@ func TestAssetInstrumentationAndDeterminism(t *testing.T) {
 	// Collect events
 	events := eng.AssetEvents()
 	downloads := 0
-	optimizes := 0
 	for _, ev := range events {
 		if ev.Type == "asset_download" {
 			downloads++
-		}
-		if ev.Type == "asset_optimize" {
-			optimizes++
 		}
 	}
 	if downloads != 3 {
 		t.Errorf("expected 3 download events, got %d", downloads)
 	}
-	if optimizes != 3 {
-		t.Errorf("expected 3 optimize events, got %d", optimizes)
-	}
+	// Optimization events are now coalesced into download events (Optimizations field present)
 
 	// Determinism: run again on a fresh clone of original page
 	page2 := &engmodels.Page{URL: u, Content: html, Title: "Test"}

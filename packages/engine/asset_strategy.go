@@ -92,6 +92,7 @@ type AssetMetrics struct {
 	selected        int64
 	skipped         int64
 	downloaded      int64
+	failed          int64 // Iteration 7 part 2: failed download attempts
 	inlined         int64
 	optimized       int64
 	bytesIn         int64
@@ -105,6 +106,7 @@ type AssetMetricsSnapshot struct {
 	Selected        int64
 	Skipped         int64
 	Downloaded      int64
+	Failed          int64
 	Inlined         int64
 	Optimized       int64
 	BytesIn         int64
@@ -121,6 +123,7 @@ func (m *AssetMetrics) snapshot() AssetMetricsSnapshot {
 		Selected:        atomic.LoadInt64(&m.selected),
 		Skipped:         atomic.LoadInt64(&m.skipped),
 		Downloaded:      atomic.LoadInt64(&m.downloaded),
+		Failed:          atomic.LoadInt64(&m.failed),
 		Inlined:         atomic.LoadInt64(&m.inlined),
 		Optimized:       atomic.LoadInt64(&m.optimized),
 		BytesIn:         atomic.LoadInt64(&m.bytesIn),
@@ -176,22 +179,32 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 	// Iteration 7: parse srcset (choose first URL for now; future: multiple variants)
 	doc.Find("img[srcset]").Each(func(_ int, sel *goquery.Selection) {
 		v, _ := sel.Attr("srcset")
-		if v == "" { return }
+		if v == "" {
+			return
+		}
 		// pick first candidate before comma
 		first := strings.TrimSpace(strings.Split(v, ",")[0])
 		// remove descriptor (e.g., '1x' or '480w')
 		parts := strings.Fields(first)
-		if len(parts) > 0 { first = parts[0] }
+		if len(parts) > 0 {
+			first = parts[0]
+		}
 		abs := resolve(first)
-		if abs == "" { return }
+		if abs == "" {
+			return
+		}
 		refs = append(refs, AssetRef{URL: abs, Type: "img", Attr: "srcset", Original: first})
 	})
 	// video/audio sources
 	doc.Find("video source[src], audio source[src]").Each(func(_ int, sel *goquery.Selection) {
 		v, _ := sel.Attr("src")
-		if v == "" { return }
+		if v == "" {
+			return
+		}
 		abs := resolve(v)
-		if abs == "" { return }
+		if abs == "" {
+			return
+		}
 		refs = append(refs, AssetRef{URL: abs, Type: "media", Attr: "src", Original: v})
 	})
 	doc.Find("link[rel='stylesheet'][href]").Each(func(_ int, sel *goquery.Selection) {
@@ -264,75 +277,114 @@ func (s *DefaultAssetStrategy) Decide(ctx context.Context, refs []AssetRef, poli
 		atomic.AddInt64(&s.metrics.selected, int64(len(actions)))
 		atomic.AddInt64(&s.metrics.skipped, int64(skipped))
 		inlineCount := int64(0)
-		for _, a := range actions { if a.Mode == AssetModeInline { inlineCount++ } }
-		if inlineCount > 0 { atomic.AddInt64(&s.metrics.inlined, inlineCount) }
+		for _, a := range actions {
+			if a.Mode == AssetModeInline {
+				inlineCount++
+			}
+		}
+		if inlineCount > 0 {
+			atomic.AddInt64(&s.metrics.inlined, inlineCount)
+		}
 	}
 	return actions, nil
 }
 func (s *DefaultAssetStrategy) Execute(ctx context.Context, actions []AssetAction, policy AssetPolicy) ([]MaterializedAsset, error) {
-	if !policy.Enabled || len(actions) == 0 {
-		return nil, nil
-	}
-	// Filter applicable actions first
-	filtered := make([]AssetAction, 0, len(actions))
-	for _, a := range actions { if a.Mode == AssetModeDownload || a.Mode == AssetModeInline { filtered = append(filtered, a) } }
-	if len(filtered) == 0 { return nil, nil }
-	workerCount := policy.MaxConcurrent
-	if workerCount <= 0 { workerCount = runtime.NumCPU(); if workerCount > 8 { workerCount = 8 } }
-	if workerCount > len(filtered) { workerCount = len(filtered) }
+    if !policy.Enabled || len(actions) == 0 {
+        return nil, nil
+    }
+    // Filter to executable actions
+    filtered := make([]AssetAction, 0, len(actions))
+    for _, a := range actions {
+        if a.Mode == AssetModeDownload || a.Mode == AssetModeInline {
+            filtered = append(filtered, a)
+        }
+    }
+    if len(filtered) == 0 {
+        return nil, nil
+    }
 
-	type result struct { m MaterializedAsset; err error; bytes int }
-	jobs := make(chan AssetAction)
-	resCh := make(chan result, len(filtered))
-	var wg sync.WaitGroup
-	var totalBytes int64
+    workerCount := policy.MaxConcurrent
+    if workerCount <= 0 {
+        workerCount = runtime.NumCPU()
+        if workerCount > 8 { // conservative cap
+            workerCount = 8
+        }
+    }
+    if workerCount > len(filtered) {
+        workerCount = len(filtered)
+    }
 
-	worker := func() {
-		defer wg.Done()
-		for a := range jobs {
-			if policy.MaxBytes > 0 && atomic.LoadInt64(&totalBytes) >= policy.MaxBytes { continue }
-			capRemaining := int64(0)
-			if policy.MaxBytes > 0 { capRemaining = policy.MaxBytes - atomic.LoadInt64(&totalBytes) }
-			start := time.Now()
-			b, err := fetchAsset(ctx, a.Ref.URL, capRemaining)
-			if err != nil {
-				if s.events != nil { s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "execute", URL: a.Ref.URL, Error: err.Error()}) }
-				continue
-			}
-			// update total first for cap enforcement
-			atomic.AddInt64(&totalBytes, int64(len(b)))
-			optim := []string{}
-			if policy.Optimize {
-				b2, applied := optimizeBytes(a.Ref.Type, b)
-				if len(applied) > 0 { b = b2; optim = applied }
-			}
-			hash := hashBytesHex(b)
-			path := computeAssetPath(policy.RewritePrefix, hash, a.Ref.URL)
-			ma := MaterializedAsset{Ref: a.Ref, Bytes: b, Hash: hash, Path: path, Size: len(b), Optimizations: optim}
-			if s.metrics != nil {
-				atomic.AddInt64(&s.metrics.downloaded, 1)
-				if len(optim) > 0 { atomic.AddInt64(&s.metrics.optimized, 1) }
-				atomic.AddInt64(&s.metrics.bytesIn, int64(len(b)))
-				atomic.AddInt64(&s.metrics.bytesOut, int64(len(b)))
-			}
-			if s.events != nil {
-				s.events.Publish(AssetEvent{Type: "asset_download", Stage: "execute", URL: a.Ref.URL, BytesIn: len(b), BytesOut: len(b), Duration: time.Since(start), Optimizations: optim})
-				if len(optim) > 0 { s.events.Publish(AssetEvent{Type: "asset_optimize", Stage: "execute", URL: a.Ref.URL, BytesIn: len(b), BytesOut: len(b), Duration: time.Since(start), Optimizations: optim}) }
-			}
-			resCh <- result{m: ma, bytes: len(b)}
-		}
-	}
+    jobs := make(chan AssetAction)
+    results := make(chan MaterializedAsset, len(filtered))
+    var wg sync.WaitGroup
+    var totalBytes int64 // cumulative pre-optimization bytes fetched
 
-	wg.Add(workerCount)
-	for i := 0; i < workerCount; i++ { go worker() }
-	for _, a := range filtered { jobs <- a }
-	close(jobs)
-	wg.Wait()
-	close(resCh)
+    worker := func() {
+        defer wg.Done()
+        for a := range jobs {
+            if ctx.Err() != nil { // context cancelled
+                return
+            }
+            if policy.MaxBytes > 0 && atomic.LoadInt64(&totalBytes) >= policy.MaxBytes {
+                continue
+            }
+            var capRemaining int64
+            if policy.MaxBytes > 0 {
+                capRemaining = policy.MaxBytes - atomic.LoadInt64(&totalBytes)
+                if capRemaining <= 0 {
+                    continue
+                }
+            }
+            start := time.Now()
+            b, err := fetchAsset(ctx, a.Ref.URL, capRemaining)
+            if err != nil {
+                if s.metrics != nil { atomic.AddInt64(&s.metrics.failed, 1) }
+                if s.events != nil {
+                    s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "execute", URL: a.Ref.URL, Error: err.Error()})
+                }
+                continue
+            }
+            preLen := len(b)
+            // account toward total cap
+            atomic.AddInt64(&totalBytes, int64(preLen))
 
-	assets := make([]MaterializedAsset, 0, len(filtered))
-	for r := range resCh { assets = append(assets, r.m) }
-	return assets, nil
+            optimizations := []string{}
+            if policy.Optimize {
+                b2, applied := optimizeBytes(a.Ref.Type, b)
+                if len(applied) > 0 {
+                    optimizations = applied
+                    b = b2
+                }
+            }
+            postLen := len(b)
+
+            hash := hashBytesHex(b)
+            path := computeAssetPath(policy.RewritePrefix, hash, a.Ref.URL)
+            ma := MaterializedAsset{Ref: a.Ref, Bytes: b, Hash: hash, Path: path, Size: postLen, Optimizations: optimizations}
+
+            if s.metrics != nil {
+                atomic.AddInt64(&s.metrics.downloaded, 1)
+                if len(optimizations) > 0 { atomic.AddInt64(&s.metrics.optimized, 1) }
+                atomic.AddInt64(&s.metrics.bytesIn, int64(preLen))
+                atomic.AddInt64(&s.metrics.bytesOut, int64(postLen))
+            }
+            if s.events != nil {
+                s.events.Publish(AssetEvent{Type: "asset_download", Stage: "execute", URL: a.Ref.URL, BytesIn: preLen, BytesOut: postLen, Duration: time.Since(start), Optimizations: optimizations})
+            }
+            results <- ma
+        }
+    }
+
+    wg.Add(workerCount)
+    for i := 0; i < workerCount; i++ { go worker() }
+    for _, a := range filtered { jobs <- a }
+    close(jobs)
+    wg.Wait()
+    close(results)
+
+    assets := make([]MaterializedAsset, 0, len(filtered))
+    for m := range results { assets = append(assets, m) }
+    return assets, nil
 }
 func (s *DefaultAssetStrategy) Rewrite(ctx context.Context, page *engmodels.Page, assets []MaterializedAsset, policy AssetPolicy) (*engmodels.Page, error) {
 	if page == nil || len(assets) == 0 || !policy.Enabled {
