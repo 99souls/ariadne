@@ -1,7 +1,7 @@
 # Phase 5D Plan: Asset Strategy Integration
 
-Status: Draft (Pending Approval)
-Date: September 27, 2025
+Status: In Progress (Iterations 1–6 complete; Iterations 7–8 pending)
+Date: September 27, 2025 (Last Updated after Iteration 6 instrumentation & determinism test)
 Related Analysis: See `phase5-engine-architecture-analysis.md` (Section Phase 5D)
 Preceding Phase: 5C (Processor Migration & Config Platform Enhancements) — COMPLETE
 
@@ -43,36 +43,47 @@ Non-Goals (Explicit Deferrals):
 
 - Test Coverage: ≥ 85% for new asset subsystem (unit + integration) / overall engine package coverage not reduced below prior baseline.
 - Concurrency Safety: Race detector clean across modified packages.
-- Observability: Metrics + events available and validated via tests.
-- Backwards Compatibility: No changes required in CLI or existing engine public APIs beyond additive config fields.
-- Determinism: Same input corpus yields identical asset rewrite outputs across runs (hash naming + ordering tests).
+- Observability: Metrics + events available and validated via tests. (Partially Complete: basic counters + in-memory events implemented & tested.)
+- Explicit Breaking Change: Legacy `internal/assets` subsystem removed. Consumers must adopt the new policy-driven strategy (major version shift expectation).
+- Determinism: Same input corpus yields identical asset rewrite outputs across runs (hash naming + ordering tests) — Validated by integration test.
 
-### 2.3 Exit Criteria Checklist
+### 2.3 Backward Compatibility Stance (Directive)
 
-- [ ] Interface + default implementation merged
-- [ ] Config surface wired + validated
-- [ ] Processor refactored to delegate asset path
-- [ ] Tests (unit, integration, determinism) green
-- [ ] Metrics & events instrumentation verified
-- [ ] Performance sanity benchmark recorded
-- [ ] Documentation updated (API, operations, architecture progress)
-- [ ] Phase 5D completion note committed
+Phase 5D introduces a deliberate, non-backward-compatible replacement of the legacy asset pipeline:
+
+- The previous `internal/assets` package was removed in Iteration 5 (no soft deprecation window on this feature branch).
+- Upgrade Path: Consumers enable `AssetPolicy.Enabled` and rely on deterministic hashed paths + rewrite semantics; no legacy shim will be provided.
+- Rationale: Legacy implementation was incomplete, not directionally aligned, and created maintenance drag; early removal reduces migration cost over time.
+- Communication: Mark release notes prominently as "Breaking: Asset subsystem replaced"; provide before/after config mapping in docs (to be added in Iteration 8 docs pass).
+
+### 2.4 Exit Criteria Checklist (Progress)
+
+- [x] Interface + default implementation merged (Iterations 1–4)
+- [x] Config surface wired + validated (Iteration 1 + validation tests)
+- [x] Processor/pipeline refactored to delegate asset path (Iteration 5 hook integration)
+- [x] Tests (unit, integration, determinism) green (Deterministic rewrite + instrumentation test added)
+- [x] Metrics & events instrumentation (baseline counters + events & tests)
+- [ ] Performance sanity benchmark recorded (Planned Iteration 7)
+- [ ] Race detector & concurrency validation (Planned Iteration 7)
+- [ ] Documentation updated (API, operations, architecture progress) (Planned Iteration 8)
+- [ ] Phase 5D completion note committed (Iteration 8)
 
 ---
 
 ## 3. Scope Decomposition & Workstreams
 
-| Workstream            | Description                                                   | Outputs                                       |
-| --------------------- | ------------------------------------------------------------- | --------------------------------------------- |
-| Interface Design      | Define `AssetStrategy` contract + data models                 | `asset_strategy.go`, docs section             |
-| Extraction & Shim     | Move logic from `internal/assets`; add shim adapter layer     | `default_strategy.go`, transitional adapter   |
-| Config Integration    | Extend `engine.Config` with `AssetPolicy` struct + validation | `config.go` changes, `validation` tests       |
-| Processor Refactor    | Remove embedded asset logic; inject strategy                  | Modified `processor` package + tests          |
-| Observability         | Metrics counters + events types                               | `metrics.go` additions, `events.go` additions |
-| Determinism & Hashing | Stable naming + mapping tables                                | Hashing helper, determinism tests             |
-| Testing Matrix        | Unit, integration, concurrency, rollback scenarios            | New `_test.go` files                          |
-| Documentation         | API doc, operations guide, progress log updates               | `phase5d-progress.md`, API & ops diffs        |
-| Benchmark             | Baseline before/after micro-benchmark script                  | `asset_benchmark_test.go`                     |
+| Workstream            | Description                                                        | Outputs / Status                                                |
+| --------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Interface Design      | Define `AssetStrategy` contract + data models                      | Implemented (`asset_strategy.go`)                               |
+| Extraction (Direct)   | Build discovery/decision/execute without legacy shim               | Implemented (legacy code removed; no adapter retained)          |
+| Config Integration    | Extend `engine.Config` with `AssetPolicy` + validation             | Implemented & tested                                            |
+| Pipeline Refactor     | Introduce hook & remove legacy pipeline                            | Implemented (Iteration 5)                                       |
+| Observability         | Metrics counters + events types + tests                            | Baseline implemented (Iteration 6); exporter TBD                |
+| Determinism & Hashing | Stable naming + path scheme + tests                                | Implemented & validated                                         |
+| Concurrency & Perf    | Parallel Execute, worker pool, baseline benchmark                  | Pending (Iteration 7)                                           |
+| Extended Discovery    | srcset, media, docs (parity backlog)                               | Pending (Iteration 7+)                                          |
+| Documentation         | API doc, operations guide, migration & progress log                | Pending (Iteration 8)                                           |
+| Benchmark             | Before/after micro-benchmark script                                | Pending (Iteration 7)                                           |
 
 ---
 
@@ -137,11 +148,16 @@ type AssetPolicy struct {
 
 ### 4.4 Concurrency Model
 
-- Page-level handling executed per processed page, but per-page strategy ensures internal ordering.
-- Asset downloads performed with bounded worker pool (policy-driven: default = min(4, GOMAXPROCS)).
-- Avoid global shared mutable state beyond metrics counters.
+Current (Iterations 1–6):
+- Execute stage runs serially per page (simplifies determinism + early correctness).
 
-### 4.5 Metrics (Additions)
+Planned (Iteration 7):
+- Introduce bounded worker pool (default size: min(4, GOMAXPROCS); configurable future `AssetPolicy.MaxConcurrent`).
+- Maintain deterministic final rewrite ordering by sorting materialized assets by hash (already in place).
+- Aggregate errors; non-fatal failures produce events and skip specific assets only.
+- Metrics updated atomically for parallel downloads (may refactor counters to atomic operations if contention observed).
+
+### 4.5 Metrics (Implemented Baseline / Additions)
 
 | Metric                       | Type    | Description                   |
 | ---------------------------- | ------- | ----------------------------- |
@@ -155,7 +171,12 @@ type AssetPolicy struct {
 | asset_bytes_out_total        | counter | Bytes after optimization      |
 | asset_rewrite_failures_total | counter | Rewrite errors                |
 
-### 4.6 Events (Additions)
+Implementation Notes:
+- Current counters stored in `AssetMetrics`; snapshot exposed via `Engine.AssetMetricsSnapshot()`.
+- Events stored in bounded in-memory ring (cap 1024) via `Engine.AssetEvents()` — future exporter hook slated for Phase 5E or monitoring layer.
+- Optimization currently reports an event per optimized asset (css/js whitespace collapse, svg meta tag placeholder).
+
+### 4.6 Events (Implemented)
 
 - `asset_stage_error` (stage, error)
 - `asset_download` (url, bytes, duration)
@@ -167,10 +188,14 @@ type AssetPolicy struct {
 - Single asset failure does not abort page unless policy has `FailFast=true` (future extension; not in initial scope).
 - Partial success: rewrite only successful assets; emit event for failures.
 
-### 4.8 Backwards Compatibility Strategy
+### 4.8 Backwards Compatibility Strategy (Superseded)
 
-- Processor will invoke strategy if `policy.Enabled` else skip, preserving legacy behavior (no asset transformation).
-- Legacy fields in internal processor deprecated with TODO markers -> removed in Phase 5E or earlier cleanup.
+Original strategy (graceful coexistence) has been replaced by a hard cut-over:
+
+- Legacy `internal/assets` package deleted in Iteration 5.
+- No transitional adapter: existing users must enable `AssetPolicy` or accept no asset rewriting (if disabled).
+- Major version release will highlight this; semantic version bump required.
+- Future compatibility mitigation: Provide migration doc mapping old conceptual stages (discovery → download → optimize → rewrite) to new API calls & metrics.
 
 ---
 
@@ -193,27 +218,29 @@ Synthetic fixtures placed under `packages/engine/testdata/assets/`.
 
 ## 6. Iteration Plan (Agile Breakdown)
 
-| Iteration | Scope                                                      | Deliverables                                                |
+| Iteration | Scope                                                      | Deliverables (Status)                                       |
 | --------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
-| 1         | Interface + policy structs + docs stub                     | `asset_strategy.go`, config additions, skeletal tests       |
-| 2         | Extraction of discovery + basic download (no optimization) | Default strategy (discover, decide=all download) tests pass |
-| 3         | Policy decision matrix (allow/block, limits, inline)       | Decision tests, updated integration test                    |
-| 4         | Optimization hook + hashing + deterministic path           | Hashing helper, path tests, optimization stub               |
-| 5         | Rewrite stage + processor delegation removal               | Processor refactor, determinism tests pass                  |
-| 6         | Metrics + events instrumentation                           | Observability tests                                         |
-| 7         | Edge cases + concurrency + performance baseline            | Bench + race detector clean                                 |
-| 8         | Documentation + polish + deprecation markers               | Updated docs, progress log, completion checklist            |
+| 1         | Interface + policy structs + docs stub                     | Strategy + config defaults (Complete)                       |
+| 2         | Discovery + basic execute                                  | Serial discovery/execute tests (Complete)                   |
+| 3         | Policy decision matrix (allow/block, limits, inline)       | Decision + limit tests (Complete)                           |
+| 4         | Optimization hook + hashing + deterministic path           | Path + optimization tests (Complete)                        |
+| 5         | Rewrite stage + processor delegation removal               | Hook integration, legacy removal (Complete)                 |
+| 6         | Metrics + events instrumentation                           | Counters + events + tests (Complete)                        |
+| 7         | Concurrency + extended discovery + performance baseline    | Worker pool, srcset/media/docs, benchmark (Pending)         |
+| 8         | Documentation + polish + release checklist                 | Docs, migration guide, completion note (Pending)            |
 
 ---
 
 ## 7. Risk Register (Phase-Specific)
 
-| Risk                                         | Likelihood | Impact | Mitigation                                              |
-| -------------------------------------------- | ---------- | ------ | ------------------------------------------------------- |
-| Hidden coupling in processor to asset fields | Medium     | High   | Incremental refactor w/ adapter shim first              |
-| Performance regression from hashing / I/O    | Medium     | Medium | Batch hashing, streaming download, benchmark early      |
-| Configuration overload                       | Low        | Medium | Provide defaults; only expose critical fields initially |
-| Determinism flakiness (timestamp, ordering)  | Low        | Medium | Avoid time-based names, stable sort inputs              |
+| Risk                                          | Likelihood | Impact | Mitigation                                                     |
+| --------------------------------------------- | ---------- | ------ | -------------------------------------------------------------- |
+| Hidden coupling in processor to asset fields  | Medium     | High   | Early integration hook + full legacy removal (resolved)       |
+| Performance regression from hashing / I/O     | Medium     | Medium | Benchmark in Iteration 7; introduce concurrency & pooling     |
+| Configuration overload                        | Low        | Medium | Minimal policy fields; defer advanced knobs                  |
+| Determinism flakiness (timestamp, ordering)   | Low        | Medium | Stable hash ordering & deterministic tests (validated)        |
+| Event buffer growth / memory pressure         | Low        | Low    | Bounded event slice (cap 1024); future exporter offload       |
+| Parallel metrics race (future concurrency)    | Medium     | Medium | Adopt atomic increments; add race tests in Iteration 7        |
 
 ---
 
@@ -225,13 +252,15 @@ Synthetic fixtures placed under `packages/engine/testdata/assets/`.
 
 ---
 
-## 9. Completion Deliverables
+## 9. Completion Deliverables (Updated)
 
-- Merged code (interfaces + default strategy + refactored processor)
-- Added + updated tests (unit, integration, determinism, concurrency)
-- Updated docs (architecture, API, ops, progress)
-- Performance benchmark delta documented (before/after table)
-- Phase 5D completion note appended to progress log
+- Merged code (interfaces + default strategy + refactored pipeline) – Done
+- Added + updated tests (unit, integration, determinism, instrumentation) – Done (concurrency pending)
+- Extended discovery parity (srcset/media/doc assets) – Pending
+- Performance benchmark delta documented (before/after table) – Pending
+- Race detector clean report – Pending
+- Updated docs (architecture, API, migration, ops, progress) – Pending
+- Phase 5D completion note appended to progress log – Pending
 
 ---
 
