@@ -1,5 +1,7 @@
 go 1.25.1
 
-use ./
 use ./engine
+
 use ./cli
+
+use ./tools/apireport

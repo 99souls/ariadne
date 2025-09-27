@@ -1,23 +1,33 @@
 # Makefile for ariadne
 
 GO ?= go
-PKGS := ./...
+
+# Explicit module directories (root has no go.mod)
+MODULES := engine cli tools/apireport
+ENGINE_MOD := engine
+CLI_MOD := cli
+TOOLS_APIREPORT := tools/apireport
 
 .PHONY: all build test race cover lint tidy vet ci snapshot
 
 all: build
 
 build:
-	$(GO) build ./...
+	@for m in $(MODULES); do echo "==> build $$m"; (cd $$m && $(GO) build ./... ) || exit 1; done
 
 test:
-	$(GO) test $(PKGS)
+	@for m in $(MODULES); do echo "==> test $$m"; (cd $$m && $(GO) test ./... ) || exit 1; done
 
 race:
-	$(GO) test -race $(PKGS)
+	@for m in $(MODULES); do echo "==> race $$m"; (cd $$m && $(GO) test -race ./... ) || exit 1; done
 
 cover:
-	$(GO) test -cover -coverprofile=coverage.out $(PKGS)
+	@rm -f coverage.out
+	@for m in $(MODULES); do \
+		echo "==> cover $$m"; \
+		(cd $$m && $(GO) test -coverprofile=coverage.tmp -cover ./... ) || exit 1; \
+		cat $$m/coverage.tmp >> coverage.out; rm $$m/coverage.tmp; \
+	done; \
 	$(GO) tool cover -func=coverage.out | tail -n 1
 
 lint:
@@ -25,19 +35,19 @@ lint:
 	golangci-lint run ./...
 
 vet:
-	$(GO) vet $(PKGS)
+	@for m in $(MODULES); do echo "==> vet $$m"; (cd $$m && $(GO) vet ./... ) || exit 1; done
 
 tidy:
-	$(GO) mod tidy
+	@for m in $(MODULES); do echo "==> tidy $$m"; (cd $$m && $(GO) mod tidy ) || exit 1; done
 
 ci: tidy vet test race
 
 snapshot:
-	$(GO) run . -seeds https://example.com -snapshot-interval 5s -checkpoint checkpoint.log | head -n 5
+	cd $(CLI_MOD) && $(GO) run ./cmd/ariadne -seeds https://example.com -snapshot-interval 5s -checkpoint checkpoint.log | head -n 5
 
 api-report:
 	@echo "Generating API_REPORT.md" >&2
-	$(GO) run ./cmd/apireport -out API_REPORT.md
+	$(GO) run ./tools/apireport -out API_REPORT.md
 	@echo "Done" >&2
 
 # Assert zero occurrences of removed legacy path

@@ -28,7 +28,7 @@ func TestCrawlerBasic(t *testing.T) {
 	cfg.AllowedDomains = []string{u.Host}
 	cfg.MaxPages = 2
 	cfg.RequestDelay = 5 * time.Millisecond
-	c := New(&cfg)
+	c := New(cfg)
 	if err := c.Start(cfg.StartURL); err != nil {
 		t.Fatalf("start: %v", err)
 	}

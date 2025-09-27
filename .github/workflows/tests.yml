@@ -32,17 +32,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Download dependencies
-        run: go mod download
+      - name: Workspace sync
+        run: go work sync
 
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Build
-        run: go build -v ./...
+      - name: Build modules
+        run: |
+          for m in engine cli tools/apireport; do
+            echo "==> build $m";
+            (cd $m && go build ./... ) || exit 1;
+          done
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out ./...
+        run: |
+          set -e
+          rm -f coverage.out
+            for m in engine cli tools/apireport; do
+              echo "==> test $m";
+              (cd $m && go test -race -coverprofile=coverage.tmp ./... );
+              cat $m/coverage.tmp >> coverage.out; rm $m/coverage.tmp;
+            done
 
       - name: Check test coverage
         run: |
@@ -62,7 +70,7 @@ jobs:
         run: |
           echo "Regenerating API report and checking for drift..."
           cp API_REPORT.md /tmp/API_REPORT.prev
-          go run ./cmd/apireport -out API_REPORT.md
+          go run ./tools/apireport -out API_REPORT.md
           if ! diff -u /tmp/API_REPORT.prev API_REPORT.md; then
             echo "❌ API_REPORT.md is out of date. Run 'make api-report' and commit the changes." >&2
             exit 1

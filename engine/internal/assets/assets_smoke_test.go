@@ -1,5 +1,4 @@
 package assets
-package assets
 
 import "testing"
 

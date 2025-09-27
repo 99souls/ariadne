@@ -25,8 +25,19 @@ jobs:
       - name: Clear Go mod cache
         run: go clean -modcache
 
-      - name: Build
-        run: go build -v ./...
+      - name: Workspace sync
+        run: go work sync
 
-      - name: Test
-        run: go test -v ./...
+      - name: Build modules
+        run: |
+          for m in engine cli tools/apireport; do
+            echo "==> build $m";
+            (cd $m && go build ./... ) || exit 1;
+          done
+
+      - name: Test modules
+        run: |
+          for m in engine cli tools/apireport; do
+            echo "==> test $m";
+            (cd $m && go test ./... ) || exit 1;
+          done
