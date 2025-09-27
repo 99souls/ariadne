@@ -7,24 +7,21 @@ import (
 	"strings"
 	"time"
 
-	"ariadne/internal/processor"
+	// TODO(phase5f-wave3): Reintroduce legacy processor bridging within engine/internal without cross-module import.
+	// Previously used "ariadne/internal/processor"; now temporarily no-op.
 	"ariadne/packages/engine/models"
 )
 
 // CompatibilityAdapter bridges the new Processor interface with existing internal processor
 type CompatibilityAdapter struct {
-	contentProcessor *processor.ContentProcessor
-	policy           ProcessPolicy
-	stats            ProcessorStats
+	// contentProcessor *processor.ContentProcessor // removed pending internal relocation
+	policy ProcessPolicy
+	stats  ProcessorStats
 }
 
 // NewCompatibilityAdapter creates a new adapter for existing processor logic
 func NewCompatibilityAdapter() *CompatibilityAdapter {
-	return &CompatibilityAdapter{
-		contentProcessor: processor.NewContentProcessor(),
-		policy:           DefaultProcessPolicy(),
-		stats:            ProcessorStats{},
-	}
+	return &CompatibilityAdapter{policy: DefaultProcessPolicy(), stats: ProcessorStats{}}
 }
 
 // Process transforms content using the existing internal processor
@@ -59,12 +56,10 @@ func (ca *CompatibilityAdapter) Process(request ProcessRequest) (*ProcessResult,
 	var warnings []string
 
 	// Use the existing processor logic
-	baseURL := "https://example.com"
-	if request.BaseURL != nil {
-		baseURL = request.BaseURL.String()
-	}
+	// BaseURL ignored in transitional no-op path (will be reintegrated when legacy content processor ported).
 
-	err := ca.contentProcessor.ProcessPage(page, baseURL)
+	// Legacy processing pipeline disabled in module split transitional phase.
+	var err error
 
 	processingTime := time.Since(startTime)
 	ca.stats.ProcessingTime += processingTime
