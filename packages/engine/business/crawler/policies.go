@@ -57,19 +57,19 @@ func (e *CrawlingPolicyEvaluator) IsURLAllowed(u *url.URL) bool {
 	}
 
 	domain := u.Host
-	
+
 	// Check for exact domain match
 	if sitePolicy, exists := e.policy.SiteRules[domain]; exists {
 		return sitePolicy.Allowed
 	}
-	
+
 	// Check for parent domain match (subdomain handling)
 	for ruleDomain, sitePolicy := range e.policy.SiteRules {
 		if strings.HasSuffix(domain, "."+ruleDomain) {
 			return sitePolicy.Allowed
 		}
 	}
-	
+
 	// Default deny if no matching rule found
 	return false
 }
@@ -79,12 +79,12 @@ func (e *CrawlingPolicyEvaluator) ShouldFollowLink(u *url.URL, currentDepth int)
 	if e.policy.LinkRules == nil {
 		return false
 	}
-	
+
 	// Check depth limit
 	if currentDepth >= e.policy.LinkRules.MaxDepth {
 		return false
 	}
-	
+
 	// For external links, check if external following is enabled
 	// We need a way to determine if this is external - for now, assume external if not in site rules
 	isExternal := true
@@ -102,12 +102,12 @@ func (e *CrawlingPolicyEvaluator) ShouldFollowLink(u *url.URL, currentDepth int)
 			}
 		}
 	}
-	
+
 	// If it's external and external following is disabled, don't follow
 	if isExternal && !e.policy.LinkRules.FollowExternal {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -116,14 +116,14 @@ func (e *CrawlingPolicyEvaluator) GetContentSelectors(u *url.URL) []string {
 	if e.policy.ContentRules == nil {
 		return []string{}
 	}
-	
+
 	domain := u.Host
-	
+
 	// Check for site-specific selectors
 	if selectors, exists := e.policy.ContentRules.SiteSelectors[domain]; exists {
 		return selectors
 	}
-	
+
 	// Return default selectors
 	return e.policy.ContentRules.DefaultSelectors
 }
@@ -133,12 +133,12 @@ func (e *CrawlingPolicyEvaluator) GetRequestDelay(domain string) time.Duration {
 	if e.policy.RateRules == nil {
 		return 0
 	}
-	
+
 	// Check for site-specific delay
 	if delay, exists := e.policy.RateRules.SiteDelays[domain]; exists {
 		return delay
 	}
-	
+
 	// Return default delay
 	return e.policy.RateRules.DefaultDelay
 }

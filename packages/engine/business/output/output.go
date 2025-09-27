@@ -7,17 +7,17 @@ import (
 
 // OutputProcessingPolicy defines how output should be processed
 type OutputProcessingPolicy struct {
-	OutputFormat         string        `json:"output_format"`         // Format for output (json, markdown, html)
-	CompressionEnabled   bool          `json:"compression_enabled"`   // Whether to compress output
-	CompressionLevel     int           `json:"compression_level"`     // Compression level (0-9)
-	BufferingEnabled     bool          `json:"buffering_enabled"`     // Whether to buffer output
-	BufferSize          int           `json:"buffer_size"`           // Size of output buffer
-	FlushInterval       time.Duration `json:"flush_interval"`        // Interval for flushing buffer
-	RetryEnabled        bool          `json:"retry_enabled"`         // Whether to retry failed outputs
-	MaxRetries          int           `json:"max_retries"`           // Maximum retry attempts
-	RetryDelay          time.Duration `json:"retry_delay"`           // Delay between retries
-	TransformationRules []string      `json:"transformation_rules"`  // Rules for output transformation
-	ValidationEnabled   bool          `json:"validation_enabled"`    // Whether to validate output
+	OutputFormat        string        `json:"output_format"`        // Format for output (json, markdown, html)
+	CompressionEnabled  bool          `json:"compression_enabled"`  // Whether to compress output
+	CompressionLevel    int           `json:"compression_level"`    // Compression level (0-9)
+	BufferingEnabled    bool          `json:"buffering_enabled"`    // Whether to buffer output
+	BufferSize          int           `json:"buffer_size"`          // Size of output buffer
+	FlushInterval       time.Duration `json:"flush_interval"`       // Interval for flushing buffer
+	RetryEnabled        bool          `json:"retry_enabled"`        // Whether to retry failed outputs
+	MaxRetries          int           `json:"max_retries"`          // Maximum retry attempts
+	RetryDelay          time.Duration `json:"retry_delay"`          // Delay between retries
+	TransformationRules []string      `json:"transformation_rules"` // Rules for output transformation
+	ValidationEnabled   bool          `json:"validation_enabled"`   // Whether to validate output
 }
 
 // OutputQualityPolicy defines quality requirements for output
@@ -57,8 +57,8 @@ type OutputConfigurationDecision struct {
 
 // OutputContext holds context information for output decisions
 type OutputContext struct {
-	URL       string                `json:"url"`
-	Policy    OutputBusinessPolicy  `json:"policy"`
+	URL       string               `json:"url"`
+	Policy    OutputBusinessPolicy `json:"policy"`
 	CreatedAt time.Time            `json:"created_at"`
 	Status    string               `json:"status"`
 }
@@ -84,10 +84,10 @@ type RoutingDestination struct {
 
 // RoutingDecision represents a decision about output routing
 type RoutingDecision struct {
-	URL                   string   `json:"url"`
+	URL                    string   `json:"url"`
 	ShouldUseMultipleSinks bool     `json:"should_use_multiple_sinks"`
-	PrimarySink           string   `json:"primary_sink"`
-	SecondarySinks        []string `json:"secondary_sinks"`
+	PrimarySink            string   `json:"primary_sink"`
+	SecondarySinks         []string `json:"secondary_sinks"`
 }
 
 // OutputProcessingPolicyEvaluator evaluates output processing policies
@@ -202,7 +202,7 @@ func (e *OutputQualityPolicyEvaluator) MeetsMetadataRequirements(hasMetadata boo
 // ShouldProcessOutput makes a decision about whether to process specific output
 func (d *OutputDecisionMaker) ShouldProcessOutput(url string, policy OutputBusinessPolicy) OutputDecision {
 	shouldProcess := d.processingEvaluator.ShouldProcessOutput(url, policy.ProcessingPolicy)
-	
+
 	return OutputDecision{
 		URL:            url,
 		ShouldProcess:  shouldProcess,
@@ -236,11 +236,11 @@ func (d *OutputDecisionMaker) CreateOutputContext(url string, policy OutputBusin
 // BatchShouldProcess makes output decisions for multiple URLs
 func (d *OutputDecisionMaker) BatchShouldProcess(urls []string, policy OutputBusinessPolicy) []OutputDecision {
 	decisions := make([]OutputDecision, len(urls))
-	
+
 	for i, url := range urls {
 		decisions[i] = d.ShouldProcessOutput(url, policy)
 	}
-	
+
 	return decisions
 }
 
@@ -257,7 +257,7 @@ func (r *OutputRoutingDecisionMaker) GetSinkDestination(input string, rules Outp
 			}
 		}
 	}
-	
+
 	// Use default sink if no rules match
 	return RoutingDestination{
 		SinkName: rules.DefaultSink,
@@ -269,12 +269,12 @@ func (r *OutputRoutingDecisionMaker) GetSinkDestination(input string, rules Outp
 func (r *OutputRoutingDecisionMaker) ShouldRouteToMultipleSinks(url string, rules OutputRoutingRules) RoutingDecision {
 	// Default behavior is single sink routing
 	destination := r.GetSinkDestination(url, rules)
-	
+
 	return RoutingDecision{
-		URL:                   url,
+		URL:                    url,
 		ShouldUseMultipleSinks: false,
-		PrimarySink:           destination.SinkName,
-		SecondarySinks:        []string{},
+		PrimarySink:            destination.SinkName,
+		SecondarySinks:         []string{},
 	}
 }
 
@@ -283,13 +283,13 @@ func (r *OutputRoutingDecisionMaker) matchesPattern(input, pattern string) bool 
 	if pattern == "*" {
 		return true
 	}
-	
+
 	// Simple wildcard matching - supports *.extension patterns
 	if strings.HasPrefix(pattern, "*.") {
 		extension := strings.TrimPrefix(pattern, "*.")
 		return strings.HasSuffix(input, "."+extension)
 	}
-	
+
 	// Exact match
 	return input == pattern
 }

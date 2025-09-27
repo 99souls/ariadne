@@ -21,7 +21,7 @@ func TestCrawlingPolicyEvaluation(t *testing.T) {
 			policy: &CrawlingBusinessPolicy{
 				SiteRules: map[string]*SitePolicy{
 					"example.com": {
-						Allowed: true,
+						Allowed:  true,
 						MaxDepth: 3,
 					},
 				},
@@ -34,7 +34,7 @@ func TestCrawlingPolicyEvaluation(t *testing.T) {
 			policy: &CrawlingBusinessPolicy{
 				SiteRules: map[string]*SitePolicy{
 					"example.com": {
-						Allowed: true,
+						Allowed:  true,
 						MaxDepth: 3,
 					},
 				},
@@ -47,7 +47,7 @@ func TestCrawlingPolicyEvaluation(t *testing.T) {
 			policy: &CrawlingBusinessPolicy{
 				SiteRules: map[string]*SitePolicy{
 					"allowed.com": {
-						Allowed: true,
+						Allowed:  true,
 						MaxDepth: 3,
 					},
 				},
@@ -72,10 +72,10 @@ func TestCrawlingPolicyEvaluation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewCrawlingPolicyEvaluator(tt.policy)
-			
+
 			parsedURL, err := url.Parse(tt.url)
 			require.NoError(t, err)
-			
+
 			result := evaluator.IsURLAllowed(parsedURL)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -93,7 +93,7 @@ func TestLinkFollowingPolicyEvaluation(t *testing.T) {
 		{
 			name: "within depth limit",
 			policy: &LinkFollowingPolicy{
-				MaxDepth: 3,
+				MaxDepth:       3,
 				FollowExternal: false,
 			},
 			url:      "https://example.com/page",
@@ -103,7 +103,7 @@ func TestLinkFollowingPolicyEvaluation(t *testing.T) {
 		{
 			name: "exceeds depth limit",
 			policy: &LinkFollowingPolicy{
-				MaxDepth: 3,
+				MaxDepth:       3,
 				FollowExternal: false,
 			},
 			url:      "https://example.com/page",
@@ -113,7 +113,7 @@ func TestLinkFollowingPolicyEvaluation(t *testing.T) {
 		{
 			name: "external link allowed",
 			policy: &LinkFollowingPolicy{
-				MaxDepth: 5,
+				MaxDepth:       5,
 				FollowExternal: true,
 			},
 			url:      "https://external.com/page",
@@ -123,7 +123,7 @@ func TestLinkFollowingPolicyEvaluation(t *testing.T) {
 		{
 			name: "external link blocked",
 			policy: &LinkFollowingPolicy{
-				MaxDepth: 5,
+				MaxDepth:       5,
 				FollowExternal: false,
 			},
 			url:      "https://external.com/page",
@@ -142,10 +142,10 @@ func TestLinkFollowingPolicyEvaluation(t *testing.T) {
 					},
 				},
 			}
-			
+
 			parsedURL, err := url.Parse(tt.url)
 			require.NoError(t, err)
-			
+
 			result := evaluator.ShouldFollowLink(parsedURL, tt.depth)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -190,10 +190,10 @@ func TestContentSelectionPolicyEvaluation(t *testing.T) {
 					ContentRules: tt.policy,
 				},
 			}
-			
+
 			parsedURL, err := url.Parse(tt.url)
 			require.NoError(t, err)
-			
+
 			result := evaluator.GetContentSelectors(parsedURL)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -238,7 +238,7 @@ func TestRateLimitingPolicyEvaluation(t *testing.T) {
 					RateRules: tt.policy,
 				},
 			}
-			
+
 			result := evaluator.GetRequestDelay(tt.domain)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -277,15 +277,15 @@ func TestBusinessPoliciesIntegration(t *testing.T) {
 	t.Run("integrated policy evaluation", func(t *testing.T) {
 		// Test URL allowed
 		assert.True(t, evaluator.IsURLAllowed(testURL))
-		
+
 		// Test link following
 		assert.True(t, evaluator.ShouldFollowLink(testURL, 2))
 		assert.False(t, evaluator.ShouldFollowLink(testURL, 4))
-		
+
 		// Test content selectors
 		selectors := evaluator.GetContentSelectors(testURL)
 		assert.Equal(t, []string{".content", ".main-article"}, selectors)
-		
+
 		// Test rate limiting
 		delay := evaluator.GetRequestDelay("example.com")
 		assert.Equal(t, 1*time.Second, delay)

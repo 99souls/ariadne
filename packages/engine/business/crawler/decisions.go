@@ -88,7 +88,7 @@ func (dm *CrawlingDecisionMaker) ShouldFollowLink(ctx context.Context, baseURL, 
 
 	// Check if this is an external link
 	isExternal := baseURL.Host != linkURL.Host
-	
+
 	// If it's external and external following is disabled
 	if isExternal && !dm.evaluator.policy.LinkRules.FollowExternal {
 		decision.ShouldFollow = false

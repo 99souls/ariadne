@@ -76,7 +76,7 @@ func TestContentValidationPolicyEvaluator(t *testing.T) {
 	t.Run("validate_word_count", func(t *testing.T) {
 		// Valid word count
 		assert.True(t, evaluator.ValidateWordCount(50, rules))
-		assert.True(t, evaluator.ValidateWordCount(10, rules)) // Minimum boundary
+		assert.True(t, evaluator.ValidateWordCount(10, rules))   // Minimum boundary
 		assert.True(t, evaluator.ValidateWordCount(1000, rules)) // Maximum boundary
 
 		// Invalid word count
@@ -160,13 +160,13 @@ func TestContentValidationDecisionMaker(t *testing.T) {
 
 	policy := ContentValidationBusinessPolicy{
 		ValidationRules: ContentValidationRules{
-			MinWordCount:        10,
-			MaxWordCount:        500,
-			MinTitleLength:      5,
-			MaxTitleLength:      80,
-			RequireHeadings:     false,
-			MaxHTMLTagRatio:     0.5,
-			RequireMetadata:     false,
+			MinWordCount:    10,
+			MaxWordCount:    500,
+			MinTitleLength:  5,
+			MaxTitleLength:  80,
+			RequireHeadings: false,
+			MaxHTMLTagRatio: 0.5,
+			RequireMetadata: false,
 		},
 		QualityThreshold: 0.6,
 		StrictMode:       false,
@@ -187,7 +187,7 @@ func TestContentValidationDecisionMaker(t *testing.T) {
 
 	t.Run("create_validation_context", func(t *testing.T) {
 		context := decisionMaker.CreateValidationContext("https://example.com/test", policy)
-		
+
 		assert.Equal(t, "https://example.com/test", context.URL)
 		assert.Equal(t, policy, context.Policy)
 		assert.NotZero(t, context.CreatedAt)
@@ -222,7 +222,7 @@ func TestContentQualityAnalyzer(t *testing.T) {
 		score := analyzer.AnalyzeQualityScore(goodContent, "Great Article", 25)
 		assert.True(t, score > 0.7, "Expected high quality score, got %f", score)
 
-		// Low quality content  
+		// Low quality content
 		poorContent := "<div><span><p>Poor</p></span></div>"
 		score = analyzer.AnalyzeQualityScore(poorContent, "X", 1)
 		assert.True(t, score < 0.4, "Expected low quality score, got %f", score)
@@ -243,12 +243,12 @@ func TestContentQualityAnalyzer(t *testing.T) {
 	t.Run("estimate_reading_time", func(t *testing.T) {
 		// Test reading time calculation (assuming 200 words per minute)
 		readingTime := analyzer.EstimateReadingTime(400) // 400 words
-		assert.Equal(t, 2, readingTime) // Should be 2 minutes
+		assert.Equal(t, 2, readingTime)                  // Should be 2 minutes
 
-		readingTime = analyzer.EstimateReadingTime(100) // 100 words  
-		assert.Equal(t, 1, readingTime) // Should be 1 minute (minimum)
+		readingTime = analyzer.EstimateReadingTime(100) // 100 words
+		assert.Equal(t, 1, readingTime)                 // Should be 1 minute (minimum)
 
 		readingTime = analyzer.EstimateReadingTime(50) // 50 words
-		assert.Equal(t, 1, readingTime) // Should be 1 minute (minimum)
+		assert.Equal(t, 1, readingTime)                // Should be 1 minute (minimum)
 	})
 }
