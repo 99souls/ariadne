@@ -202,11 +202,17 @@ func TestDecideEnforcesMaxPerPage(t *testing.T) {
 	s := &DefaultAssetStrategy{}
 	// fabricate refs
 	var refs []AssetRef
-	for i := 0; i < 10; i++ { refs = append(refs, AssetRef{URL: "https://e/x" , Type: "img"}) }
+	for i := 0; i < 10; i++ {
+		refs = append(refs, AssetRef{URL: "https://e/x", Type: "img"})
+	}
 	policy := AssetPolicy{Enabled: true, MaxPerPage: 3, AllowTypes: []string{"img"}}
 	acts, err := s.Decide(context.TODO(), refs, policy)
-	if err != nil { t.Fatalf("decide: %v", err) }
-	if len(acts) != 3 { t.Fatalf("expected 3 actions capped, got %d", len(acts)) }
+	if err != nil {
+		t.Fatalf("decide: %v", err)
+	}
+	if len(acts) != 3 {
+		t.Fatalf("expected 3 actions capped, got %d", len(acts))
+	}
 }
 
 func TestDecideAllowFilters(t *testing.T) {
@@ -214,8 +220,12 @@ func TestDecideAllowFilters(t *testing.T) {
 	refs := []AssetRef{{URL: "https://e/a.css", Type: "stylesheet"}, {URL: "https://e/a.js", Type: "script"}, {URL: "https://e/a.png", Type: "img"}}
 	policy := AssetPolicy{Enabled: true, AllowTypes: []string{"script"}}
 	acts, err := s.Decide(context.TODO(), refs, policy)
-	if err != nil { t.Fatalf("decide: %v", err) }
-	if len(acts) != 1 || acts[0].Ref.Type != "script" { t.Fatalf("allow filter failed: %+v", acts) }
+	if err != nil {
+		t.Fatalf("decide: %v", err)
+	}
+	if len(acts) != 1 || acts[0].Ref.Type != "script" {
+		t.Fatalf("allow filter failed: %+v", acts)
+	}
 }
 
 func TestComputeAssetPathPrefixNormalization(t *testing.T) {
@@ -223,30 +233,47 @@ func TestComputeAssetPathPrefixNormalization(t *testing.T) {
 	p1 := computeAssetPath("assets", hash, "https://e/x.js")
 	p2 := computeAssetPath("/assets", hash, "https://e/x.js")
 	p3 := computeAssetPath("/assets/", hash, "https://e/x.js")
-	if p1 != p2 || p2 != p3 { t.Fatalf("expected normalized paths equal, got: %s | %s | %s", p1, p2, p3) }
+	if p1 != p2 || p2 != p3 {
+		t.Fatalf("expected normalized paths equal, got: %s | %s | %s", p1, p2, p3)
+	}
 }
 
 func TestExecuteOptimizeToggle(t *testing.T) {
 	// Override fetchAsset to return deterministic bytes without network.
 	oldFetch := fetchAsset
-	fetchAsset = func(ctx context.Context, rawURL string, cap int64) ([]byte, error) { return []byte("function   x( ){ return  1 ; }"), nil }
-	defer func(){ fetchAsset = oldFetch }()
+	fetchAsset = func(ctx context.Context, rawURL string, cap int64) ([]byte, error) {
+		return []byte("function   x( ){ return  1 ; }"), nil
+	}
+	defer func() { fetchAsset = oldFetch }()
 	s := &DefaultAssetStrategy{}
 	ref := AssetRef{URL: "https://e/app.js", Type: "script"}
 	actions := []AssetAction{{Ref: ref, Mode: AssetModeDownload}}
 	polNo := AssetPolicy{Enabled: true, RewritePrefix: "/assets/", Optimize: false}
 	matsNo, err := s.Execute(context.TODO(), actions, polNo)
-	if err != nil || len(matsNo) != 1 { t.Fatalf("execute no optimize failed: %v %d", err, len(matsNo)) }
-	polYes := polNo; polYes.Optimize = true
+	if err != nil || len(matsNo) != 1 {
+		t.Fatalf("execute no optimize failed: %v %d", err, len(matsNo))
+	}
+	polYes := polNo
+	polYes.Optimize = true
 	matsYes, err := s.Execute(context.TODO(), actions, polYes)
-	if err != nil || len(matsYes) != 1 { t.Fatalf("execute optimize failed: %v %d", err, len(matsYes)) }
-	if matsNo[0].Hash == matsYes[0].Hash && string(matsNo[0].Bytes) != string(matsYes[0].Bytes) { t.Fatalf("hash unchanged despite byte change") }
-	if polYes.Optimize && len(matsYes[0].Optimizations) == 0 { t.Fatalf("expected optimization tag") }
+	if err != nil || len(matsYes) != 1 {
+		t.Fatalf("execute optimize failed: %v %d", err, len(matsYes))
+	}
+	if matsNo[0].Hash == matsYes[0].Hash && string(matsNo[0].Bytes) != string(matsYes[0].Bytes) {
+		t.Fatalf("hash unchanged despite byte change")
+	}
+	if polYes.Optimize && len(matsYes[0].Optimizations) == 0 {
+		t.Fatalf("expected optimization tag")
+	}
 }
 
 func TestAssetPolicyValidate(t *testing.T) {
 	bad := AssetPolicy{Enabled: true, RewritePrefix: "assets/"}
-	if err := bad.Validate(); err == nil { t.Fatalf("expected validation error for missing leading slash") }
+	if err := bad.Validate(); err == nil {
+		t.Fatalf("expected validation error for missing leading slash")
+	}
 	good := AssetPolicy{Enabled: true, RewritePrefix: "/assets"}
-	if err := good.Validate(); err != nil { t.Fatalf("unexpected error: %v", err) }
+	if err := good.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }

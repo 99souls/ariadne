@@ -33,7 +33,7 @@ func TestRolloutEvaluator_Percentage(t *testing.T) {
 		case base.Version:
 			sawBase = true
 		default:
-									 t.Fatalf("unexpected version %d for domain %s", v, d)
+			t.Fatalf("unexpected version %d for domain %s", v, d)
 		}
 	}
 	if !sawBase || !sawHead {

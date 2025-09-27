@@ -48,7 +48,8 @@ type Engine struct {
 	started       atomic.Bool
 	startedAt     time.Time
 	resumeMetrics resumeState
-	strategies    interface{} // Placeholder for strategy injection (Phase 5A Step 4)
+	strategies    interface{} // Placeholder for broader strategy sets (future)
+	assetStrategy AssetStrategy
 }
 
 type resumeState struct {
@@ -91,13 +92,39 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	pc := (&cfg).toPipelineConfig(engineOptions{limiter: limiter, resourceManager: rm})
 	pl := engpipeline.NewPipeline(pc)
 
-	e := &Engine{
-		cfg:        cfg,
-		pl:         pl,
-		limiter:    limiter,
-		rm:         rm,
-		startedAt:  time.Now(),
-		strategies: nil, // Strategy injection placeholder
+	e := &Engine{cfg: cfg, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
+
+	// Phase 5D Iteration 5: initialize asset strategy if enabled
+	if cfg.AssetPolicy.Enabled {
+		// For now always use DefaultAssetStrategy; future customization could be injected
+		// via options or EngineStrategies.
+		as := &DefaultAssetStrategy{}
+		if err := cfg.AssetPolicy.Validate(); err != nil {
+			return nil, err
+		}
+		e.assetStrategy = as
+		// Inject hook into pipeline for per-page processing.
+		if e.pl != nil {
+			policy := cfg.AssetPolicy
+			e.pl.Config().AssetProcessingHook = func(ctx context.Context, page *engmodels.Page) (*engmodels.Page, error) {
+				if page == nil || page.Content == "" {
+					return page, nil
+				}
+				refs, err := as.Discover(ctx, page)
+				if err != nil || len(refs) == 0 {
+					return page, err
+				}
+				actions, err := as.Decide(ctx, refs, policy)
+				if err != nil || len(actions) == 0 {
+					return page, err
+				}
+				mats, err := as.Execute(ctx, actions, policy)
+				if err != nil || len(mats) == 0 {
+					return page, err
+				}
+				return as.Rewrite(ctx, page, mats, policy)
+			}
+		}
 	}
 	e.started.Store(true)
 	return e, nil

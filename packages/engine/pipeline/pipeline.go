@@ -29,6 +29,10 @@ type PipelineConfig struct {
 	RetryMaxDelay    time.Duration            `yaml:"retry_max_delay" json:"retry_max_delay"`
 	RetryMaxAttempts int                      `yaml:"retry_max_attempts" json:"retry_max_attempts"`
 	ResourceManager  *engresources.Manager    `yaml:"-" json:"-"`
+
+	// AssetProcessingHook allows the engine to inject a page mutation step (e.g., asset strategy rewrite)
+	// after extraction but before result emission. It returns the possibly mutated page or an error.
+	AssetProcessingHook func(ctx context.Context, page *engmodels.Page) (*engmodels.Page, error) `yaml:"-" json:"-"`
 }
 
 type extractionTask struct {
@@ -575,6 +579,14 @@ func (p *Pipeline) processContent(page *engmodels.Page) *engmodels.CrawlResult {
 	if page != nil {
 		crawledAt := time.Unix(page.CrawledAt.Unix(), page.CrawledAt.UnixNano()%1e9)
 		processedPage = &engmodels.Page{URL: page.URL, Title: page.Title, Content: page.Content, CleanedText: page.CleanedText, Markdown: page.Markdown, Links: page.Links, Images: page.Images, Metadata: page.Metadata, CrawledAt: crawledAt, ProcessedAt: time.Now()}
+		if p.config.AssetProcessingHook != nil {
+			ctx, cancel := context.WithTimeout(p.ctx, 5*time.Second)
+			mutated, err := p.config.AssetProcessingHook(ctx, processedPage)
+			cancel()
+			if err == nil && mutated != nil {
+				processedPage = mutated
+			}
+		}
 	}
 	resultURL := ""
 	if processedPage != nil && processedPage.URL != nil {

@@ -58,7 +58,9 @@ func (c Config) toPipelineConfig(opts engineOptions) *engpipeline.PipelineConfig
 		RateLimiter:       nil,
 		ResourceManager:   opts.resourceManager,
 	}
-	if rl, ok := opts.limiter.(interface{ Acquire(ctx interface{}, domain string) (interface{}, error) }); ok {
+	if rl, ok := opts.limiter.(interface {
+		Acquire(ctx interface{}, domain string) (interface{}, error)
+	}); ok {
 		_ = rl // placeholder to suppress unused warning if build tags differ
 	}
 	return pc
@@ -76,27 +78,27 @@ func Defaults() Config {
 		RetryMaxDelay:     5 * time.Second,
 		RetryMaxAttempts:  3,
 		RateLimit: models.RateLimitConfig{
-			Enabled:             true,
-			InitialRPS:          2.0,
-			MinRPS:              0.25,
-			MaxRPS:              8.0,
-			TokenBucketCapacity: 4.0,
-			AIMDIncrease:        0.25,
-			AIMDDecrease:        0.5,
-			LatencyTarget:       1 * time.Second,
-			LatencyDegradeFactor: 2.0,
+			Enabled:                  true,
+			InitialRPS:               2.0,
+			MinRPS:                   0.25,
+			MaxRPS:                   8.0,
+			TokenBucketCapacity:      4.0,
+			AIMDIncrease:             0.25,
+			AIMDDecrease:             0.5,
+			LatencyTarget:            1 * time.Second,
+			LatencyDegradeFactor:     2.0,
 			ErrorRateThreshold:       0.4,
 			MinSamplesToTrip:         10,
 			ConsecutiveFailThreshold: 5,
 			OpenStateDuration:        15 * time.Second,
 			HalfOpenProbes:           3,
-			RetryBaseDelay:   200 * time.Millisecond,
-			RetryMaxDelay:    5 * time.Second,
-			RetryMaxAttempts: 3,
-			StatsWindow:    30 * time.Second,
-			StatsBucket:    2 * time.Second,
-			DomainStateTTL: 2 * time.Minute,
-			Shards:         16,
+			RetryBaseDelay:           200 * time.Millisecond,
+			RetryMaxDelay:            5 * time.Second,
+			RetryMaxAttempts:         3,
+			StatsWindow:              30 * time.Second,
+			StatsBucket:              2 * time.Second,
+			DomainStateTTL:           2 * time.Minute,
+			Shards:                   16,
 		},
 		Resources: engresources.Config{
 			CacheCapacity:      64,
@@ -104,7 +106,7 @@ func Defaults() Config {
 			CheckpointInterval: 50 * time.Millisecond,
 		},
 		AssetPolicy: AssetPolicy{ // conservative defaults
-			Enabled:        false, // off until strategy implemented
+			Enabled:        false,           // off until strategy implemented
 			MaxBytes:       5 * 1024 * 1024, // 5MB per page aggregate cap (initial placeholder)
 			MaxPerPage:     64,
 			InlineMaxBytes: 2048,
@@ -118,13 +120,12 @@ func Defaults() Config {
 // AssetPolicy configures the asset subsystem when enabled. Iteration 1 surface; enforcement &
 // validation logic comes in later iterations.
 type AssetPolicy struct {
-    Enabled          bool
-    MaxBytes         int64
-    MaxPerPage       int
-    InlineMaxBytes   int64
-    Optimize         bool
-    RewritePrefix    string
-    AllowTypes       []string
-    BlockTypes       []string
+	Enabled        bool
+	MaxBytes       int64
+	MaxPerPage     int
+	InlineMaxBytes int64
+	Optimize       bool
+	RewritePrefix  string
+	AllowTypes     []string
+	BlockTypes     []string
 }
-

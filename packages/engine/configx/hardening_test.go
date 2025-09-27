@@ -57,8 +57,8 @@ func TestConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-				spec := &EngineConfigSpec{Global: &GlobalConfigSection{MaxConcurrency: 1 + i}}
-				_, _ = a.Apply(nil, spec, ApplyOptions{Actor: "c"}) // ignore errors (simulation always acceptable)
+			spec := &EngineConfigSpec{Global: &GlobalConfigSection{MaxConcurrency: 1 + i}}
+			_, _ = a.Apply(nil, spec, ApplyOptions{Actor: "c"}) // ignore errors (simulation always acceptable)
 		}(i)
 		wg.Add(1)
 		go func() {

@@ -175,11 +175,17 @@ func (s *DefaultAssetStrategy) Execute(ctx context.Context, actions []AssetActio
 		if a.Mode != AssetModeDownload && a.Mode != AssetModeInline {
 			continue
 		}
-		if policy.MaxBytes > 0 && total >= policy.MaxBytes { break }
+		if policy.MaxBytes > 0 && total >= policy.MaxBytes {
+			break
+		}
 		capRemaining := int64(0)
-		if policy.MaxBytes > 0 { capRemaining = policy.MaxBytes - total }
+		if policy.MaxBytes > 0 {
+			capRemaining = policy.MaxBytes - total
+		}
 		b, err := fetchAsset(ctx, a.Ref.URL, capRemaining)
-		if err != nil { continue }
+		if err != nil {
+			continue
+		}
 		total += int64(len(b))
 		optim := []string{}
 		if policy.Optimize {
@@ -313,14 +319,25 @@ func collapseSpaces(in []byte) []byte {
 // fetchAsset is overrideable in tests to avoid real network calls.
 var fetchAsset = func(ctx context.Context, rawURL string, capRemaining int64) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil { return nil, err }
-	if resp.StatusCode != 200 { _ = resp.Body.Close(); return nil, errors.New("non-200") }
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		_ = resp.Body.Close()
+		return nil, errors.New("non-200")
+	}
 	var reader io.Reader = resp.Body
-	if capRemaining > 0 { reader = io.LimitReader(resp.Body, capRemaining) }
+	if capRemaining > 0 {
+		reader = io.LimitReader(resp.Body, capRemaining)
+	}
 	b, err := io.ReadAll(reader)
 	_ = resp.Body.Close()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return b, nil
 }
