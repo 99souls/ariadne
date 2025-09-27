@@ -112,7 +112,8 @@ func Defaults() Config {
 			InlineMaxBytes: 2048,
 			Optimize:       false,
 			RewritePrefix:  "/assets/",
-			AllowTypes:     []string{"img", "script", "link"},
+			AllowTypes:     []string{"img", "script", "stylesheet"},
+			MaxConcurrent:  4, // Iteration 7: default worker pool size
 		},
 	}
 }
@@ -128,4 +129,5 @@ type AssetPolicy struct {
 	RewritePrefix  string
 	AllowTypes     []string
 	BlockTypes     []string
+	MaxConcurrent  int // Iteration 7: parallel Execute worker count (>=1). 0 => auto
 }

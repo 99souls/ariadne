@@ -1,7 +1,7 @@
 # Phase 5D Plan: Asset Strategy Integration
 
-Status: In Progress (Iterations 1–6 complete; Iterations 7–8 pending)
-Date: September 27, 2025 (Last Updated after Iteration 6 instrumentation & determinism test)
+Status: In Progress (Iterations 1–6 complete; Iteration 7 ACTIVE)
+Date: September 27, 2025 (Updated: Iteration 7 concurrency + extended discovery scaffold started)
 Related Analysis: See `phase5-engine-architecture-analysis.md` (Section Phase 5D)
 Preceding Phase: 5C (Processor Migration & Config Platform Enhancements) — COMPLETE
 
@@ -72,18 +72,18 @@ Phase 5D introduces a deliberate, non-backward-compatible replacement of the leg
 
 ## 3. Scope Decomposition & Workstreams
 
-| Workstream            | Description                                                        | Outputs / Status                                                |
-| --------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------- |
-| Interface Design      | Define `AssetStrategy` contract + data models                      | Implemented (`asset_strategy.go`)                               |
-| Extraction (Direct)   | Build discovery/decision/execute without legacy shim               | Implemented (legacy code removed; no adapter retained)          |
-| Config Integration    | Extend `engine.Config` with `AssetPolicy` + validation             | Implemented & tested                                            |
-| Pipeline Refactor     | Introduce hook & remove legacy pipeline                            | Implemented (Iteration 5)                                       |
-| Observability         | Metrics counters + events types + tests                            | Baseline implemented (Iteration 6); exporter TBD                |
-| Determinism & Hashing | Stable naming + path scheme + tests                                | Implemented & validated                                         |
-| Concurrency & Perf    | Parallel Execute, worker pool, baseline benchmark                  | Pending (Iteration 7)                                           |
-| Extended Discovery    | srcset, media, docs (parity backlog)                               | Pending (Iteration 7+)                                          |
-| Documentation         | API doc, operations guide, migration & progress log                | Pending (Iteration 8)                                           |
-| Benchmark             | Before/after micro-benchmark script                                | Pending (Iteration 7)                                           |
+| Workstream            | Description                                            | Outputs / Status                                       |
+| --------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| Interface Design      | Define `AssetStrategy` contract + data models          | Implemented (`asset_strategy.go`)                      |
+| Extraction (Direct)   | Build discovery/decision/execute without legacy shim   | Implemented (legacy code removed; no adapter retained) |
+| Config Integration    | Extend `engine.Config` with `AssetPolicy` + validation | Implemented & tested                                   |
+| Pipeline Refactor     | Introduce hook & remove legacy pipeline                | Implemented (Iteration 5)                              |
+| Observability         | Metrics counters + events types + tests                | Baseline implemented (Iteration 6); exporter TBD       |
+| Determinism & Hashing | Stable naming + path scheme + tests                    | Implemented & validated                                |
+| Concurrency & Perf    | Parallel Execute, worker pool, baseline benchmark      | Pending (Iteration 7)                                  |
+| Extended Discovery    | srcset, media, docs (parity backlog)                   | Pending (Iteration 7+)                                 |
+| Documentation         | API doc, operations guide, migration & progress log    | Pending (Iteration 8)                                  |
+| Benchmark             | Before/after micro-benchmark script                    | Pending (Iteration 7)                                  |
 
 ---
 
@@ -149,9 +149,11 @@ type AssetPolicy struct {
 ### 4.4 Concurrency Model
 
 Current (Iterations 1–6):
+
 - Execute stage runs serially per page (simplifies determinism + early correctness).
 
 Planned (Iteration 7):
+
 - Introduce bounded worker pool (default size: min(4, GOMAXPROCS); configurable future `AssetPolicy.MaxConcurrent`).
 - Maintain deterministic final rewrite ordering by sorting materialized assets by hash (already in place).
 - Aggregate errors; non-fatal failures produce events and skip specific assets only.
@@ -172,6 +174,7 @@ Planned (Iteration 7):
 | asset_rewrite_failures_total | counter | Rewrite errors                |
 
 Implementation Notes:
+
 - Current counters stored in `AssetMetrics`; snapshot exposed via `Engine.AssetMetricsSnapshot()`.
 - Events stored in bounded in-memory ring (cap 1024) via `Engine.AssetEvents()` — future exporter hook slated for Phase 5E or monitoring layer.
 - Optimization currently reports an event per optimized asset (css/js whitespace collapse, svg meta tag placeholder).
@@ -218,29 +221,29 @@ Synthetic fixtures placed under `packages/engine/testdata/assets/`.
 
 ## 6. Iteration Plan (Agile Breakdown)
 
-| Iteration | Scope                                                      | Deliverables (Status)                                       |
-| --------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
-| 1         | Interface + policy structs + docs stub                     | Strategy + config defaults (Complete)                       |
-| 2         | Discovery + basic execute                                  | Serial discovery/execute tests (Complete)                   |
-| 3         | Policy decision matrix (allow/block, limits, inline)       | Decision + limit tests (Complete)                           |
-| 4         | Optimization hook + hashing + deterministic path           | Path + optimization tests (Complete)                        |
-| 5         | Rewrite stage + processor delegation removal               | Hook integration, legacy removal (Complete)                 |
-| 6         | Metrics + events instrumentation                           | Counters + events + tests (Complete)                        |
-| 7         | Concurrency + extended discovery + performance baseline    | Worker pool, srcset/media/docs, benchmark (Pending)         |
-| 8         | Documentation + polish + release checklist                 | Docs, migration guide, completion note (Pending)            |
+| Iteration | Scope                                                   | Deliverables (Status)                               |
+| --------- | ------------------------------------------------------- | --------------------------------------------------- |
+| 1         | Interface + policy structs + docs stub                  | Strategy + config defaults (Complete)               |
+| 2         | Discovery + basic execute                               | Serial discovery/execute tests (Complete)           |
+| 3         | Policy decision matrix (allow/block, limits, inline)    | Decision + limit tests (Complete)                   |
+| 4         | Optimization hook + hashing + deterministic path        | Path + optimization tests (Complete)                |
+| 5         | Rewrite stage + processor delegation removal            | Hook integration, legacy removal (Complete)         |
+| 6         | Metrics + events instrumentation                        | Counters + events + tests (Complete)                |
+| 7         | Concurrency + extended discovery + performance baseline | Worker pool (in progress), srcset/media (partial), benchmark (baseline test stub) |
+| 8         | Documentation + polish + release checklist              | Docs, migration guide, completion note (Pending)    |
 
 ---
 
 ## 7. Risk Register (Phase-Specific)
 
-| Risk                                          | Likelihood | Impact | Mitigation                                                     |
-| --------------------------------------------- | ---------- | ------ | -------------------------------------------------------------- |
-| Hidden coupling in processor to asset fields  | Medium     | High   | Early integration hook + full legacy removal (resolved)       |
-| Performance regression from hashing / I/O     | Medium     | Medium | Benchmark in Iteration 7; introduce concurrency & pooling     |
-| Configuration overload                        | Low        | Medium | Minimal policy fields; defer advanced knobs                  |
-| Determinism flakiness (timestamp, ordering)   | Low        | Medium | Stable hash ordering & deterministic tests (validated)        |
-| Event buffer growth / memory pressure         | Low        | Low    | Bounded event slice (cap 1024); future exporter offload       |
-| Parallel metrics race (future concurrency)    | Medium     | Medium | Adopt atomic increments; add race tests in Iteration 7        |
+| Risk                                         | Likelihood | Impact | Mitigation                                                |
+| -------------------------------------------- | ---------- | ------ | --------------------------------------------------------- |
+| Hidden coupling in processor to asset fields | Medium     | High   | Early integration hook + full legacy removal (resolved)   |
+| Performance regression from hashing / I/O    | Medium     | Medium | Benchmark in Iteration 7; introduce concurrency & pooling |
+| Configuration overload                       | Low        | Medium | Minimal policy fields; defer advanced knobs               |
+| Determinism flakiness (timestamp, ordering)  | Low        | Medium | Stable hash ordering & deterministic tests (validated)    |
+| Event buffer growth / memory pressure        | Low        | Low    | Bounded event slice (cap 1024); future exporter offload   |
+| Parallel metrics race (future concurrency)   | Medium     | Medium | Adopt atomic increments; add race tests in Iteration 7    |
 
 ---
 
