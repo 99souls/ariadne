@@ -10,6 +10,7 @@ type SimulationImpact struct {
 	FlagsAdded       []string          `json:"flags_added,omitempty"`
 	FlagsRemoved     []string          `json:"flags_removed,omitempty"`
 	Notes            []string          `json:"notes,omitempty"`
+	Acceptable       bool              `json:"acceptable"`
 }
 
 // Simulator computes a mock impact analysis between current and candidate specs.
@@ -27,6 +28,10 @@ func (s *Simulator) Simulate(current, candidate *EngineConfigSpec) *SimulationIm
 	impact.FlagsAdded, impact.FlagsRemoved = diffFlags(current, candidate)
 	// Simple latency heuristic: +1ms per added business rule (mock)
 	impact.ProjectedLatency = time.Duration(max(0, impact.RuleCountDelta)) * time.Millisecond
+	// Heuristic: Impact acceptable if projected latency increase < 10ms and added rules < 20.
+	if impact.ProjectedLatency < 10*time.Millisecond && impact.RuleCountDelta < 20 {
+		impact.Acceptable = true
+	}
 	if impact.ChangedFields == 0 {
 		impact.Notes = append(impact.Notes, "no structural section changes detected")
 	}
