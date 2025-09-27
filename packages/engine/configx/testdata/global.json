@@ -1,0 +1,4 @@
+{
+  "global": { "max_concurrency": 4, "logging_level": "warn" },
+  "policies": { "enabled_flags": { "core": true } }
+}
