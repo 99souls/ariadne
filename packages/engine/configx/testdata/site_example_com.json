@@ -1,0 +1,8 @@
+{
+  "crawling": {
+    "site_rules": {
+      "example.com": { "allowed_domains": ["example.com"], "max_depth": 2 }
+    }
+  },
+  "policies": { "enabled_flags": { "example_boost": true } }
+}

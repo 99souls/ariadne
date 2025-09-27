@@ -1,0 +1,65 @@
+package engine
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	telemetryhealth "ariadne/packages/engine/telemetry/health"
+)
+
+// TestHealthChangeEvent verifies that a health_change event is emitted on status transition.
+func TestHealthChangeEvent(t *testing.T) {
+	cfg := Defaults()
+	cfg.MetricsEnabled = false // we don't need metrics provider for event test
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("engine construction failed: %v", err)
+	}
+	sub, err := e.EventBus().Subscribe(8)
+	if err != nil {
+		t.Fatalf("subscribe failed: %v", err)
+	}
+	defer sub.Close()
+
+	var current telemetryhealth.Status = telemetryhealth.StatusHealthy
+	probe := telemetryhealth.ProbeFunc(func(ctx context.Context) telemetryhealth.ProbeResult {
+		return telemetryhealth.ProbeResult{Name: "test", Status: current, CheckedAt: time.Now()}
+	})
+	// Replace evaluator with short TTL to enable status transition detection
+	e.healthEval = telemetryhealth.NewEvaluator(10*time.Millisecond, probe)
+
+	// First snapshot establishes baseline; no event expected for initial set.
+	first := e.HealthSnapshot(context.Background())
+	if first.Overall != telemetryhealth.StatusHealthy {
+		t.Fatalf("expected first overall healthy got %s", first.Overall)
+	}
+	select {
+	case ev := <-sub.C():
+		t.Fatalf("unexpected event on initial snapshot: %+v", ev)
+	case <-time.After(50 * time.Millisecond):
+		// pass
+	}
+
+	// Change status to degraded triggers an event.
+	current = telemetryhealth.StatusDegraded
+	time.Sleep(15 * time.Millisecond) // exceed TTL
+	second := e.HealthSnapshot(context.Background())
+	if second.Overall != telemetryhealth.StatusDegraded {
+		t.Fatalf("expected second overall degraded got %s", second.Overall)
+	}
+	// Allow brief scheduling window
+	time.Sleep(10 * time.Millisecond)
+	stats := e.EventBus().Stats()
+	select {
+	case ev := <-sub.C():
+		if ev.Category != "health" || ev.Type != "health_change" {
+			t.Fatalf("unexpected event: %+v", ev)
+		}
+		if ev.Fields["previous"] != string(telemetryhealth.StatusHealthy) || ev.Fields["current"] != string(telemetryhealth.StatusDegraded) {
+			t.Fatalf("unexpected field transition: %+v", ev.Fields)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatalf("expected health_change event not received (bus stats: %+v)", stats)
+	}
+}

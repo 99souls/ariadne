@@ -191,7 +191,7 @@ func createTestWikiSite(t *testing.T) *httptest.Server {
 		}
 
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `
+		_, _ = fmt.Fprintf(w, `
 			<html>
 				<head>
 					<title>Wiki Page %s</title>

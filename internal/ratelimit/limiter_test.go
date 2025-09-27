@@ -13,7 +13,7 @@ func TestAdaptiveLimiterAcquireSuccess(t *testing.T) {
 	clock := newFakeClock(time.Unix(0, 0))
 	limiter := NewAdaptiveRateLimiter(cfg)
 	limiter = limiter.WithClock(clock)
-	defer limiter.Close()
+	defer func() { _ = limiter.Close() }()
 
 	permit, err := limiter.Acquire(context.Background(), "example.com")
 	if err != nil {
@@ -33,7 +33,7 @@ func TestAdaptiveLimiterCircuitOpenAfterFailures(t *testing.T) {
 	clock := newFakeClock(time.Unix(0, 0))
 	limiter := NewAdaptiveRateLimiter(cfg)
 	limiter = limiter.WithClock(clock)
-	defer limiter.Close()
+	defer func() { _ = limiter.Close() }()
 
 	permit, err := limiter.Acquire(context.Background(), "example.com")
 	if err != nil {
@@ -66,7 +66,7 @@ func TestAdaptiveLimiterRetryAfterDelay(t *testing.T) {
 	clock := newFakeClock(time.Unix(0, 0))
 	limiter := NewAdaptiveRateLimiter(cfg)
 	limiter = limiter.WithClock(clock)
-	defer limiter.Close()
+	defer func() { _ = limiter.Close() }()
 
 	permit, err := limiter.Acquire(context.Background(), "example.com")
 	if err != nil {

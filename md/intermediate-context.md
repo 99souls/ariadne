@@ -1,109 +1,185 @@
-go test ./internal/assets -v # ✅ PASS
-go test ./internal/processor -v # ✅ PASS
-go build # ✅ SUCCESS
+# Phase 5B Progress - Business Logic Consolidation
 
-# Site Scraper Implementation Context
-
-## Current Status: Phase 3 Complete (3.1–3.3) ✅
-
-**Date**: November 3, 2025  
-**Phase**: Concurrency & Performance Track (Phase 3)  
-**Achievement**: Multi-stage pipeline, adaptive rate limiting, and resource management (cache, spillover, checkpoints) delivered with full TDD coverage
+**Status**: In Progress  
+**Started**: September 27, 2025  
+**Goal**: Transform interface foundation into comprehensive business layer architecture  
+**Current Step**: Step 2 - Policy-Based Processing  
+**Approach**: TDD methodology with comprehensive test coverage
 
 ---
 
-## Phase 3.3 Highlights – Resource Management Delivered
+## Phase 5B Progress Tracking
 
-### Core Deliverables
+### Step 1: Business Logic Migration ✅
 
-- **Resource Manager (`internal/resources`)**: Configurable MaxInFlight semaphore, LRU cache with disk spillover, checkpoint journaling goroutine, and unit tests covering cache hits, spill recovery, and concurrency semantics.
-- **Pipeline Caching Integration**: Extraction stage consults cache before hitting network, records cache stage metrics, and stores fresh pages post-fetch. Cache hits bypass rate limiter permits for faster throughput.
-- **Checkpointing & Journaling**: `deliverResult` appends processed URLs to durable log while pipeline integration tests confirm flush semantics.
-- **Memory Guardrails**: In-flight slot acquisition prevents runaway extraction concurrency; release occurs immediately after caching to maintain throughput without saturating memory.
+**Status**: **COMPLETE** ✅  
+**Completion Date**: September 27, 2025  
+**Test Coverage**: 61/61 tests passing  
+**Code Quality**: Zero linting issues  
+**Implementation Time**: ~4 hours
 
-### Validation & Quality Gates
+**Achievements**:
 
-- `go test ./internal/resources ./internal/pipeline` ✅ – verifies cache hits, spillover, checkpoint flush, and pipeline integration.
-- `go test -race ./internal/resources ./internal/pipeline` ✅ – ensures concurrency safety across new manager and pipeline interactions.
-- `go test -race ./...` ✅ – full suite now green offline after replacing external HTTPBIN dependencies with internal `httpmock` server.
+- ✅ **Crawler Business Logic Consolidation**: Created comprehensive `packages/engine/business/crawler/` package (29 tests)
+- ✅ **Processor Business Logic Consolidation**: Created comprehensive `packages/engine/business/processor/` package (20 tests)
+- ✅ **Output Business Logic Consolidation**: Created comprehensive `packages/engine/business/output/` package (12 tests)
+- ✅ **Policy-Based Decision Making**: Implemented business policies with 4 policy domains
+- ✅ **Business Decision Engine**: Created decision makers for intelligent processing
+- ✅ **Site-Specific Rules**: Implemented policy management with pattern matching and rule inheritance
+- ✅ **Cross-Package Integration**: All business logic packages integrated and tested together
 
-### Key Insights
+**Files Created/Enhanced**:
 
-- Caching and checkpointing significantly reduce redundant extraction work during retries or duplicate URLs.
-- Spillover format (`spill-*.spill.json`) provides deterministic artifacts for debugging and future resumption logic.
-- Integrating resource manager early sets the stage for the upcoming engine facade to expose clean APIs for CLI/TUI layers.
-- Formal retrospective captured in `phase3.3-retrospective.md` (covers emotions, process wins, risks, and next sprint picks).
+- **Crawler Package**: `policies.go`, `policies_test.go`, `decisions.go`, `decisions_test.go`, `sites.go`, `sites_test.go` (29 tests)
+- **Processor Package**: `content.go`, `content_test.go`, `validation.go`, `validation_test.go` (20 tests)
+- **Output Package**: `output.go`, `output_test.go` (12 tests)
+
+**Business Logic Consolidation**:
+
+1. **Crawler Logic**: URL allowance, link following, content selection, rate limiting policies
+2. **Processor Logic**: Content processing, quality validation, business rule evaluation
+3. **Output Logic**: Output processing, routing decisions, quality gates
+4. **Cross-cutting Concerns**: Integrated policy evaluation across all components
+
+### Step 2: Policy-Based Processing ✅
+
+**Status**: **COMPLETE** ✅  
+**Completion Date**: September 27, 2025  
+**Test Coverage**: 73/73 tests passing  
+**Code Quality**: Zero linting issues  
+**Implementation Time**: ~2 hours
+
+**Achievements**:
+
+- ✅ **Enhanced Policy System**: Created comprehensive `packages/engine/business/policies/` package
+- ✅ **Dynamic Rule Engine**: Implemented priority-based rule evaluation with conditional logic
+- ✅ **Policy Configuration Management**: Hot-reloading support with validation framework
+- ✅ **Cross-Component Integration**: Policy conversion interfaces for existing business logic
+- ✅ **Comprehensive Testing**: 13 additional tests covering all policy system scenarios
+
+**Enhanced Policy Architecture**:
+
+1. **BusinessPolicies Structure**:
+
+   - `CrawlingBusinessPolicy` - Site-specific crawling rules
+   - `ProcessingBusinessPolicy` - Content processing configuration
+   - `OutputBusinessPolicy` - Output routing and quality policies
+   - `GlobalBusinessPolicy` - Cross-cutting configuration
+
+2. **Dynamic Rule Engine**:
+
+   - `BusinessRule` - Dynamic business rules with conditions and actions
+   - `RuleCondition` - URL pattern, content type, domain, path matching
+   - `RuleAction` - Configurable actions (depth, delay, selectors, format)
+   - `EvaluationContext` - Context for rule evaluation
+
+3. **Policy Management**:
+   - `PolicyManager` - Thread-safe policy configuration management
+   - `DynamicRuleEngine` - Priority-based rule evaluation
+   - `PolicyConfigurationLoader` - Hot-reloading from multiple sources
+
+**Files Created**:
+
+- `packages/engine/business/policies/policies.go` (574 lines) - Core policy system implementation
+- `packages/engine/business/policies/policies_test.go` (364 lines) - Comprehensive policy testing
+
+**Key Features Implemented**:
+
+- ✅ **Thread-Safe Operations**: All policy management operations are thread-safe
+- ✅ **Priority-Based Rules**: Dynamic rules ordered by priority for consistent evaluation
+- ✅ **Pattern Matching**: Advanced URL pattern matching with wildcard support
+- ✅ **Policy Validation**: Comprehensive validation with detailed error messages
+- ✅ **Hot Configuration**: Support for runtime policy updates and reloading
+- ✅ **Integration Interfaces**: Conversion methods for existing business logic compatibility
+
+**Integration Points Prepared**:
+
+- Ready for integration with existing `CollyFetcher` implementation
+- Business policies can be configured through `UnifiedBusinessConfig`
+- Decision context supports distributed crawling scenarios
+
+### Step 2: Processor Business Logic Migration ✅
+
+**Status**: **COMPLETE** ✅  
+**Completion Date**: September 27, 2025  
+**Test Coverage**: 20/20 tests passing  
+**Code Quality**: Zero linting issues
+
+**Achievements**:
+
+- ✅ **Content Processing Policy System**: Implemented `ContentProcessingPolicy` for content extraction, cleaning, and transformation rules
+- ✅ **Content Quality Policy System**: Created `ContentQualityPolicy` for validation requirements and quality standards
+- ✅ **Processing Decision Engine**: Built `ProcessingDecisionMaker` for intelligent content processing decisions
+- ✅ **Content Validation Framework**: Implemented `ContentValidationPolicyEvaluator` with comprehensive validation rules
+- ✅ **Quality Analysis System**: Created `ContentQualityAnalyzer` for content density, quality scoring, and reading time estimation
+
+**Files Created**:
+
+- `packages/engine/business/processor/content.go` (185 lines) - Core content processing business logic
+- `packages/engine/business/processor/content_test.go` (200 lines) - Content processing tests
+- `packages/engine/business/processor/validation.go` (215 lines) - Content validation business logic
+- `packages/engine/business/processor/validation_test.go` (230 lines) - Validation tests
+
+**Business Logic Consolidation**:
+
+1. **Content Processing Decisions**: Policy-driven content extraction, cleaning, and transformation
+2. **Quality Validation**: Configurable validation rules for word count, title length, content structure
+3. **Processing Steps Configuration**: Dynamic processing pipeline based on policy settings
+4. **Content Analysis**: Quality scoring, density analysis, and reading time estimation
+
+### Step 3: Output Business Logic Migration ✅
+
+**Status**: **COMPLETE** ✅  
+**Completion Date**: September 27, 2025  
+**Test Coverage**: 12/12 tests passing  
+**Code Quality**: Zero linting issues
+
+**Achievements**:
+
+- ✅ **Output Processing Policy System**: Implemented `OutputProcessingPolicy` for format, compression, buffering, and retry settings
+- ✅ **Output Quality Policy System**: Created `OutputQualityPolicy` for size limits, format validation, and integrity checks
+- ✅ **Output Decision Engine**: Built `OutputDecisionMaker` for intelligent output processing decisions
+- ✅ **Output Routing System**: Implemented `OutputRoutingDecisionMaker` with pattern matching and sink routing
+
+**Files Created**:
+
+- `packages/engine/business/output/output.go` (295 lines) - Core output processing business logic
+- `packages/engine/business/output/output_test.go` (230 lines) - Output processing tests
+
+**Business Logic Consolidation**:
+
+1. **Output Processing Decisions**: Policy-driven format selection, compression, and buffering
+2. **Quality Validation**: Size limits, format restrictions, and content integrity checks
+3. **Output Configuration**: Dynamic configuration based on URL and policy evaluation
+4. **Routing Decisions**: Pattern-based sink routing with fallback mechanisms
 
 ---
 
-## Phase 3.2 Highlights – Adaptive Rate Limiting Delivered
+## Phase 5B Step 1 Summary ✅
 
-### Core Deliverables
+**Overall Status**: **COMPLETE** ✅  
+**Total Implementation Time**: ~3 hours  
+**Total Tests Created**: 61 tests (29 crawler + 20 processor + 12 output)  
+**Code Quality**: Zero linting issues across all modules  
+**Architecture Achievement**: Complete business logic consolidation
 
-- **Adaptive Limiter Engine** (`internal/ratelimit`)
-  - Sharded domain registry with per-domain token buckets and AIMD tuning
-  - Sliding error-rate windows and circuit breaker state machine
-  - Retry-After compliance plus idle-domain eviction for bounded memory use
-  - Snapshot API for future telemetry consumers
-- **Pipeline Integration** (`internal/pipeline`)
-  - Extraction workers acquire permits before HTTP fetches and submit feedback after completion
-  - Retry logic upgraded to jittered exponential backoff with bounded attempts
-  - Retry goroutines respect pipeline cancellation, preventing orphaned work during shutdown
+**Key Architectural Transformations**:
 
-### Validation & Quality Gates
+1. **Policy-Based Decision Making**: All business decisions now driven by configurable policies
+2. **Site-Specific Rules**: Fine-grained control over crawling, processing, and output behavior
+3. **Quality-Driven Processing**: Comprehensive validation and quality analysis systems
+4. **Routing Intelligence**: Smart routing decisions based on content patterns and policies
 
-- `go test ./...` ✅ – entire suite green post-integration
-- `go test -race ./internal/ratelimit ./internal/pipeline` ✅ – concurrency-safe limiter & pipeline
-- `go test -race ./...` ✅ – external flakiness removed (mocked assets)
-- `gofmt` + linting applied to new/modified Go files
+**Integration Points Prepared**:
 
-### Key Learnings
+- Business policies ready for integration with existing engine components
+- Decision makers can be injected into pipeline for intelligent processing
+- Site-specific rules support for domain-aware behavior
+- Quality analysis integration points for content validation
 
-- AIMD tuning combined with breaker state delivers fast recovery while avoiding oscillations
-- Respecting `Retry-After` directives keeps us polite with servers issuing explicit slowdown instructions
-- Coordinating retries inside the pipeline requires strict context checks to avoid zombie goroutines
-- Eviction plus `Close()` hooks make deterministic tests feasible even with long-lived background loops
+**Next Steps Ready**:
 
----
-
-## Phase 3.1 Recap – Multi-Stage Pipeline Foundation ✅
-
-- Channel-based discovery → extraction → processing → output pipeline fully implemented
-- Per-stage worker pools, backpressure handling, and graceful shutdown via context cancellation
-- Result aggregator guarantees deterministic completion and simplifies testing
-- Extensive TDD suite (`internal/pipeline/pipeline_test.go`) covering metrics, backpressure, shutdown, and integration scenarios
-
----
-
-## Earlier Foundations – Phase 2 Refactoring Snapshot ✅
-
-- Asset management extracted to `internal/assets` with independent pipeline and tests
-- Content processor modularised with advanced HTML cleaning, Markdown conversion, and metadata handling
-- TDD workflow maintained 100% coverage across critical paths and enabled aggressive refactoring with confidence
-
----
-
-## Open Items & Follow-Ups
-
-1. **CLI Migration (P5)**: Route `main.go` through engine facade only; add seed/resume flags.
-2. **Deprecations (P6)**: Mark direct pipeline constructors as experimental for prospective internalization.
-3. **Stability & Docs (P7)**: Add `API_STABILITY.md`, migration notes, baseline CHANGELOG.
-4. **Limiter Telemetry Export**: Wire `Snapshot()` outputs to future metrics sink (Prometheus placeholders).
-5. **Optional Domain Rate Detail**: Extend snapshot with top-N domain stats (deferred unless needed for CLI output).
-
----
-
-## Reference Commands
-
-```bash
-# Core verification
-go test ./...                                           # ✅
-go test -race ./internal/ratelimit ./internal/pipeline # ✅
-# Pending remediation due to network dependency
-go test -race ./...                                    # ⚠️ (fails: asset downloader external call)
-```
-
----
-
-_Last Updated: November 3, 2025_  
-_Next Focus: Phase 3.3 Resource Management & Monitoring_
+- Step 2: Policy-Based Processing (Enhanced Policy System)
+- Step 3: Strategy Composition (Advanced Strategy System)
+- Step 4: Runtime Configuration (Hot-Reloading System)
+- Step 5: Advanced Monitoring (Business Metrics)

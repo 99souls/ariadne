@@ -4,7 +4,58 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
-- Telemetry export (Prometheus integration) scaffolding
+### Added
+
+- Adaptive percentage-based tracer (policy-driven sample percent) replacing always-on tracer.
+- Integrated workload benchmark (`BenchmarkIntegratedWorkload`) simulating page + asset telemetry mix.
+
+### Changed
+
+- Prometheus timer implementation pre-creates histogram (reduces per-timer allocations).
+
+### Deferred
+
+- External trace exporter wiring (will introduce build tag & binary size note)
+- Error/latency biased sampling boosts (policy fields scaffolded but logic deferred).
+
+## [Phase 5E Completion] - 2025-09-27
+
+Comprehensive Monitoring & Observability Expansion (Phase 5E) is complete.
+
+### Added
+
+- Metrics abstraction with selectable backend: Prometheus exporter (stable) & experimental OTEL provider.
+- Event bus replacing legacy ring buffer with subscription API, backpressure & drop accounting.
+- Tracing span hierarchy (crawl → page → stage → asset) with runtime-adjustable sampling.
+- Structured logging enrichment (correlation fields, JSON mode) unified with tracing context.
+- Health & readiness HTTP endpoints (`/healthz`, `/readyz`) plus metrics endpoint exposure.
+- Runtime TelemetryPolicy enabling hot toggles (metrics, tracing, events, log level/format, sampling rate).
+- OTEL cardinality guard rails & internal exceed counter `ariadne_internal_cardinality_exceeded_total` + one-time warning.
+- Benchmark suite for metrics provider operations (counter, histogram, timer) across noop/prom/otel backends.
+- Overhead report (`telemetry-overhead.md`) and SLO baseline document (`slo-baselines.md`).
+- Documentation set: telemetry architecture, metrics reference, operator guide, overhead & SLO baselines.
+
+### Changed
+
+- Unified configuration path for selecting metrics backend via `metricsBackend` value.
+- Logging/tracing integration standardized field taxonomy preventing key drift.
+
+### Performance
+
+- Single metric op overhead (counter/histogram) remains within low tens of ns (Prometheus ~57–65ns; OTEL ~4ns) vs noop ~1ns.
+- Timer latency: Prometheus ~675ns, OTEL ~315ns, noop ~190ns; optimization opportunity identified (alloc reductions) without blocking release.
+
+### Deferred
+
+- Integrated end-to-end crawl workload overhead percentage validation.
+- Prometheus timer allocation reduction (4 allocs/op) optimization.
+- External trace exporter & build tag size audit.
+- Adaptive/error-biased trace sampling prototype.
+- Event schema unification & metrics push gateway exploration.
+
+### Notes
+
+Phase 5E establishes a stable foundation for advanced operator tooling and future distributed scaling phases. Deferred items are intentional and tracked for subsequent iterations.
 
 ## [v0.1.0] - 2025-09-26
 

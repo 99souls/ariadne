@@ -47,6 +47,7 @@ func TestPipelineComponents(t *testing.T) {
 		page := pipeline.extractContent("https://example.com/test")
 		if page == nil {
 			t.Error("Content extraction should return a page")
+			return
 		}
 
 		if page.Title == "" {
@@ -71,6 +72,7 @@ func TestPipelineComponents(t *testing.T) {
 
 		if result == nil {
 			t.Error("Content processing should return a result")
+			return
 		}
 
 		if !result.Success {

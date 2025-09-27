@@ -1,0 +1,4 @@
+{
+  "global": { "logging_level": "info" },
+  "policies": { "enabled_flags": { "prod_gate": true } }
+}

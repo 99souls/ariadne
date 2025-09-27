@@ -408,7 +408,7 @@ func TestPipelineResourceCacheHit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create resource manager: %v", err)
 	}
-	defer manager.Close()
+	defer func() { _ = manager.Close() }()
 
 	config := &PipelineConfig{
 		DiscoveryWorkers:  1,
@@ -468,7 +468,7 @@ func TestPipelineResourceSpillover(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create resource manager: %v", err)
 	}
-	defer manager.Close()
+	defer func() { _ = manager.Close() }()
 
 	config := &PipelineConfig{
 		DiscoveryWorkers:  1,
@@ -530,7 +530,7 @@ func TestPipelineResourceCheckpointing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create resource manager: %v", err)
 	}
-	defer manager.Close()
+	defer func() { _ = manager.Close() }()
 
 	config := &PipelineConfig{
 		DiscoveryWorkers:  1,
