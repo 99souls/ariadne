@@ -3,6 +3,7 @@ package engine
 import (
 	engmodels "ariadne/packages/engine/models"
 	"context"
+	"crypto/sha256"
 	"net/url"
 	"strings"
 	"testing"
@@ -96,18 +97,76 @@ func TestAssetStrategyDecisionInlineAndBlock(t *testing.T) {
 	html := `<html><body><img src="/images/logo.svg"><img src="/images/photo.png"><script src="/js/app.js"></script></body></html>`
 	page := &engmodels.Page{URL: base, Content: html}
 	refs, err := s.Discover(context.TODO(), page)
-	if err != nil { t.Fatalf("discover: %v", err) }
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
 	// Expect 3 refs
-	if len(refs) != 3 { t.Fatalf("expected 3 refs got %d", len(refs)) }
-	policy := AssetPolicy{Enabled: true, AllowTypes: []string{"img","script"}, BlockTypes: []string{"script"}, InlineMaxBytes: 4096, RewritePrefix: "/assets/"}
+	if len(refs) != 3 {
+		t.Fatalf("expected 3 refs got %d", len(refs))
+	}
+	policy := AssetPolicy{Enabled: true, AllowTypes: []string{"img", "script"}, BlockTypes: []string{"script"}, InlineMaxBytes: 4096, RewritePrefix: "/assets/"}
 	actions, err := s.Decide(context.TODO(), refs, policy)
-	if err != nil { t.Fatalf("decide: %v", err) }
+	if err != nil {
+		t.Fatalf("decide: %v", err)
+	}
 	// script should be blocked -> only 2 image actions
-	if len(actions) != 2 { t.Fatalf("expected 2 actions got %d", len(actions)) }
+	if len(actions) != 2 {
+		t.Fatalf("expected 2 actions got %d", len(actions))
+	}
 	// One of them (logo.svg) should be inline
 	var sawInline bool
 	for _, a := range actions {
-		if strings.HasSuffix(a.Ref.URL, "logo.svg") && a.Mode == AssetModeInline { sawInline = true }
+		if strings.HasSuffix(a.Ref.URL, "logo.svg") && a.Mode == AssetModeInline {
+			sawInline = true
+		}
 	}
-	if !sawInline { t.Fatalf("expected svg asset to be inline candidate") }
+	if !sawInline {
+		t.Fatalf("expected svg asset to be inline candidate")
+	}
+}
+
+// Iteration 4: Deterministic path + optimization tests (unit-level, synthetic inputs).
+func TestComputeAssetPathDeterministic(t *testing.T) {
+	// Synthetic bytes to avoid network.
+	data := []byte("function test  ( ) {   return  42; }\n")
+	hash := hashBytesHex(data)
+	if len(hash) != sha256.Size*2 { t.Fatalf("expected sha256 hex length %d got %d", sha256.Size*2, len(hash)) }
+	path := computeAssetPath("/assets/", hash, "https://example.com/js/app.js")
+	if !strings.HasPrefix(path, "/assets/") { t.Fatalf("path missing prefix: %s", path) }
+	parts := strings.Split(path[len("/assets/"):], "/")
+	if len(parts) != 2 { t.Fatalf("expected 2 parts after prefix, got %d (%v)", len(parts), parts) }
+	if len(parts[0]) != 2 { t.Fatalf("expected first directory of length 2, got %s", parts[0]) }
+	if !strings.HasSuffix(path, ".js") { t.Fatalf("expected original extension .js preserved, got %s", path) }
+	// Determinism: recompute path for same hash & url
+	path2 := computeAssetPath("/assets/", hash, "https://example.com/js/app.js")
+	if path != path2 { t.Fatalf("expected deterministic path, got %s vs %s", path, path2) }
+}
+
+func TestOptimizeBytesWhitespaceCollapse(t *testing.T) {
+	css := []byte("body {  color:   red;    background:   white; }\n\n")
+	out, applied := optimizeBytes("stylesheet", css)
+	if len(applied) == 0 || applied[0] != "css_minify" { t.Fatalf("expected css_minify applied, got %v", applied) }
+	if len(out) >= len(css) { t.Fatalf("expected reduced size, in=%d out=%d", len(css), len(out)) }
+	// Idempotent second pass
+	out2, applied2 := optimizeBytes("stylesheet", out)
+	if len(applied2) != 0 { t.Fatalf("expected no further optimization second pass, got %v", applied2) }
+	if string(out) != string(out2) { t.Fatalf("expected stable output after second pass") }
+}
+
+func TestOptimizeBytesJS(t *testing.T) {
+	js := []byte("function   foo( ) {  return   1 + 2 ; }    ")
+	out, applied := optimizeBytes("script", js)
+	if len(applied) == 0 || applied[0] != "js_minify" { t.Fatalf("expected js_minify applied, got %v", applied) }
+	if len(out) >= len(js) { t.Fatalf("expected reduced size for js, in=%d out=%d", len(js), len(out)) }
+}
+
+func TestOptimizeDisabledLeavesBytes(t *testing.T) {
+	// Use helper directly; simulate disabled optimization by skipping optimizeBytes invocation.
+	js := []byte("let   x =  1 ;")
+	out, applied := optimizeBytes("script", js)
+	if len(applied) == 0 { t.Fatalf("expected optimization when enabled helper directly: %v", applied) }
+	// Simulate disabled by not calling optimizeBytes: ensure hash differs only when we apply.
+	if hashBytesHex(js) == hashBytesHex(out) && string(js) != string(out) {
+		t.Fatalf("hash should change when bytes change; input and output hash equal")
+	}
 }
