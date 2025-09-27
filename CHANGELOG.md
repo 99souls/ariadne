@@ -5,13 +5,16 @@ All notable changes to this project will be documented in this file. The format 
 ## [Unreleased]
 
 ### Added
+
 - (Planned) Integrated workload benchmark for telemetry overhead (deferred from Phase 5E)
 - (Planned) Adaptive/error-biased trace sampling prototype
 
 ### Changed
+
 - (Planned) Prometheus timer allocation optimization
 
 ### Deferred
+
 - External trace exporter wiring (will introduce build tag & binary size note)
 
 ## [Phase 5E Completion] - 2025-09-27
@@ -19,6 +22,7 @@ All notable changes to this project will be documented in this file. The format 
 Comprehensive Monitoring & Observability Expansion (Phase 5E) is complete.
 
 ### Added
+
 - Metrics abstraction with selectable backend: Prometheus exporter (stable) & experimental OTEL provider.
 - Event bus replacing legacy ring buffer with subscription API, backpressure & drop accounting.
 - Tracing span hierarchy (crawl → page → stage → asset) with runtime-adjustable sampling.
@@ -31,14 +35,17 @@ Comprehensive Monitoring & Observability Expansion (Phase 5E) is complete.
 - Documentation set: telemetry architecture, metrics reference, operator guide, overhead & SLO baselines.
 
 ### Changed
+
 - Unified configuration path for selecting metrics backend via `metricsBackend` value.
 - Logging/tracing integration standardized field taxonomy preventing key drift.
 
 ### Performance
+
 - Single metric op overhead (counter/histogram) remains within low tens of ns (Prometheus ~57–65ns; OTEL ~4ns) vs noop ~1ns.
 - Timer latency: Prometheus ~675ns, OTEL ~315ns, noop ~190ns; optimization opportunity identified (alloc reductions) without blocking release.
 
 ### Deferred
+
 - Integrated end-to-end crawl workload overhead percentage validation.
 - Prometheus timer allocation reduction (4 allocs/op) optimization.
 - External trace exporter & build tag size audit.
@@ -46,6 +53,7 @@ Comprehensive Monitoring & Observability Expansion (Phase 5E) is complete.
 - Event schema unification & metrics push gateway exploration.
 
 ### Notes
+
 Phase 5E establishes a stable foundation for advanced operator tooling and future distributed scaling phases. Deferred items are intentional and tracked for subsequent iterations.
 
 ## [v0.1.0] - 2025-09-26

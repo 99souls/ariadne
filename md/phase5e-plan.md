@@ -55,7 +55,7 @@ Non-Goals (Explicit Deferrals):
 All primary Phase 5E objectives are satisfied:
 
 - [x] Metrics abstraction + Prometheus exporter (registry + HTTP handler)
-- [x] OTEL metrics backend (experimental) & selection via config (traces bridging deferred)  
+- [x] OTEL metrics backend (experimental) & selection via config (traces bridging deferred)
 - [x] Event bus implemented; legacy ring removed; tests updated
 - [x] Span model implemented (crawl → page → stage → asset) with attributes & timing
 - [x] Structured logging enriched (trace/page/domain/component fields + JSON option)
@@ -67,10 +67,10 @@ All primary Phase 5E objectives are satisfied:
 
 Optional / Deferred (carried forward):
 
-- [ ] Integrated end-to-end workload overhead % validation (CPU & memory)  
-- [ ] Adaptive / error-biased trace sampling prototype  
-- [ ] External trace exporter & build tag sizing audit  
-- [ ] Prometheus timer allocation micro-optimization  
+- [ ] Integrated end-to-end workload overhead % validation (CPU & memory)
+- [ ] Adaptive / error-biased trace sampling prototype
+- [ ] External trace exporter & build tag sizing audit
+- [ ] Prometheus timer allocation micro-optimization
 - [ ] Event schema unification & push gateway exploration
 
 ---
@@ -212,15 +212,15 @@ Recorded: ns/op, B/op, allocs/op, CPU delta (approx via testing loop), event dro
 
 ## 6. Iteration Plan (Agile Breakdown)
 
-| Iteration | Scope (Revised)                                              | Status / Notes                                                                                 |
-| --------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| 1         | Metrics abstraction + Prometheus exporter                    | ✅ Complete                                                                                    |
-| 2         | Event bus + migration off ring buffer                        | ✅ Complete                                                                                    |
-| 3         | Tracing spans + sampling + logging enrichment                | ✅ Complete                                                                                    |
-| 4         | Health evaluator + probes + health gauge/events              | ✅ Complete (endpoints delivered in Iteration 5)                                               |
-| 5         | TelemetryPolicy + HTTP endpoints (/healthz,/readyz,/metrics) | ✅ Complete (policy + adapter handlers + tests)                                                |
-| 6         | OTEL bridge + overhead benchmarks + SLO draft                | ✅ Complete (OTEL metrics backend, backend selection, benchmarks, SLO baseline draft)          |
-| 7         | Hardening + docs + completion checklist                      | ✅ Complete (OTEL cardinality guard + exceed counter, expanded benchmarks, overhead report, docs)
+| Iteration | Scope (Revised)                                              | Status / Notes                                                                                    |
+| --------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| 1         | Metrics abstraction + Prometheus exporter                    | ✅ Complete                                                                                       |
+| 2         | Event bus + migration off ring buffer                        | ✅ Complete                                                                                       |
+| 3         | Tracing spans + sampling + logging enrichment                | ✅ Complete                                                                                       |
+| 4         | Health evaluator + probes + health gauge/events              | ✅ Complete (endpoints delivered in Iteration 5)                                                  |
+| 5         | TelemetryPolicy + HTTP endpoints (/healthz,/readyz,/metrics) | ✅ Complete (policy + adapter handlers + tests)                                                   |
+| 6         | OTEL bridge + overhead benchmarks + SLO draft                | ✅ Complete (OTEL metrics backend, backend selection, benchmarks, SLO baseline draft)             |
+| 7         | Hardening + docs + completion checklist                      | ✅ Complete (OTEL cardinality guard + exceed counter, expanded benchmarks, overhead report, docs) |
 
 ### Adapter Emphasis (Revision)
 
