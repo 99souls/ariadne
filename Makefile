@@ -35,16 +35,16 @@ ci: tidy vet test race
 snapshot:
 	$(GO) run . -seeds https://example.com -snapshot-interval 5s -checkpoint checkpoint.log | head -n 5
 
-# Count legacy import path occurrences (Wave 2A guard)
+# Assert zero occurrences of removed legacy path
 legacy-imports:
-	@echo "Counting legacy import path occurrences (github.com/99souls/ariadne/engine)" >&2
-	@COUNT=$$(grep -R "github.com/99souls/ariadne/engine" -n --include='*.go' . | wc -l | tr -d ' '); \
-	echo $$COUNT; \
-	if [ -n "$(EXPECTED)" ]; then \
-		if [ "$$COUNT" -gt "$(EXPECTED)" ]; then \
-			echo "ERROR: Legacy import count ($$COUNT) exceeds EXPECTED=$(EXPECTED)" >&2; exit 1; \
-		fi; \
-	fi
+	@echo "Verifying legacy path 'ariadne/packages/engine' is absent" >&2
+	@COUNT=$$(grep -R "ariadne/packages/engine" -n --include='*.go' . | wc -l | tr -d ' '); \
+	if [ "$$COUNT" -ne 0 ]; then \
+		echo "ERROR: Found $$COUNT occurrences of removed legacy path" >&2; \
+		grep -R "ariadne/packages/engine" -n --include='*.go' . | head -n 20 >&2; \
+		exit 1; \
+	fi; \
+	echo "OK (0)" >&2
 
 # Tag a release (usage: make tag VERSION=0.1.0)
 tag:
