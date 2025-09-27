@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"ariadne/internal/ratelimit"
+	"github.com/99souls/ariadne/engine/ratelimit"
 	"ariadne/internal/resources"
 
 	"github.com/99souls/ariadne/engine/models"

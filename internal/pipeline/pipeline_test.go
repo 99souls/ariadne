@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/internal/ratelimit"
+	"github.com/99souls/ariadne/engine/ratelimit"
 	"ariadne/internal/resources"
 )
 
