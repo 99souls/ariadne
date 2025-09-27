@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-27T23:32:28+01:00
+Generated: 2025-09-27T23:59:39+01:00
 
 ## Package `models`
 
@@ -65,62 +65,6 @@ Manager.Stats | method |  |
 Manager.StorePage | method |  | StorePage caches a page, evicting oldest to spill if needed.
 Stats | type | Experimental | Stats provides lightweight insight into current resource manager state.
 
-## Package `config`
-
-Package config provides higher-level composition helpers for engine component
-policies plus runtime configuration facilities.
-
-Experimental: This package's exported surface is still being refined prior to
-v1.0. Types and functions here may be renamed, relocated (some content may
-move under internal/), or significantly reduced in scope. Consumers should
-treat all identifiers as Experimental unless/until explicitly promoted to
-Stable in documentation.
-
-Name | Kind | Stability | Summary
------|------|-----------|--------
-ABTest | type | Experimental | Experimental: ABTest definition; fields and naming may change or move.
-ABTestResult | type | Experimental | Experimental: ABTestResult aggregates computed statistics; subject to change.
-ABTestingFramework | type | Experimental | Experimental: ABTestingFramework provides a simplistic in-process A/B test
-ABTestingFramework.AnalyzeTestResults | method | Experimental | Experimental: AnalyzeTestResults computes basic stats; methodology will evolve.
-ABTestingFramework.CreateABTest | method | Experimental | Experimental: CreateABTest persists a new test; persistence model may
-ABTestingFramework.GetConfigForUser | method | Experimental | Experimental: GetConfigForUser distributes users across variants; hashing
-ABTestingFramework.RecordTestResult | method | Experimental | Experimental: RecordTestResult appends result; format & durability may change.
-ConfigChange | type | Experimental | Experimental: ConfigChange describes a detected configuration update. Shape
-ConfigValidator | type | Experimental | Experimental: ConfigValidator allows custom validation hooks. Interface may
-ConfigVersion | type | Experimental | Experimental: ConfigVersion captures stored configuration metadata; shape
-ConfigVersionManager | type | Experimental | Experimental: ConfigVersionManager persists configuration versions. May move
-ConfigVersionManager.GetVersionHistory | method | Experimental | Experimental: GetVersionHistory enumerates on-disk versions. Ordering &
-ConfigVersionManager.RollbackToVersion | method | Experimental | Experimental: RollbackToVersion applies a previous version. Side-effects may
-ConfigVersionManager.SaveVersion | method | Experimental | Experimental: SaveVersion persists version metadata. On-disk format not
-GlobalSettings | type | Experimental | Experimental: GlobalSettings houses cross-cutting knobs. Field names and
-HotReloadSystem | type | Experimental | Experimental: HotReloadSystem watches a config file and produces change
-HotReloadSystem.DetectChanges | method | Experimental | Experimental: DetectChanges performs a naive comparison; strategy may change
-HotReloadSystem.StopWatching | method | Experimental | Experimental: StopWatching halts watching. May become idempotent error.
-HotReloadSystem.WatchConfigChanges | method | Experimental | Experimental: WatchConfigChanges emits change events. Channel protocol and
-IntegratedRuntimeSystem | type | Experimental | Experimental: IntegratedRuntimeSystem is a convenience aggregate; may be
-IntegratedRuntimeSystem.DeployConfiguration | method | Experimental | Experimental: DeployConfiguration saves & applies config; transactional
-IntegratedRuntimeSystem.GetCurrentConfiguration | method | Experimental | Experimental: GetCurrentConfiguration returns current config; may become a
-IntegratedRuntimeSystem.RollbackToVersion | method | Experimental | Experimental: RollbackToVersion performs rollback; side-effects may change.
-RuntimeBusinessConfig | type | Experimental | Experimental: RuntimeBusinessConfig is a higher-level runtime representation.
-RuntimeConfigManager | type | Experimental | Experimental: RuntimeConfigManager orchestrates loading and applying runtime
-RuntimeConfigManager.AddValidator | method | Experimental | Experimental: AddValidator registers a validation hook. May shift to
-RuntimeConfigManager.GetCurrentConfig | method | Experimental | Experimental: GetCurrentConfig returns a shallow copy; deeper copies may be
-RuntimeConfigManager.LoadConfiguration | method | Experimental | Experimental: LoadConfiguration loads config from disk. Error handling and
-RuntimeConfigManager.UpdateConfiguration | method | Experimental | Experimental: UpdateConfiguration applies a new configuration. Concurrency
-RuntimeConfigManager.ValidateConfiguration | method | Experimental | Experimental: ValidateConfiguration may merge with UpdateConfiguration or be
-TestResultRecord | type | Experimental | Experimental: TestResultRecord storage model may change; persistence
-UnifiedBusinessConfig | type | Experimental | Experimental: UnifiedBusinessConfig aggregates per-component policies and
-UnifiedBusinessConfig.ApplyDefaults | method | Experimental | Experimental: ApplyDefaults sets unset fields to opinionated defaults. The
-UnifiedBusinessConfig.ApplyFetchDefaults | method | Experimental | Experimental: ApplyFetchDefaults sets defaults for FetchPolicy. May become
-UnifiedBusinessConfig.ApplyGlobalDefaults | method | Experimental | Experimental: ApplyGlobalDefaults sets defaults for GlobalSettings. May
-UnifiedBusinessConfig.ApplyProcessDefaults | method | Experimental | Experimental: ApplyProcessDefaults sets defaults for ProcessPolicy. May
-UnifiedBusinessConfig.ApplySinkDefaults | method | Experimental | Experimental: ApplySinkDefaults sets defaults for SinkPolicy. May become
-UnifiedBusinessConfig.ExtractFetchPolicy | method | Experimental | Experimental: ExtractFetchPolicy returns a defensive copy of FetchPolicy.
-UnifiedBusinessConfig.ExtractProcessPolicy | method | Experimental | Experimental: ExtractProcessPolicy returns a defensive copy.
-UnifiedBusinessConfig.ExtractSinkPolicy | method | Experimental | Experimental: ExtractSinkPolicy returns a defensive copy.
-UnifiedBusinessConfig.Validate | method | Experimental | Experimental: Validate checks internal consistency. Error messages and
-VariantResult | type | Experimental | Experimental: VariantResult metrics may change; do not rely on ordering.
-
 ## Package `engine`
 
 Name | Kind | Stability | Summary
@@ -162,4 +106,29 @@ Processor | type | Experimental | Processor transforms a fetched page into enric
 ResourceSnapshot | type | Experimental | ResourceSnapshot summarizes resource manager internal counters.
 ResumeSnapshot | type | Experimental | ResumeSnapshot contains resume filter statistics.
 Snapshot | type | Stable | Snapshot is a unified view of engine state.
+
+## Package `config`
+
+Package config provides higher-level composition helpers for engine component
+policies plus runtime configuration facilities.
+
+Experimental: This package's exported surface is still being refined prior to
+v1.0. Types and functions here may be renamed, relocated (some content may
+move under internal/), or significantly reduced in scope. Consumers should
+treat all identifiers as Experimental unless/until explicitly promoted to
+Stable in documentation.
+
+Name | Kind | Stability | Summary
+-----|------|-----------|--------
+GlobalSettings | type | Experimental | Experimental: GlobalSettings houses cross-cutting knobs. Field names and
+UnifiedBusinessConfig | type | Experimental | Experimental: UnifiedBusinessConfig aggregates per-component policies and
+UnifiedBusinessConfig.ApplyDefaults | method | Experimental | Experimental: ApplyDefaults sets unset fields to opinionated defaults. The
+UnifiedBusinessConfig.ApplyFetchDefaults | method | Experimental | Experimental: ApplyFetchDefaults sets defaults for FetchPolicy. May become
+UnifiedBusinessConfig.ApplyGlobalDefaults | method | Experimental | Experimental: ApplyGlobalDefaults sets defaults for GlobalSettings. May
+UnifiedBusinessConfig.ApplyProcessDefaults | method | Experimental | Experimental: ApplyProcessDefaults sets defaults for ProcessPolicy. May
+UnifiedBusinessConfig.ApplySinkDefaults | method | Experimental | Experimental: ApplySinkDefaults sets defaults for SinkPolicy. May become
+UnifiedBusinessConfig.ExtractFetchPolicy | method | Experimental | Experimental: ExtractFetchPolicy returns a defensive copy of FetchPolicy.
+UnifiedBusinessConfig.ExtractProcessPolicy | method | Experimental | Experimental: ExtractProcessPolicy returns a defensive copy.
+UnifiedBusinessConfig.ExtractSinkPolicy | method | Experimental | Experimental: ExtractSinkPolicy returns a defensive copy.
+UnifiedBusinessConfig.Validate | method | Experimental | Experimental: Validate checks internal consistency. Error messages and
 

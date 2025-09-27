@@ -106,6 +106,22 @@ guarded by an allowlist test. Future Wave (4) will evaluate aggressive
 reduction: many runtime management & A/B testing constructs likely candidates
 for internalization or extraction.
 
+### 13.1 Regression Note (Post Wave 3)
+
+After initial completion of Wave 3, the deprecated runtime & A/B testing
+implementation (`runtime.go`) was accidentally reintroduced into
+`engine/config/`, restoring a large set of public symbols (`RuntimeBusinessConfig`,
+`RuntimeConfigManager`, `HotReloadSystem`, `ConfigVersionManager`, `ABTestingFramework`,
+`IntegratedRuntimeSystem`, etc.). This caused the config export allowlist guard
+to fail and expanded the API surface counter to pruning goals. The file has now
+been removed again and the authoritative implementation remains solely under
+`engine/internal/runtime/`.
+
+Action Items to prevent recurrence:
+- Add CI check (future) to detect resurrection of removed files by path.
+- Keep API report diffs reviewed in PRs touching `engine/config/*`.
+- Consider a sentinel test asserting absence of `runtime.go` in `engine/config`.
+
 ## 7. Strategies / Extension Points
 
 Consolidate extension interfaces into a single `strategies.go` under root engine package or dedicated `engine/strategies` (already present – audit content):
