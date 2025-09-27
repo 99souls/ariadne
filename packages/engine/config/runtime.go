@@ -13,8 +13,8 @@ import (
 
 	"ariadne/packages/engine/business/policies"
 
-	"gopkg.in/yaml.v3"
 	"github.com/fsnotify/fsnotify"
+	"gopkg.in/yaml.v3"
 )
 
 // RuntimeBusinessConfig represents a complete runtime configuration
@@ -51,9 +51,9 @@ type HotReloadSystem struct {
 // ConfigChange represents a detected configuration change
 type ConfigChange struct {
 	*RuntimeBusinessConfig
-	ChangeType  string    `json:"change_type"`
-	ChangedAt   time.Time `json:"changed_at"`
-	PreviousChecksum string `json:"previous_checksum"`
+	ChangeType       string    `json:"change_type"`
+	ChangedAt        time.Time `json:"changed_at"`
+	PreviousChecksum string    `json:"previous_checksum"`
 }
 
 // ConfigVersionManager manages configuration version history and rollbacks
@@ -64,11 +64,11 @@ type ConfigVersionManager struct {
 
 // ConfigVersion represents a stored configuration version
 type ConfigVersion struct {
-	Version           string                     `json:"version"`
-	Config            *RuntimeBusinessConfig     `json:"config"`
-	SavedAt           time.Time                  `json:"saved_at"`
-	ChangeDescription string                     `json:"change_description"`
-	PreviousVersion   string                     `json:"previous_version,omitempty"`
+	Version           string                 `json:"version"`
+	Config            *RuntimeBusinessConfig `json:"config"`
+	SavedAt           time.Time              `json:"saved_at"`
+	ChangeDescription string                 `json:"change_description"`
+	PreviousVersion   string                 `json:"previous_version,omitempty"`
 }
 
 // ABTestingFramework manages A/B testing for configuration changes
@@ -79,22 +79,22 @@ type ABTestingFramework struct {
 
 // ABTest represents an A/B test configuration
 type ABTest struct {
-	ID               string                     `json:"id"`
-	Name             string                     `json:"name"`
-	ControlConfig    *RuntimeBusinessConfig     `json:"control_config"`
-	ExperimentConfig *RuntimeBusinessConfig     `json:"experiment_config"`
-	TrafficSplit     float64                    `json:"traffic_split"`
-	CreatedAt        time.Time                  `json:"created_at"`
-	Status           string                     `json:"status"`
+	ID               string                 `json:"id"`
+	Name             string                 `json:"name"`
+	ControlConfig    *RuntimeBusinessConfig `json:"control_config"`
+	ExperimentConfig *RuntimeBusinessConfig `json:"experiment_config"`
+	TrafficSplit     float64                `json:"traffic_split"`
+	CreatedAt        time.Time              `json:"created_at"`
+	Status           string                 `json:"status"`
 }
 
 // ABTestResult represents results from an A/B test
 type ABTestResult struct {
-	TestID         string                        `json:"test_id"`
-	VariantResults map[string]*VariantResult     `json:"variant_results"`
-	StatisticalSignificance bool               `json:"statistical_significance"`
-	Recommendation string                       `json:"recommendation"`
-	AnalyzedAt     time.Time                    `json:"analyzed_at"`
+	TestID                  string                    `json:"test_id"`
+	VariantResults          map[string]*VariantResult `json:"variant_results"`
+	StatisticalSignificance bool                      `json:"statistical_significance"`
+	Recommendation          string                    `json:"recommendation"`
+	AnalyzedAt              time.Time                 `json:"analyzed_at"`
 }
 
 // VariantResult represents results for a specific variant
@@ -238,7 +238,7 @@ func (rcm *RuntimeConfigManager) calculateChecksum(config *RuntimeBusinessConfig
 	// Create a copy without checksum for calculation
 	configForHash := *config
 	configForHash.Checksum = ""
-	
+
 	data, _ := json.Marshal(configForHash)
 	hash := sha256.Sum256(data)
 	return fmt.Sprintf("%x", hash)
@@ -373,7 +373,7 @@ func (hrs *HotReloadSystem) DetectChanges(oldConfig, newConfig *RuntimeBusinessC
 	// Compare JSON representations
 	oldData, _ := json.Marshal(oldConfig)
 	newData, _ := json.Marshal(newConfig)
-	
+
 	return string(oldData) != string(newData)
 }
 
@@ -421,7 +421,7 @@ func (cvm *ConfigVersionManager) SaveVersion(config *RuntimeBusinessConfig, chan
 	}
 
 	versionFile := filepath.Join(cvm.versionsDir, fmt.Sprintf("%s.json", config.Version))
-	
+
 	data, err := json.MarshalIndent(version, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal version: %w", err)
@@ -445,7 +445,7 @@ func (cvm *ConfigVersionManager) GetVersionHistory() ([]*ConfigVersion, error) {
 	for _, file := range files {
 		if !file.IsDir() && filepath.Ext(file.Name()) == ".json" {
 			versionFile := filepath.Join(cvm.versionsDir, file.Name())
-			
+
 			data, err := os.ReadFile(versionFile)
 			if err != nil {
 				continue // Skip problematic files
@@ -606,7 +606,7 @@ func (abt *ABTestingFramework) AnalyzeTestResults(testID string) (*ABTestResult,
 
 	// Group results by variant
 	variantStatsMap := make(map[string]*variantStats)
-	
+
 	for _, result := range results {
 		if _, exists := variantStatsMap[result.Variant]; !exists {
 			variantStatsMap[result.Variant] = &variantStats{}
@@ -642,7 +642,7 @@ func (abt *ABTestingFramework) AnalyzeTestResults(testID string) (*ABTestResult,
 		VariantResults:          variantResults,
 		StatisticalSignificance: len(results) >= 100, // Simple threshold
 		Recommendation:          abt.generateRecommendation(variantResults),
-		AnalyzedAt:             time.Now(),
+		AnalyzedAt:              time.Now(),
 	}, nil
 }
 
@@ -719,7 +719,7 @@ func (irs *IntegratedRuntimeSystem) DeployConfiguration(config *RuntimeBusinessC
 func (irs *IntegratedRuntimeSystem) GetCurrentConfiguration() *RuntimeBusinessConfig {
 	irs.mutex.RLock()
 	defer irs.mutex.RUnlock()
-	
+
 	return irs.configManager.GetCurrentConfig()
 }
 
