@@ -12,16 +12,24 @@ import (
 	"time"
 )
 
+// ErrCircuitOpen signals requests are temporarily denied due to breaker state.
+// Experimental: Error value retained; semantics may narrow.
 var ErrCircuitOpen = errors.New("ratelimit: circuit open")
 
+// RateLimiter is the adaptive per-domain limiter interface.
+// Experimental: Interface may gain context about request classification.
 type RateLimiter interface {
 	Acquire(ctx context.Context, domain string) (Permit, error)
 	Feedback(domain string, fb Feedback)
 	Snapshot() LimiterSnapshot
 }
 
+// Permit represents an acquired capacity token.
+// Stable (planned): Release contract will remain; additional methods may be added via new interface.
 type Permit interface { Release() }
 
+// Feedback supplies outcome metrics from completed requests.
+// Experimental: Fields may be grouped or expanded (e.g., ContentLength) pre-v1.0.
 type Feedback struct {
 	StatusCode int
 	Latency    time.Duration
@@ -29,6 +37,8 @@ type Feedback struct {
 	RetryAfter time.Duration
 }
 
+// LimiterSnapshot aggregates limiter-level counters.
+// Experimental: Field set may change; prefer Engine Snapshot for stable consumers.
 type LimiterSnapshot struct {
 	TotalRequests    int64
 	Throttled        int64
@@ -38,6 +48,8 @@ type LimiterSnapshot struct {
 	Domains          []DomainSummary
 }
 
+// DomainSummary reports per-domain adaptive state.
+// Experimental: Field set & ordering may change.
 type DomainSummary struct {
 	Domain       string
 	FillRate     float64
@@ -45,6 +57,8 @@ type DomainSummary struct {
 	LastActivity time.Time
 }
 
+// AdaptiveRateLimiter implements RateLimiter using AIMD + circuit breaking.
+// Experimental: Internal algorithm tuning subject to change; exported behavior (Acquire/Feedback) stable.
 type AdaptiveRateLimiter struct {
     cfg   engmodels.RateLimitConfig
     clock Clock

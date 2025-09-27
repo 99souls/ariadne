@@ -3,6 +3,7 @@ package ratelimit
 import "time"
 
 // Clock abstracts time operations for deterministic testing.
+// Experimental: May move to internal if no external implementations appear.
 type Clock interface {
     Now() time.Time
     Sleep(time.Duration)

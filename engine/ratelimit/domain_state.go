@@ -8,9 +8,10 @@ import (
 	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
+// Internal tuning constant for latency smoothing.
 const latencyEWMALambda = 0.2
 
-type circuitState int
+type circuitState int // internal state enum (unexported intentionally)
 
 const (
 	circuitClosed circuitState = iota

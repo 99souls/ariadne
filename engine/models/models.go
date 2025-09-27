@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// Page represents a single scraped web page with its content and metadata
-// (lifted verbatim from legacy pkg/models). Keep structure identical for stability.
+// Page represents a single scraped web page with its content and metadata.
+// Stable: Field additions are allowed; existing field semantics will be preserved after baseline.
 type Page struct {
 	URL         *url.URL   `json:"url"`
 	Title       string     `json:"title"`
@@ -25,6 +25,8 @@ type Page struct {
 	ProcessedAt time.Time  `json:"processed_at"`
 }
 
+// PageMeta contains structured metadata extracted from the page.
+// Experimental: Field set may expand (front‑matter, canonical URL) prior to v1.0.
 type PageMeta struct {
 	Author      string            `json:"author,omitempty"`
 	Description string            `json:"description,omitempty"`
@@ -35,6 +37,8 @@ type PageMeta struct {
 	OpenGraph   OpenGraphMeta     `json:"open_graph,omitempty"`
 }
 
+// OpenGraphMeta captures a subset of Open Graph tags.
+// Experimental: May merge with future SocialMeta struct.
 type OpenGraphMeta struct {
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
@@ -43,8 +47,8 @@ type OpenGraphMeta struct {
 	Type        string `json:"type,omitempty"`
 }
 
-// CrawlResult represents the result of processing a single URL through the pipeline
-// (error remains an interface field; JSON marshalling will omit detailed error stack).
+// CrawlResult represents the result of processing a single URL through the pipeline.
+// Experimental: Error and Stage fields may change shape (structured error) before v1.0.
 type CrawlResult struct {
 	URL     string `json:"url"`
 	Page    *Page  `json:"page"`
@@ -54,6 +58,8 @@ type CrawlResult struct {
 	Retry   bool   `json:"retry"`
 }
 
+// CrawlStats aggregates crawl progress metrics.
+// Experimental: Field set & naming may change; prefer Engine Snapshot for stable telemetry.
 type CrawlStats struct {
 	TotalPages     int           `json:"total_pages"`
 	ProcessedPages int           `json:"processed_pages"`
@@ -64,8 +70,8 @@ type CrawlStats struct {
 	PagesPerSec    float64       `json:"pages_per_sec,omitempty"`
 }
 
-// RateLimitConfig defines adaptive per-domain rate limiting behavior
-// (kept identical to legacy version for compatibility).
+// RateLimitConfig defines adaptive per-domain rate limiting behavior.
+// Experimental: Some tuning knobs may be collapsed into policy groups.
 type RateLimitConfig struct {
 	Enabled             bool    `json:"enabled"`
 	InitialRPS          float64 `json:"initial_rps"`
@@ -98,6 +104,8 @@ type RateLimitConfig struct {
 // It is now the authoritative definition used by internal components. Some fields
 // (like worker counts) will be reconsidered during API pruning; retained verbatim
 // here to unblock root purge.
+// ScraperConfig holds crawler configuration for legacy simple crawler mode.
+// Experimental: This config may be reduced or replaced by Engine Config + high level policy.
 type ScraperConfig struct {
 	StartURL       string   `json:"start_url"`
 	AllowedDomains []string `json:"allowed_domains"`
@@ -126,6 +134,8 @@ type ScraperConfig struct {
 }
 
 // DefaultConfig returns a baseline ScraperConfig.
+// DefaultConfig returns a baseline ScraperConfig.
+// Experimental: Defaults may tune between minor versions pre-v1.0.
 func DefaultConfig() *ScraperConfig {
 	return &ScraperConfig{
 		MaxDepth:          10,
@@ -170,6 +180,8 @@ func DefaultConfig() *ScraperConfig {
 }
 
 // Validate performs basic sanity checks on the configuration.
+// Validate performs basic sanity checks on the configuration.
+// Experimental: Validation rules may evolve; callers should treat returned errors as transient guidance.
 func (c *ScraperConfig) Validate() error {
 	if c.StartURL == "" {
 		return ErrMissingStartURL
@@ -187,6 +199,8 @@ func (c *ScraperConfig) Validate() error {
 }
 
 // Domain-specific errors (copied for locality; keep values identical)
+// Domain-specific errors.
+// Experimental: Error list may consolidate into sentinel + typed wrappers.
 var (
 	ErrMissingStartURL       = errors.New("start URL is required")
 	ErrMissingAllowedDomains = errors.New("at least one allowed domain is required")
@@ -204,6 +218,8 @@ var (
 	ErrTemplateExecution     = errors.New("failed to execute template")
 )
 
+// CrawlError wraps a stage-specific error with page context.
+// Experimental: May gain more structured classification fields.
 type CrawlError struct {
 	URL   string
 	Stage string

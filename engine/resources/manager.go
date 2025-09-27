@@ -16,6 +16,7 @@ import (
 )
 
 // Config controls resource management features such as caching, spillover, and checkpoints.
+// Experimental: Field set & spill behavior may change; consider facade-level policy later.
 type Config struct {
 	CacheCapacity      int
 	MaxInFlight        int
@@ -25,6 +26,7 @@ type Config struct {
 }
 
 // Manager coordinates resource usage across the pipeline.
+// Experimental: Surface may shrink (expose only caching primitives) pre-v1.0.
 type Manager struct {
 	cfg          Config
 	slots        chan struct{}
@@ -37,6 +39,8 @@ type Manager struct {
 }
 
 // Stats provides lightweight insight into current resource manager state.
+// Stats provides lightweight insight into current resource manager state.
+// Experimental: Field naming may align with Engine ResourceSnapshot.
 type Stats struct {
 	CacheEntries     int `json:"cache_entries"`
 	SpillFiles       int `json:"spill_files"`
@@ -65,6 +69,8 @@ type cacheEntry struct {
 }
 
 // NewManager constructs a resource manager according to the provided configuration.
+// NewManager constructs a resource manager according to the provided configuration.
+// Experimental: May internalize once higher-level policies stabilize.
 func NewManager(cfg Config) (*Manager, error) {
 	manager := &Manager{
 		cfg:   cfg,

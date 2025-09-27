@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// tokenBucket is an internal helper implementing a leaky token bucket.
 type tokenBucket struct { capacity float64; fillRate float64; tokens float64; lastRefill time.Time }
 
 func newTokenBucket(capacity, fillRate float64, now time.Time) *tokenBucket { if capacity <= 0 { capacity = 1 }; if fillRate <= 0 { fillRate = capacity }; return &tokenBucket{capacity: capacity, fillRate: fillRate, tokens: capacity, lastRefill: now} }
