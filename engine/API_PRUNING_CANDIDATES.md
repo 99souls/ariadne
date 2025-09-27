@@ -70,10 +70,15 @@ Intent: Evaluate each for public necessity.
 | Package | Action | Notes |
 | ------- | ------ | ----- |
 | processor | INT | Implementation detail |
-| output (interfaces) | TAG | OutputSink consolidated & annotated in strategies.go |
-| output/stdout | TAG | Example implementation (mark Experimental) |
-| resources | INT | Manager internalized; expose high-level snapshot only |
-| ratelimit | TAG | Keep if embedding / external tuning desirable; else INT |
+| output (interfaces) | TAG (DONE) | OutputSink consolidated & annotated in strategies.go |
+| output/stdout | TAG (DONE) | Example implementation (Experimental doc planned) |
+| resources | TAG (DONE) | Annotated Experimental; decision to internalize deferred to Wave 4 |
+| ratelimit | TAG (DONE) | Annotated Experimental; revisit need for external implementations later |
+| processor | INT | Implementation detail |
+| output (interfaces) | TAG (DONE) | OutputSink consolidated & annotated in strategies.go |
+| output/stdout | TAG (DONE) | Example implementation (Experimental doc planned) |
+| resources | TAG (DONE) | Annotated Experimental; decision to internalize deferred to Wave 4 |
+| ratelimit | TAG (DONE) | Annotated Experimental; revisit need for external implementations later |
 
 ## 6. Telemetry Packages
 
@@ -85,6 +90,21 @@ Intent: Evaluate each for public necessity.
 | telemetry/health  | INT    | Expose only summarized status via facade Policy/Snapshot |
 | telemetry/policy  | TAG    | Experimental; subject to field renames                   |
 | telemetry/logging | INT    | Internal logging integration                             |
+| Package | Action | Notes                                                    |
+| ----------------- | ------ | -------------------------------------------------------- |
+| telemetry/metrics | TAG    | Provider selection API may churn                         |
+| telemetry/events  | INT    | Internal bus (no stable contract yet)                    |
+| telemetry/tracing | TAG    | Adaptive tracer heuristics may change                    |
+| telemetry/health  | INT    | Expose only summarized status via facade Policy/Snapshot |
+| telemetry/policy  | TAG    | Experimental; subject to field renames                   |
+| telemetry/logging | INT    | Internal logging integration                             |
+
+## 13. Config Package Status (Wave 3 Completion)
+
+All exported symbols in `engine/config` have been annotated as Experimental and
+guarded by an allowlist test. Future Wave (4) will evaluate aggressive
+reduction: many runtime management & A/B testing constructs likely candidates
+for internalization or extraction.
 
 ## 7. Strategies / Extension Points
 
@@ -141,3 +161,10 @@ Stable (when designated) omit prefix or use:
 ---
 
 Feedback welcome; after sign-off we proceed with internalization (Wave 3 execution).
+
+## 13. Config Package Status (Wave 3 Completion)
+
+All exported symbols in `engine/config` have been annotated as Experimental and
+guarded by an allowlist test. Future Wave (4) will evaluate aggressive
+reduction: many runtime management & A/B testing constructs likely candidates
+for internalization or extraction.

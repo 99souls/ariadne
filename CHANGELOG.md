@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. The format 
 ### Added
 
 - engine: Introduced `strategies.go` consolidating `Fetcher`, `Processor`, `OutputSink`, and `AssetStrategy` interfaces with Experimental annotations (Wave 3).
+- config: Added comprehensive Experimental annotations across `engine/config` (unified + runtime config, hot reload, versioning, AB testing) plus export allowlist guard test locking curated surface (Wave 3).
 
 ### Changed
 

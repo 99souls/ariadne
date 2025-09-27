@@ -10,6 +10,10 @@ import (
 	"github.com/99souls/ariadne/engine/processor"
 )
 
+// Experimental: UnifiedBusinessConfig aggregates per-component policies and
+// global settings. Shape and field set may shrink or be replaced by a smaller
+// engine.Config translation layer pre-v1.0.
+//
 // UnifiedBusinessConfig provides a unified configuration for all engine components
 type UnifiedBusinessConfig struct {
 	// Component policies
@@ -26,6 +30,9 @@ type UnifiedBusinessConfig struct {
 	CreatedAt   time.Time
 }
 
+// Experimental: GlobalSettings houses cross-cutting knobs. Field names and
+// semantics may change; prefer higher-level Engine options when available.
+//
 // GlobalSettings contains cross-cutting configuration
 type GlobalSettings struct {
 	// Performance settings
@@ -44,6 +51,8 @@ type GlobalSettings struct {
 	TrustedCerts  []string
 }
 
+// Experimental: NewUnifiedBusinessConfig constructs an empty configuration.
+// May be replaced by functional options on engine.New or removed entirely.
 // NewUnifiedBusinessConfig creates a new unified configuration with empty policies
 func NewUnifiedBusinessConfig() *UnifiedBusinessConfig {
 	return &UnifiedBusinessConfig{
@@ -57,6 +66,8 @@ func NewUnifiedBusinessConfig() *UnifiedBusinessConfig {
 	}
 }
 
+// Experimental: DefaultBusinessConfig returns a configuration pre-populated
+// with opinionated defaults. Defaults and availability may change.
 // DefaultBusinessConfig creates a unified configuration with sensible defaults
 func DefaultBusinessConfig() *UnifiedBusinessConfig {
 	config := NewUnifiedBusinessConfig()
@@ -64,6 +75,9 @@ func DefaultBusinessConfig() *UnifiedBusinessConfig {
 	return config
 }
 
+// Experimental: ComposeBusinessConfig combines discrete policies. May move to
+// an internal translation helper; callers should not rely on long-term
+// presence.
 // ComposeBusinessConfig creates a unified configuration from individual policies
 func ComposeBusinessConfig(fetchPolicy crawler.FetchPolicy, processPolicy processor.ProcessPolicy, sinkPolicy output.SinkPolicy) (*UnifiedBusinessConfig, error) {
 	config := &UnifiedBusinessConfig{
@@ -84,6 +98,8 @@ func ComposeBusinessConfig(fetchPolicy crawler.FetchPolicy, processPolicy proces
 	return config, nil
 }
 
+// Experimental: FromLegacyConfig adapts a legacy key/value config map. Subject
+// to removal once legacy migration paths are dropped.
 // FromLegacyConfig creates a unified configuration from legacy configuration map
 func FromLegacyConfig(legacyConfig map[string]interface{}) (*UnifiedBusinessConfig, error) {
 	config := NewUnifiedBusinessConfig()
@@ -115,6 +131,8 @@ func FromLegacyConfig(legacyConfig map[string]interface{}) (*UnifiedBusinessConf
 	return config, nil
 }
 
+// Experimental: Validate checks internal consistency. Error messages and
+// validation scope may change (avoid string matching in tests).
 // Validate performs comprehensive validation of the unified configuration
 func (c *UnifiedBusinessConfig) Validate() error {
 	if c == nil {
@@ -252,6 +270,9 @@ func (c *UnifiedBusinessConfig) validateGlobalSettings() error {
 	return nil
 }
 
+// Experimental: ApplyDefaults sets unset fields to opinionated defaults. The
+// exact values may evolve; prefer explicit policy specification for
+// reproducibility.
 // ApplyDefaults applies default values to all components
 func (c *UnifiedBusinessConfig) ApplyDefaults() {
 	if c == nil {
@@ -264,6 +285,8 @@ func (c *UnifiedBusinessConfig) ApplyDefaults() {
 	c.ApplyGlobalDefaults()
 }
 
+// Experimental: ApplyFetchDefaults sets defaults for FetchPolicy. May become
+// unexported or merged into a constructor.
 // ApplyFetchDefaults applies fetch policy defaults
 func (c *UnifiedBusinessConfig) ApplyFetchDefaults() {
 	if c == nil || c.FetchPolicy == nil {
@@ -299,6 +322,8 @@ func (c *UnifiedBusinessConfig) ApplyFetchDefaults() {
 	}
 }
 
+// Experimental: ApplyProcessDefaults sets defaults for ProcessPolicy. May
+// become unexported or consolidated.
 // ApplyProcessDefaults applies process policy defaults
 func (c *UnifiedBusinessConfig) ApplyProcessDefaults() {
 	if c == nil || c.ProcessPolicy == nil {
@@ -350,6 +375,8 @@ func (c *UnifiedBusinessConfig) ApplyProcessDefaults() {
 	}
 }
 
+// Experimental: ApplySinkDefaults sets defaults for SinkPolicy. May become
+// unexported or consolidated.
 // ApplySinkDefaults applies sink policy defaults
 func (c *UnifiedBusinessConfig) ApplySinkDefaults() {
 	if c == nil || c.SinkPolicy == nil {
@@ -381,6 +408,8 @@ func (c *UnifiedBusinessConfig) ApplySinkDefaults() {
 	}
 }
 
+// Experimental: ApplyGlobalDefaults sets defaults for GlobalSettings. May
+// become unexported or consolidated.
 // ApplyGlobalDefaults applies global settings defaults
 func (c *UnifiedBusinessConfig) ApplyGlobalDefaults() {
 	if c == nil || c.GlobalSettings == nil {
@@ -408,6 +437,8 @@ func (c *UnifiedBusinessConfig) ApplyGlobalDefaults() {
 	}
 }
 
+// Experimental: ExtractFetchPolicy returns a defensive copy of FetchPolicy.
+// Prefer accessing via engine facade helpers when available.
 // ExtractFetchPolicy returns a copy of the fetch policy
 func (c *UnifiedBusinessConfig) ExtractFetchPolicy() crawler.FetchPolicy {
 	if c == nil || c.FetchPolicy == nil {
@@ -416,6 +447,7 @@ func (c *UnifiedBusinessConfig) ExtractFetchPolicy() crawler.FetchPolicy {
 	return *c.FetchPolicy
 }
 
+// Experimental: ExtractProcessPolicy returns a defensive copy.
 // ExtractProcessPolicy returns a copy of the process policy
 func (c *UnifiedBusinessConfig) ExtractProcessPolicy() processor.ProcessPolicy {
 	if c == nil || c.ProcessPolicy == nil {
@@ -424,6 +456,7 @@ func (c *UnifiedBusinessConfig) ExtractProcessPolicy() processor.ProcessPolicy {
 	return *c.ProcessPolicy
 }
 
+// Experimental: ExtractSinkPolicy returns a defensive copy.
 // ExtractSinkPolicy returns a copy of the sink policy
 func (c *UnifiedBusinessConfig) ExtractSinkPolicy() output.SinkPolicy {
 	if c == nil || c.SinkPolicy == nil {
@@ -432,6 +465,8 @@ func (c *UnifiedBusinessConfig) ExtractSinkPolicy() output.SinkPolicy {
 	return *c.SinkPolicy
 }
 
+// Experimental: DefaultGlobalSettings provides opinionated defaults. Values
+// may change pre-v1.
 // DefaultGlobalSettings returns sensible global settings defaults
 func DefaultGlobalSettings() *GlobalSettings {
 	return &GlobalSettings{

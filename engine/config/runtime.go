@@ -17,6 +17,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Experimental: RuntimeBusinessConfig is a higher-level runtime representation.
+// Structure & field set may substantially change; do not persist externally
+// beyond short-lived experiments.
 // RuntimeBusinessConfig represents a complete runtime configuration
 type RuntimeBusinessConfig struct {
 	Version          string                     `yaml:"version" json:"version"`
@@ -27,6 +30,8 @@ type RuntimeBusinessConfig struct {
 	Checksum         string                     `yaml:"checksum,omitempty" json:"checksum,omitempty"`
 }
 
+// Experimental: RuntimeConfigManager orchestrates loading and applying runtime
+// configs. API surface (methods, locking semantics) may shrink or move.
 // RuntimeConfigManager manages runtime configuration updates
 type RuntimeConfigManager struct {
 	configPath    string
@@ -35,11 +40,15 @@ type RuntimeConfigManager struct {
 	validators    []ConfigValidator
 }
 
+// Experimental: ConfigValidator allows custom validation hooks. Interface may
+// gain context or be removed in favor of functional options.
 // ConfigValidator validates configuration before applying updates
 type ConfigValidator interface {
 	Validate(config *RuntimeBusinessConfig) error
 }
 
+// Experimental: HotReloadSystem watches a config file and produces change
+// events. May be replaced by a simpler callback or moved internal.
 // HotReloadSystem manages file system watching and configuration hot-reloading
 type HotReloadSystem struct {
 	configPath string
@@ -48,6 +57,8 @@ type HotReloadSystem struct {
 	mutex      sync.Mutex
 }
 
+// Experimental: ConfigChange describes a detected configuration update. Shape
+// may change (especially ChangeType) as semantics evolve.
 // ConfigChange represents a detected configuration change
 type ConfigChange struct {
 	*RuntimeBusinessConfig
@@ -56,12 +67,16 @@ type ConfigChange struct {
 	PreviousChecksum string    `json:"previous_checksum"`
 }
 
+// Experimental: ConfigVersionManager persists configuration versions. May move
+// to an internal persistence module or gain pluggable storage.
 // ConfigVersionManager manages configuration version history and rollbacks
 type ConfigVersionManager struct {
 	versionsDir string
 	mutex       sync.RWMutex
 }
 
+// Experimental: ConfigVersion captures stored configuration metadata; shape
+// may evolve (e.g., diff summary).
 // ConfigVersion represents a stored configuration version
 type ConfigVersion struct {
 	Version           string                 `json:"version"`
@@ -71,12 +86,15 @@ type ConfigVersion struct {
 	PreviousVersion   string                 `json:"previous_version,omitempty"`
 }
 
+// Experimental: ABTestingFramework provides a simplistic in-process A/B test
+// harness; may be removed or replaced by external integration.
 // ABTestingFramework manages A/B testing for configuration changes
 type ABTestingFramework struct {
 	testsDir string
 	mutex    sync.RWMutex
 }
 
+// Experimental: ABTest definition; fields and naming may change or move.
 // ABTest represents an A/B test configuration
 type ABTest struct {
 	ID               string                 `json:"id"`
@@ -88,6 +106,7 @@ type ABTest struct {
 	Status           string                 `json:"status"`
 }
 
+// Experimental: ABTestResult aggregates computed statistics; subject to change.
 // ABTestResult represents results from an A/B test
 type ABTestResult struct {
 	TestID                  string                    `json:"test_id"`
@@ -97,6 +116,7 @@ type ABTestResult struct {
 	AnalyzedAt              time.Time                 `json:"analyzed_at"`
 }
 
+// Experimental: VariantResult metrics may change; do not rely on ordering.
 // VariantResult represents results for a specific variant
 type VariantResult struct {
 	VariantName         string  `json:"variant_name"`
@@ -106,6 +126,8 @@ type VariantResult struct {
 	ErrorRate           float64 `json:"error_rate"`
 }
 
+// Experimental: TestResultRecord storage model may change; persistence
+// semantics not guaranteed.
 // TestResultRecord represents a single test result record
 type TestResultRecord struct {
 	TestID       string    `json:"test_id"`
@@ -116,6 +138,8 @@ type TestResultRecord struct {
 	RecordedAt   time.Time `json:"recorded_at"`
 }
 
+// Experimental: IntegratedRuntimeSystem is a convenience aggregate; may be
+// decomposed or removed.
 // IntegratedRuntimeSystem combines all runtime configuration management components
 type IntegratedRuntimeSystem struct {
 	configManager  *RuntimeConfigManager
@@ -124,6 +148,8 @@ type IntegratedRuntimeSystem struct {
 	mutex          sync.RWMutex
 }
 
+// Experimental: NewRuntimeConfigManager constructs a manager instance. Future
+// versions may use functional options.
 // NewRuntimeConfigManager creates a new runtime configuration manager
 func NewRuntimeConfigManager(configPath string) (*RuntimeConfigManager, error) {
 	manager := &RuntimeConfigManager{
@@ -138,6 +164,8 @@ func NewRuntimeConfigManager(configPath string) (*RuntimeConfigManager, error) {
 	return manager, nil
 }
 
+// Experimental: AddValidator registers a validation hook. May shift to
+// immutable configuration on construction.
 // AddValidator adds a configuration validator
 func (rcm *RuntimeConfigManager) AddValidator(validator ConfigValidator) {
 	rcm.mutex.Lock()
@@ -145,6 +173,8 @@ func (rcm *RuntimeConfigManager) AddValidator(validator ConfigValidator) {
 	rcm.validators = append(rcm.validators, validator)
 }
 
+// Experimental: LoadConfiguration loads config from disk. Error handling and
+// zero value semantics may change.
 // LoadConfiguration loads configuration from file
 func (rcm *RuntimeConfigManager) LoadConfiguration() error {
 	rcm.mutex.Lock()
@@ -173,6 +203,8 @@ func (rcm *RuntimeConfigManager) LoadConfiguration() error {
 	return nil
 }
 
+// Experimental: UpdateConfiguration applies a new configuration. Concurrency
+// semantics may tighten.
 // UpdateConfiguration updates the current configuration
 func (rcm *RuntimeConfigManager) UpdateConfiguration(config *RuntimeBusinessConfig) error {
 	rcm.mutex.Lock()
@@ -194,6 +226,8 @@ func (rcm *RuntimeConfigManager) UpdateConfiguration(config *RuntimeBusinessConf
 	return rcm.saveConfigurationToFile(config)
 }
 
+// Experimental: GetCurrentConfig returns a shallow copy; deeper copies may be
+// introduced or accessor removed.
 // GetCurrentConfig returns the current configuration (read-only copy)
 func (rcm *RuntimeConfigManager) GetCurrentConfig() *RuntimeBusinessConfig {
 	rcm.mutex.RLock()
@@ -204,6 +238,8 @@ func (rcm *RuntimeConfigManager) GetCurrentConfig() *RuntimeBusinessConfig {
 	return &configCopy
 }
 
+// Experimental: ValidateConfiguration may merge with UpdateConfiguration or be
+// removed.
 // ValidateConfiguration validates a configuration without applying it
 func (rcm *RuntimeConfigManager) ValidateConfiguration(config *RuntimeBusinessConfig) error {
 	rcm.mutex.RLock()
@@ -244,6 +280,8 @@ func (rcm *RuntimeConfigManager) calculateChecksum(config *RuntimeBusinessConfig
 	return fmt.Sprintf("%x", hash)
 }
 
+// Experimental: NewHotReloadSystem creates a watcher abstraction. May be
+// removed or require context.
 // NewHotReloadSystem creates a new hot reload system
 func NewHotReloadSystem(configPath string) (*HotReloadSystem, error) {
 	watcher, err := fsnotify.NewWatcher()
@@ -258,6 +296,8 @@ func NewHotReloadSystem(configPath string) (*HotReloadSystem, error) {
 	}, nil
 }
 
+// Experimental: WatchConfigChanges emits change events. Channel protocol and
+// buffering may change; use defensively.
 // WatchConfigChanges starts watching for configuration file changes
 func (hrs *HotReloadSystem) WatchConfigChanges(ctx context.Context) (<-chan *ConfigChange, <-chan error) {
 	changesChan := make(chan *ConfigChange, 10)
@@ -342,6 +382,7 @@ func (hrs *HotReloadSystem) WatchConfigChanges(ctx context.Context) (<-chan *Con
 	return changesChan, errorsChan
 }
 
+// Experimental: StopWatching halts watching. May become idempotent error.
 // StopWatching stops the file system watcher
 func (hrs *HotReloadSystem) StopWatching() error {
 	hrs.mutex.Lock()
@@ -355,6 +396,8 @@ func (hrs *HotReloadSystem) StopWatching() error {
 	return nil
 }
 
+// Experimental: DetectChanges performs a naive comparison; strategy may change
+// (e.g., structural diff).
 // DetectChanges compares two configurations and returns true if they differ
 func (hrs *HotReloadSystem) DetectChanges(oldConfig, newConfig *RuntimeBusinessConfig) bool {
 	if oldConfig == nil && newConfig == nil {
@@ -395,6 +438,7 @@ func (hrs *HotReloadSystem) loadConfigFromFile() (*RuntimeBusinessConfig, error)
 	return &config, nil
 }
 
+// Experimental: NewConfigVersionManager constructs a version manager.
 // NewConfigVersionManager creates a new configuration version manager
 func NewConfigVersionManager(versionsDir string) (*ConfigVersionManager, error) {
 	if err := os.MkdirAll(versionsDir, 0755); err != nil {
@@ -406,6 +450,8 @@ func NewConfigVersionManager(versionsDir string) (*ConfigVersionManager, error) 
 	}, nil
 }
 
+// Experimental: SaveVersion persists version metadata. On-disk format not
+// stable.
 // SaveVersion saves a configuration version with description
 func (cvm *ConfigVersionManager) SaveVersion(config *RuntimeBusinessConfig, changeDescription string, args ...interface{}) error {
 	cvm.mutex.Lock()
@@ -430,6 +476,8 @@ func (cvm *ConfigVersionManager) SaveVersion(config *RuntimeBusinessConfig, chan
 	return os.WriteFile(versionFile, data, 0644)
 }
 
+// Experimental: GetVersionHistory enumerates on-disk versions. Ordering &
+// filtering may change.
 // GetVersionHistory returns the version history
 func (cvm *ConfigVersionManager) GetVersionHistory() ([]*ConfigVersion, error) {
 	cvm.mutex.RLock()
@@ -463,6 +511,8 @@ func (cvm *ConfigVersionManager) GetVersionHistory() ([]*ConfigVersion, error) {
 	return versions, nil
 }
 
+// Experimental: RollbackToVersion applies a previous version. Side-effects may
+// change.
 // RollbackToVersion rolls back to a specific version
 func (cvm *ConfigVersionManager) RollbackToVersion(targetVersion string) (*RuntimeBusinessConfig, error) {
 	cvm.mutex.RLock()
@@ -487,6 +537,7 @@ func (cvm *ConfigVersionManager) RollbackToVersion(targetVersion string) (*Runti
 	return version.Config, nil
 }
 
+// Experimental: NewABTestingFramework constructs A/B test harness.
 // NewABTestingFramework creates a new A/B testing framework
 func NewABTestingFramework(testsDir string) (*ABTestingFramework, error) {
 	if err := os.MkdirAll(testsDir, 0755); err != nil {
@@ -498,6 +549,8 @@ func NewABTestingFramework(testsDir string) (*ABTestingFramework, error) {
 	}, nil
 }
 
+// Experimental: CreateABTest persists a new test; persistence model may
+// change.
 // CreateABTest creates a new A/B test
 func (abt *ABTestingFramework) CreateABTest(name string, controlConfig, experimentConfig *RuntimeBusinessConfig, trafficSplit float64) (string, error) {
 	abt.mutex.Lock()
@@ -530,6 +583,8 @@ func (abt *ABTestingFramework) CreateABTest(name string, controlConfig, experime
 	return testID, nil
 }
 
+// Experimental: GetConfigForUser distributes users across variants; hashing
+// algorithm may change.
 // GetConfigForUser returns the appropriate configuration for a user based on A/B test
 func (abt *ABTestingFramework) GetConfigForUser(userID, testID string) *RuntimeBusinessConfig {
 	abt.mutex.RLock()
@@ -552,6 +607,7 @@ func (abt *ABTestingFramework) GetConfigForUser(userID, testID string) *RuntimeB
 	return test.ControlConfig
 }
 
+// Experimental: RecordTestResult appends result; format & durability may change.
 // RecordTestResult records a result from an A/B test
 func (abt *ABTestingFramework) RecordTestResult(testID, userID, variant string, success bool, responseTime float64) error {
 	abt.mutex.Lock()
@@ -587,6 +643,7 @@ func (abt *ABTestingFramework) RecordTestResult(testID, userID, variant string, 
 	return os.WriteFile(resultsFile, data, 0644)
 }
 
+// Experimental: AnalyzeTestResults computes basic stats; methodology will evolve.
 // AnalyzeTestResults analyzes A/B test results
 func (abt *ABTestingFramework) AnalyzeTestResults(testID string) (*ABTestResult, error) {
 	abt.mutex.RLock()
@@ -686,6 +743,8 @@ type variantStats struct {
 	totalResponseTime float64
 }
 
+// Experimental: NewIntegratedRuntimeSystem wires subsystems; may be removed in
+// favor of explicit composition.
 // NewIntegratedRuntimeSystem creates a new integrated runtime system
 func NewIntegratedRuntimeSystem(configManager *RuntimeConfigManager, hotReloader *HotReloadSystem, versionManager *ConfigVersionManager) (*IntegratedRuntimeSystem, error) {
 	return &IntegratedRuntimeSystem{
@@ -695,6 +754,8 @@ func NewIntegratedRuntimeSystem(configManager *RuntimeConfigManager, hotReloader
 	}, nil
 }
 
+// Experimental: DeployConfiguration saves & applies config; transactional
+// semantics may change.
 // DeployConfiguration deploys a new configuration with versioning
 func (irs *IntegratedRuntimeSystem) DeployConfiguration(config *RuntimeBusinessConfig, changeDescription string) error {
 	irs.mutex.Lock()
@@ -715,6 +776,8 @@ func (irs *IntegratedRuntimeSystem) DeployConfiguration(config *RuntimeBusinessC
 	return nil
 }
 
+// Experimental: GetCurrentConfiguration returns current config; may become a
+// snapshot struct.
 // GetCurrentConfiguration returns the current configuration
 func (irs *IntegratedRuntimeSystem) GetCurrentConfiguration() *RuntimeBusinessConfig {
 	irs.mutex.RLock()
@@ -723,6 +786,7 @@ func (irs *IntegratedRuntimeSystem) GetCurrentConfiguration() *RuntimeBusinessCo
 	return irs.configManager.GetCurrentConfig()
 }
 
+// Experimental: RollbackToVersion performs rollback; side-effects may change.
 // RollbackToVersion rolls back to a specific configuration version
 func (irs *IntegratedRuntimeSystem) RollbackToVersion(version string) error {
 	irs.mutex.Lock()
@@ -746,6 +810,7 @@ func (irs *IntegratedRuntimeSystem) RollbackToVersion(version string) error {
 	return nil
 }
 
+// Experimental: defaultConfigValidator is implementation detail; may be removed.
 // defaultConfigValidator provides basic configuration validation
 type defaultConfigValidator struct{}
 
