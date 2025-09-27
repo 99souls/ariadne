@@ -35,6 +35,17 @@ ci: tidy vet test race
 snapshot:
 	$(GO) run . -seeds https://example.com -snapshot-interval 5s -checkpoint checkpoint.log | head -n 5
 
+# Count legacy import path occurrences (Wave 2A guard)
+legacy-imports:
+	@echo "Counting legacy import path occurrences (ariadne/packages/engine)" >&2
+	@COUNT=$$(grep -R "ariadne/packages/engine" -n --include='*.go' . | wc -l | tr -d ' '); \
+	echo $$COUNT; \
+	if [ -n "$(EXPECTED)" ]; then \
+		if [ "$$COUNT" -gt "$(EXPECTED)" ]; then \
+			echo "ERROR: Legacy import count ($$COUNT) exceeds EXPECTED=$(EXPECTED)" >&2; exit 1; \
+		fi; \
+	fi
+
 # Tag a release (usage: make tag VERSION=0.1.0)
 tag:
 	@if [ -z "$(VERSION)" ]; then echo "VERSION required (e.g., make tag VERSION=0.1.0)"; exit 1; fi
