@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-	// Flags (minimal P5 CLI)
 	var (
 		seedList       string
 		seedFile       string
@@ -25,7 +24,6 @@ func main() {
 		snapshotEvery  time.Duration
 		showVersion    bool
 	)
-
 	flag.StringVar(&seedList, "seeds", "", "Comma separated list of seed URLs")
 	flag.StringVar(&seedFile, "seed-file", "", "Path to file containing one seed URL per line")
 	flag.BoolVar(&resume, "resume", false, "Resume from existing checkpoint (skip already processed URLs)")
@@ -35,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	if showVersion {
-		fmt.Println("ariadne engine CLI (facade mode) – phase-3 experimental")
+		fmt.Println("ariadne CLI – engine module hard-cut edition")
 		return
 	}
 
@@ -61,14 +59,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Graceful shutdown on SIGINT/SIGTERM
 	sigCh := make(chan os.Signal, 2)
 	signal.Notify(sigCh, os.Interrupt)
 	go func() {
 		<-sigCh
 		log.Println("signal received; initiating graceful shutdown...")
 		cancel()
-		// second signal forces exit
 		<-sigCh
 		log.Println("second signal received; forcing exit")
 		os.Exit(1)
@@ -79,19 +75,16 @@ func main() {
 		log.Fatalf("start engine: %v", err)
 	}
 
-	// Snapshot ticker
 	var ticker *time.Ticker
 	if snapshotEvery > 0 {
 		ticker = time.NewTicker(snapshotEvery)
 		defer ticker.Stop()
 	}
 
-	// Result consumption
 	done := make(chan struct{})
 	go func() {
 		enc := json.NewEncoder(os.Stdout)
 		for r := range results {
-			// Stream results as JSON lines
 			if err := enc.Encode(r); err != nil {
 				log.Printf("encode result: %v", err)
 			}
@@ -99,7 +92,6 @@ func main() {
 		close(done)
 	}()
 
-	// Snapshot loop
 	if ticker != nil {
 		go func() {
 			for {
@@ -116,7 +108,6 @@ func main() {
 	}
 
 	<-done
-	// Final snapshot (best-effort)
 	final := eng.Snapshot()
 	b, _ := json.MarshalIndent(final, "", "  ")
 	fmt.Fprintf(os.Stderr, "\n=== FINAL SNAPSHOT %s ===\n%s\n", time.Now().Format(time.RFC3339), string(b))
@@ -149,7 +140,6 @@ func gatherSeeds(seedList, seedFile string) ([]string, error) {
 			return nil, err
 		}
 	}
-	// de-duplicate while preserving order
 	seen := make(map[string]struct{}, len(seeds))
 	out := make([]string, 0, len(seeds))
 	for _, s := range seeds {
