@@ -27,7 +27,7 @@ Status: INITIATED (Iteration 1: Metrics Abstraction / Exporter Scaffold)
 - [x] Adapter for existing business metrics (phase 1: read-only exposure)
 - [x] Engine wiring (config flag + default)
 - [x] Basic tests pass (CI green)
-- [ ] Documentation update linking abstraction to existing `telemetry-architecture.md`
+- [x] Documentation update linking abstraction to existing `telemetry-architecture.md`
 
 ## Risks / Watch
 
@@ -35,6 +35,14 @@ Status: INITIATED (Iteration 1: Metrics Abstraction / Exporter Scaffold)
 - Latency overhead of label slice allocation (measure after initial commit).
 - Metric cardinality explosion (guard instrumentation early).
 
-## Next Action
+## Iteration 1 Status
 
-Update `telemetry-architecture.md` and `metrics-reference.md` to document the metrics adapter and clarify cumulative snapshot caveat; then close Iteration 1 and begin Iteration 2 (Event Bus scaffolding).
+Completed. All planned scope delivered (adapter snapshot caveat documented). Deltas (possible future hardening): adapter delta mode, cardinality warning emission metric.
+
+## Next Action (Iteration 2 Kickoff)
+
+Scaffold Event Bus:
+- Define interfaces (Publish, Subscribe, Unsubscribe, Stats)
+- Implement bounded per-subscriber ring buffer with drop counter
+- Integrate minimal metrics (events published, dropped) via provider
+- Add basic tests (single subscriber, multiple subscribers, slow subscriber drop)
