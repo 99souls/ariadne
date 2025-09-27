@@ -221,6 +221,16 @@ Additional tasks (future issues when ready):
 - Engine facade public API reference doc (TBD)
 - Migration guide promotion (Issue #7)
 
+### Adapter Strategy Alignment (New)
+
+To reduce coupling as we expand capabilities, we are adopting a consistent **adapter pattern**:
+
+- Telemetry HTTP endpoints (metrics, health, readiness) will live in an adapter package consuming pure engine APIs (`HealthSnapshot`, metrics registry handler) rather than being embedded in `engine`.
+- Fetching will evolve toward a `Fetcher` interface with the current Colly integration moved into a `colly` adapter (`packages/engine/fetcher/colly`). Future browser / API / cached fetchers can then be added without altering core orchestration.
+- Output sinks already follow this pattern; we will formalize registration for additional formats in later phases.
+
+Benefits: clear dependency direction, easier swapping/testing, smaller core surface, and alignment with future multi-module decomposition.
+
 Acceptance remains: architectural enforcement test (DONE), facade snapshot stability (DONE), incremental refactor continues under test safety net.
 
 ### Migration Work Breakdown (M0–M3 Active)

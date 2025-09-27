@@ -17,28 +17,35 @@ type AssetPolicy struct {
 ```
 
 ## Supported Types (Current)
+
 `img`, `script`, `stylesheet`, `media`, `doc`
 
 Additional discovery recognizes preload hints and srcset/source variants, but types are normalized to the above (e.g. preload as=image -> `img`).
 
 ## Behavior Notes
+
 - `Optimize` currently performs whitespace collapse for css/js and tags image assets with a placeholder optimization marker.
 - `InlineMaxBytes` uses a heuristic (filename hints) until actual size probing is implemented; inline mode still fetches bytes.
 - `MaxConcurrent` is bounded internally (hard cap 8) to prevent oversubscription.
 
 ## Validation Rules
+
 - If `Enabled` and `RewritePrefix` does not start with `/`, configuration validation fails.
 
 ## Metrics Snapshot Access
+
 ```go
 snap := engine.AssetMetricsSnapshot{
     Discovered: ..., Selected: ..., Downloaded: ..., Failed: ..., BytesIn: ..., BytesOut: ...,
 }
 ```
+
 Use after processing hooks to observe per-run aggregate counts.
 
 ## Events
+
 Inspect with `eng.AssetEvents()`; ring buffer (size 1024) returns recent events.
 
 ---
+
 End of Config Reference.

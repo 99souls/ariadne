@@ -17,6 +17,8 @@ Additionally, the long‑term target state now explicitly includes **evolving th
 **Target State**: 🎯 **Engine as Single Source of Truth (Multi-Module Ready)** - All business logic consolidated under engine interfaces; repository partitioned into independent Go modules with clear dependency direction (presentation layers depend on engine, not vice versa).  
 **Migration Effort**: **High** - Requires 6-8 phases of careful refactoring plus an activation phase for module extraction with maintained backward compatibility
 
+**Adapter Evolution Update (Phase 5E Alignment)**: As observability endpoints shift to an adapter pattern, the same architectural approach will be applied to business integrations—most notably the current Colly-based fetching implementation. A future `fetcher` adapter boundary will extract `CollyFetcher` into a pluggable module while the engine consumes only a `Fetcher` interface. This prevents HTTP mechanics and library concerns from leaking into core orchestration and mirrors the telemetry adapter separation now planned for health/metrics endpoints.
+
 ---
 
 ## 1. Current Architecture Assessment
@@ -168,6 +170,7 @@ For Ariadne, the core business layer should encapsulate:
 - Pluggable implementations for different use cases
 - Clean separation of business logic from infrastructure
 - Unified configuration surface for presentation layers
+- Consistent adapter pattern (fetchers, output sinks, telemetry endpoints) reducing churn when swapping implementations
 
 ---
 
@@ -204,6 +207,7 @@ For Ariadne, the core business layer should encapsulate:
 3. Update pipeline to use injected `Fetcher` instead of direct crawler calls
 4. Add fetch strategy configuration to engine config
 5. Deprecate direct `internal/crawler` usage
+6. Prepare adapter boundary for future alternative fetchers (browser-based, API-first) – align naming (`packages/engine/fetcher/colly`)
 
 **Risks**:
 
@@ -286,6 +290,7 @@ For Ariadne, the core business layer should encapsulate:
 ```
 
 **Tasks:**
+
 1. Extract `packages/engine` to `/engine` root module (rename path if needed)
 2. Move CLI entrypoint(s) to `/cli` with its own `go.mod` importing `engine`
 3. Introduce `/services/api` (stub) with placeholder server referencing engine (future expansion)
@@ -593,16 +598,16 @@ Potential future optional modules (not immediate): `engine-plugins/*`, `adapters
 
 ### 9.4 Incremental Extraction Plan
 
-| Step | Action | Output |
-|------|--------|--------|
-| 1 | Freeze interface churn (label proposed breaking changes) | Stability window defined |
-| 2 | Carve out `/engine` module (`go.mod`) | Independent build |
-| 3 | Adjust imports; add `replace` for local dev | Transitional build success |
-| 4 | Move CLI entrypoint → `/cli` module | Separate binary build |
-| 5 | Introduce API skeleton (even if minimal) | Future service placeholder |
-| 6 | Add CI matrix & module boundary lint | Automated enforcement |
-| 7 | First dual release: tag engine + CLI | Baseline version alignment |
-| 8 | Remove forwarding shims / finalize | Clean boundary |
+| Step | Action                                                   | Output                     |
+| ---- | -------------------------------------------------------- | -------------------------- |
+| 1    | Freeze interface churn (label proposed breaking changes) | Stability window defined   |
+| 2    | Carve out `/engine` module (`go.mod`)                    | Independent build          |
+| 3    | Adjust imports; add `replace` for local dev              | Transitional build success |
+| 4    | Move CLI entrypoint → `/cli` module                      | Separate binary build      |
+| 5    | Introduce API skeleton (even if minimal)                 | Future service placeholder |
+| 6    | Add CI matrix & module boundary lint                     | Automated enforcement      |
+| 7    | First dual release: tag engine + CLI                     | Baseline version alignment |
+| 8    | Remove forwarding shims / finalize                       | Clean boundary             |
 
 ### 9.5 CI/CD Adjustments
 
@@ -626,18 +631,19 @@ go run ./cmd/ariadne --config ../examples/config.yaml
 ```
 
 During transition:
+
 ```
 replace github.com/yourorg/ariadne/engine => ../engine
 ```
 
 ### 9.8 Risk & Mitigation Snapshot
 
-| Risk | Mitigation |
-|------|------------|
-| Dual tagging confusion | Namespaced tags + release templates |
-| Orphaned shared code | Consolidate into engine or explicit shared internal utils inside engine |
-| Drift in domain models | Single source in engine; lint disallows duplicate type declarations |
-| Over-fragmentation | Limit to 3 modules initially; reevaluate before adding more |
+| Risk                   | Mitigation                                                              |
+| ---------------------- | ----------------------------------------------------------------------- |
+| Dual tagging confusion | Namespaced tags + release templates                                     |
+| Orphaned shared code   | Consolidate into engine or explicit shared internal utils inside engine |
+| Drift in domain models | Single source in engine; lint disallows duplicate type declarations     |
+| Over-fragmentation     | Limit to 3 modules initially; reevaluate before adding more             |
 
 ### 9.9 Exit Criteria (Multi-Module Considered Successful)
 
@@ -733,11 +739,11 @@ This analysis provides the foundation for Phase 5 planning and execution, with c
 
 ## Appendix C: Proposed Initial Multi-Module Layout & Responsibilities
 
-| Module | Responsibility | Public Surface | Depends On |
-|--------|----------------|----------------|------------|
+| Module   | Responsibility                                                          | Public Surface                                        | Depends On                             |
+| -------- | ----------------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------- |
 | `engine` | Core business logic (fetch/process/output strategies, policies, models) | Stable interfaces, config structs, strategy contracts | Standard lib + vetted third-party libs |
-| `cli` | User-facing command-line, config parsing, UX, invocation orchestration | CLI commands, flags (no business logic) | `engine` |
-| `api` | (Future) HTTP/gRPC service exposing engine operations | Handlers, DTO translation layer | `engine` |
+| `cli`    | User-facing command-line, config parsing, UX, invocation orchestration  | CLI commands, flags (no business logic)               | `engine`                               |
+| `api`    | (Future) HTTP/gRPC service exposing engine operations                   | Handlers, DTO translation layer                       | `engine`                               |
 
 Transitional legacy areas (`internal/*`) will be incrementally either merged into `engine` or removed. No new code should be added under `internal/` after Phase 5C start—create strategies instead.
 

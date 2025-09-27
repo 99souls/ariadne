@@ -14,7 +14,11 @@ import (
 	engpipeline "ariadne/packages/engine/pipeline"
 	engratelimit "ariadne/packages/engine/ratelimit"
 	engresources "ariadne/packages/engine/resources"
+	telemEvents "ariadne/packages/engine/telemetry/events"
+	telemetryhealth "ariadne/packages/engine/telemetry/health"
 	telemetrymetrics "ariadne/packages/engine/telemetry/metrics"
+	telempolicy "ariadne/packages/engine/telemetry/policy"
+	telemetrytracing "ariadne/packages/engine/telemetry/tracing"
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).
@@ -58,6 +62,117 @@ type Engine struct {
 
 	// Phase 5E: metrics provider (initially optional; nil if disabled)
 	metricsProvider telemetrymetrics.Provider
+	// Phase 5E Iteration 2: event bus (always initialized; metrics provider may be noop)
+	eventBus telemEvents.Bus
+	// Phase 5E Iteration 3: tracer (simple in-process, may be noop based on future config)
+	tracer telemetrytracing.Tracer
+	// Phase 5E Iteration 4: health evaluator
+	healthEval *telemetryhealth.Evaluator
+	// health status instrumentation
+	healthStatusGauge telemetrymetrics.Gauge
+	lastHealth        atomic.Value // stores telemetryhealth.Status as string
+
+	// Telemetry policy (atomic snapshot). Nil => use internal defaults from policy.Default().
+	telemetryPolicy atomic.Pointer[telempolicy.TelemetryPolicy]
+}
+
+// Policy returns the current telemetry policy snapshot (never nil; returns default if unset)
+func (e *Engine) Policy() telempolicy.TelemetryPolicy {
+	if p := e.telemetryPolicy.Load(); p != nil {
+		return *p
+	}
+	def := telempolicy.Default()
+	return def
+}
+
+// MetricsProvider returns the active metrics provider (may be nil if disabled).
+func (e *Engine) MetricsProvider() telemetrymetrics.Provider { return e.metricsProvider }
+
+// HealthEvaluatorForTest allows tests to replace the evaluator (not concurrency-safe for production use).
+func (e *Engine) HealthEvaluatorForTest(ev *telemetryhealth.Evaluator) {
+	if e == nil || ev == nil {
+		return
+	}
+	e.healthEval = ev
+}
+
+// UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
+// Safe for concurrent use. Probes pick up new thresholds on next evaluation cycle.
+func (e *Engine) UpdateTelemetryPolicy(p *telempolicy.TelemetryPolicy) {
+	if e == nil {
+		return
+	}
+	var snap telempolicy.TelemetryPolicy
+	if p == nil {
+		snap = telempolicy.Default()
+	} else {
+		snap = p.Normalize()
+	}
+	old := e.Policy()
+	e.telemetryPolicy.Store(&snap)
+	// If probe TTL changed, rebuild evaluator so cache semantics reflect new policy.
+	if old.Health.ProbeTTL != snap.Health.ProbeTTL {
+		// Rebuild health evaluator with existing probes referencing dynamic policy via e.Policy()
+		if e.healthEval != nil {
+			limiterProbe, resourceProbe, pipelineProbe := e.healthProbes()
+			e.healthEval = telemetryhealth.NewEvaluator(snap.Health.ProbeTTL, limiterProbe, resourceProbe, pipelineProbe)
+		}
+	}
+}
+
+// healthProbes returns fresh probe funcs referencing current engine state & dynamic policy.
+func (e *Engine) healthProbes() (telemetryhealth.Probe, telemetryhealth.Probe, telemetryhealth.Probe) {
+	limiterProbe := telemetryhealth.ProbeFunc(func(ctx context.Context) telemetryhealth.ProbeResult {
+		if e.limiter == nil {
+			return telemetryhealth.Healthy("rate_limiter")
+		}
+		s := e.limiter.Snapshot()
+		if s.OpenCircuits == 0 {
+			return telemetryhealth.Healthy("rate_limiter")
+		}
+		if s.OpenCircuits > 0 && s.OpenCircuits < int64(len(s.Domains))/2+1 {
+			return telemetryhealth.Degraded("rate_limiter", "some open circuits")
+		}
+		return telemetryhealth.Unhealthy("rate_limiter", "many open circuits")
+	})
+	resourceProbe := telemetryhealth.ProbeFunc(func(ctx context.Context) telemetryhealth.ProbeResult {
+		if e.rm == nil {
+			return telemetryhealth.Healthy("resources")
+		}
+		st := e.rm.Stats()
+		pol := e.Policy()
+		if st.CheckpointQueued >= pol.Health.ResourceUnhealthyCheckpoint {
+			return telemetryhealth.Unhealthy("resources", "checkpoint backlog severe")
+		}
+		if st.CheckpointQueued >= pol.Health.ResourceDegradedCheckpoint {
+			return telemetryhealth.Degraded("resources", "checkpoint backlog")
+		}
+		return telemetryhealth.Healthy("resources")
+	})
+	pipelineProbe := telemetryhealth.ProbeFunc(func(ctx context.Context) telemetryhealth.ProbeResult {
+		if e.pl == nil {
+			return telemetryhealth.Unknown("pipeline", "not initialized")
+		}
+		m := e.pl.Metrics()
+		if m == nil {
+			return telemetryhealth.Unknown("pipeline", "metrics nil")
+		}
+		processed := m.TotalProcessed
+		failed := m.TotalFailed
+		pol := e.Policy()
+		if processed < pol.Health.PipelineMinSamples {
+			return telemetryhealth.Healthy("pipeline")
+		}
+		ratio := float64(failed) / float64(processed)
+		if ratio >= pol.Health.PipelineUnhealthyRatio {
+			return telemetryhealth.Unhealthy("pipeline", "failure ratio severe")
+		}
+		if ratio >= pol.Health.PipelineDegradedRatio {
+			return telemetryhealth.Degraded("pipeline", "failure ratio elevated")
+		}
+		return telemetryhealth.Healthy("pipeline")
+	})
+	return limiterProbe, resourceProbe, pipelineProbe
 }
 
 type resumeState struct {
@@ -109,6 +224,28 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 		e.metricsProvider = p
 		// NOTE: Exposing handler or starting HTTP server is responsibility of caller to avoid
 		// unilaterally opening ports. If PrometheusListenAddr is set future iteration may spawn server.
+	}
+
+	// Phase 5E Iteration 2: initialize event bus (metrics provider may be nil; bus tolerates nil -> noop metrics)
+	e.eventBus = telemEvents.NewBus(e.metricsProvider)
+
+	// Phase 5E Iteration 3: initialize tracer (enabled by default this iteration; future flag)
+	e.tracer = telemetrytracing.NewTracer(true)
+
+	// Phase 5E Iteration 4: initialize health evaluator with basic subsystem probes.
+	// TTL seeded from default policy; may be overridden later via UpdateTelemetryPolicy.
+	initialPolicy := telempolicy.Default()
+	e.telemetryPolicy.Store(&initialPolicy)
+	limiterProbe, resourceProbe, pipelineProbe := e.healthProbes()
+	e.healthEval = telemetryhealth.NewEvaluator(initialPolicy.Health.ProbeTTL, limiterProbe, resourceProbe, pipelineProbe)
+	// Create health status gauge if metrics enabled
+	if e.metricsProvider != nil {
+		g := e.metricsProvider.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "health", Name: "status", Help: "Engine overall health status (1=healthy,0.5=degraded,0=unhealthy,-1=unknown)"}})
+		if g != nil {
+			e.healthStatusGauge = g
+			// initialize value to unknown until first snapshot read
+			g.Set(-1)
+		}
 	}
 
 	// Phase 5D Iteration 5: initialize asset strategy if enabled
@@ -181,6 +318,40 @@ func (e *Engine) AssetEvents() []AssetEvent {
 	copy(out, e.assetEvents)
 	e.assetEventsMu.Unlock()
 	return out
+}
+
+// HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
+func (e *Engine) HealthSnapshot(ctx context.Context) telemetryhealth.Snapshot {
+	if e.healthEval == nil {
+		return telemetryhealth.Snapshot{}
+	}
+	snap := e.healthEval.Evaluate(ctx)
+	// Map status to numeric value
+	var val float64
+	switch snap.Overall {
+	case telemetryhealth.StatusHealthy:
+		val = 1
+	case telemetryhealth.StatusDegraded:
+		val = 0.5
+	case telemetryhealth.StatusUnhealthy:
+		val = 0
+	default:
+		val = -1
+	}
+	if e.healthStatusGauge != nil {
+		e.healthStatusGauge.Set(val)
+	}
+	prevRaw := e.lastHealth.Load()
+	prev := ""
+	if prevRaw != nil {
+		prev = prevRaw.(string)
+	}
+	cur := string(snap.Overall)
+	if prev != "" && prev != cur && e.eventBus != nil {
+		_ = e.eventBus.Publish(telemEvents.Event{Category: telemEvents.CategoryHealth, Type: "health_change", Severity: "info", Fields: map[string]interface{}{"previous": prev, "current": cur}})
+	}
+	e.lastHealth.Store(cur)
+	return snap
 }
 
 // Start begins processing of the provided seed URLs. It returns a read-only results channel.
@@ -265,6 +436,12 @@ func (e *Engine) Snapshot() Snapshot {
 	}
 	return snap
 }
+
+// EventBus exposes the telemetry event bus (non-nil).
+func (e *Engine) EventBus() telemEvents.Bus { return e.eventBus }
+
+// Tracer returns the engine's tracer implementation.
+func (e *Engine) Tracer() telemetrytracing.Tracer { return e.tracer }
 
 // EngineStrategies defines business logic components for dependency injection
 // This is the foundation for Phase 5A Step 4: Strategy-Aware Engine Constructor

@@ -1,9 +1,9 @@
 package metrics
 
 import (
+	legacy "ariadne/packages/engine/monitoring"
 	"net/http/httptest"
 	"testing"
-	legacy "ariadne/packages/engine/monitoring"
 )
 
 func TestNoopProviderBasic(t *testing.T) {
@@ -48,27 +48,43 @@ func TestBusinessCollectorAdapter(t *testing.T) {
 
 	prov := NewPrometheusProvider(PrometheusProviderOptions{})
 	adapter := NewBusinessCollectorAdapter(legacyCollector, prov)
-	if adapter == nil { t.Fatal("adapter nil") }
+	if adapter == nil {
+		t.Fatal("adapter nil")
+	}
 	adapter.SyncOnce()
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	prov.MetricsHandler().ServeHTTP(rr, req)
 	body := rr.Body.String()
-	if rr.Code != 200 { t.Fatalf("expected 200, got %d", rr.Code) }
-	if !contains(body, "ariadne_business_rule_evaluations_total") { t.Fatalf("expected rule evaluations metric, got body=%s", body) }
-	if !contains(body, "ariadne_business_strategy_executions_total") { t.Fatalf("expected strategy executions metric") }
-	if !contains(body, "ariadne_business_business_outcomes_total") { t.Fatalf("expected business outcomes metric") }
+	if rr.Code != 200 {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if !contains(body, "ariadne_business_rule_evaluations_total") {
+		t.Fatalf("expected rule evaluations metric, got body=%s", body)
+	}
+	if !contains(body, "ariadne_business_strategy_executions_total") {
+		t.Fatalf("expected strategy executions metric")
+	}
+	if !contains(body, "ariadne_business_business_outcomes_total") {
+		t.Fatalf("expected business outcomes metric")
+	}
 }
 
 // contains helper (avoid pulling strings package multiple times test)
-func contains(s, substr string) bool { return len(s) >= len(substr) && ( (len(substr)==0) || (Index(s, substr) >=0) ) }
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && ((len(substr) == 0) || (Index(s, substr) >= 0))
+}
 
 // Index is a minimal substring search to avoid additional imports; naive O(n*m) suffices for tests.
 func Index(s, substr string) int {
-	if len(substr)==0 { return 0 }
-	for i:=0; i+len(substr)<=len(s); i++ {
-		if s[i:i+len(substr)]==substr { return i }
+	if len(substr) == 0 {
+		return 0
+	}
+	for i := 0; i+len(substr) <= len(s); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
+		}
 	}
 	return -1
 }

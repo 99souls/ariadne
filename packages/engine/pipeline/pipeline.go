@@ -162,6 +162,19 @@ func (p *Pipeline) Metrics() *PipelineMetrics {
 	metrics.Duration = time.Since(metrics.StartTime)
 	return &metrics
 }
+
+// SetMetricsForTest allows tests to inject synthetic aggregate metrics to exercise
+// health heuristics and other policy-driven logic without running the full pipeline.
+// Not intended for production use.
+func (p *Pipeline) SetMetricsForTest(m *PipelineMetrics) {
+	if p == nil || m == nil {
+		return
+	}
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.metrics.TotalProcessed = m.TotalProcessed
+	p.metrics.TotalFailed = m.TotalFailed
+}
 func (p *Pipeline) Stop() {
 	p.cancel()
 	p.retryWG.Wait()

@@ -50,6 +50,7 @@ Units / suffixes:
 | resources.cacheMisses | ariadne_resources_cache_misses_total         | counter   | tier                    | Cache misses                       |
 | config.reloads        | ariadne_config_reloads_total                 | counter   | status (success/fail)   | Dynamic config reload attempts     |
 | events.dropped        | ariadne_events_dropped_total                 | counter   | subscriber              | Dropped events per subscriber      |
+| events.published      | ariadne_events_published_total               | counter   | -                       | Total events published (fan-out)   |
 
 ## 3. Histograms (Initial Buckets Draft)
 
@@ -67,12 +68,13 @@ Buckets (seconds): 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05
 
 ## 4. Gauges
 
-| Proposed Name                       | Source                       | Description                          |
-| ----------------------------------- | ---------------------------- | ------------------------------------ |
-| ariadne_resources_memory_inflight   | runtime stats / manager      | Bytes currently held in memory cache |
-| ariadne_resources_assets_inflight   | asset strategy (in-progress) | Concurrent active asset executions   |
-| ariadne_pipeline_pages_inflight     | pipeline scheduler           | Pages concurrently being processed   |
-| ariadne_rate_limit_tokens_available | rate limiter state           | Current available tokens (aggregate) |
+| Proposed Name                       | Source                       | Description                                                              |
+| ----------------------------------- | ---------------------------- | ------------------------------------------------------------------------ |
+| ariadne_resources_memory_inflight   | runtime stats / manager      | Bytes currently held in memory cache                                     |
+| ariadne_resources_assets_inflight   | asset strategy (in-progress) | Concurrent active asset executions                                       |
+| ariadne_pipeline_pages_inflight     | pipeline scheduler           | Pages concurrently being processed                                       |
+| ariadne_rate_limit_tokens_available | rate limiter state           | Current available tokens (aggregate)                                     |
+| ariadne_health_status               | engine health evaluator      | Overall engine health (-1 unknown, 0 unhealthy, 0.5 degraded, 1 healthy) |
 
 ## 5. Label Cardinality Constraints
 
@@ -116,4 +118,17 @@ Future phases may add: distributed shard metrics (shard_id label), exporter heal
 
 ## 11. Status
 
-Draft – will evolve during Iterations 1–3 before stability review.
+Draft – Iterations 1–4 implemented metrics provider, event bus counters, tracing/logging, and health status gauge.
+
+### Health Metric Rationale
+
+The single numeric health gauge provides low-cardinality readiness insight for dashboards / alerting without a multi-series join:
+
+| Value | Meaning   | Emission Condition                                  |
+| ----- | --------- | --------------------------------------------------- |
+| -1    | unknown   | No probes registered / evaluator not yet sampled    |
+| 0     | unhealthy | Any probe returns unhealthy OR severe threshold met |
+| 0.5   | degraded  | Any probe degraded (none unhealthy)                 |
+| 1     | healthy   | All probes healthy and sample count thresholds met  |
+
+Pipeline failure ratio thresholds: degraded >=50%, unhealthy >=80% (min 10 samples) to dampen early noise. Resource checkpoint backlog thresholds: degraded >=256, unhealthy >=512 queued entries.

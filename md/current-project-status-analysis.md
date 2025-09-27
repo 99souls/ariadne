@@ -372,6 +372,7 @@ Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added sepa
 **Objective (Delivered)**: Extract and operationalize asset handling (discovery → decision → download/inline → optimize → rewrite) as a policy-driven, concurrent, deterministic Engine subsystem.
 
 **Key Deliverables**:
+
 - AssetStrategy interface + default implementation
 - Extended discovery coverage (img/src & srcset, source[srcset], preload rel=stylesheet/script/image, media sources, document asset anchors)
 - Policy surface (enable, limits, concurrency, inline thresholds, optimization toggle, rewrite prefix)
@@ -384,6 +385,7 @@ Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added sepa
 - Documentation set: architecture appendix, migration guide, asset policy reference, finalized phase plan
 
 **Deferred Items**:
+
 - Multi-variant srcset materialization
 - Advanced image/media optimization (transcoding, format conversion)
 - External CDN / cache integration
@@ -396,6 +398,7 @@ Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added sepa
 **Objective**: Elevate observability from basic in-process counters to production-grade, externally consumable telemetry (metrics, traces, structured events, health & readiness) with low overhead and clear SLO baselines.
 
 **Planned High-Level Work (See `phase5e-plan.md` once added)**:
+
 - Metrics Exporters: Prometheus (pull) & OpenTelemetry bridge (push/OTLP)
 - Unified Telemetry Interface: abstraction enabling pluggable exporters or no-op mode
 - Event Bus: Replace bounded ring with subscription-based fan-out (in-memory to start)
@@ -407,6 +410,7 @@ Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added sepa
 - Performance Budget: <5% CPU overhead & <10% memory overhead with full telemetry enabled
 
 **Exit Criteria (Preview)**:
+
 - All core internal counters exported via Prometheus endpoint (or injectable registry)
 - Optional OTEL tracing with parent context propagation and span attributes (URL, domain, asset type)
 - Event bus supports at least one subscriber (logger) + future external forwarder hook

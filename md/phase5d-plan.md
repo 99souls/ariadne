@@ -245,12 +245,14 @@ Synthetic fixtures placed under `packages/engine/testdata/assets/`.
 ## 8. Documentation Artifacts
 
 Delivered (Iteration 8):
+
 - Architecture Appendix (`architecture-asset-strategy-appendix.md`)
 - Migration Guide (`asset-migration-guide.md`)
 - Asset Policy Config Reference (`config-asset-policy.md`)
 - Plan cross-links (this file)
 
 Deferred / Future (Phase 5E):
+
 - Metrics exporter integration docs
 - Advanced optimization guide
 
@@ -267,13 +269,15 @@ Deferred / Future (Phase 5E):
 - Phase 5D completion note appended – Done
 
 ### 9.1 Benchmark Baseline
+
 Environment: macOS arm64 (Apple M4 Max) – two runs (`go test -bench BenchmarkAssetExecute -benchmem`)
 
-| Benchmark | Run1 ns/op | Run2 ns/op | Best ns/op | B/op (approx) | allocs/op |
-|-----------|-----------:|-----------:|-----------:|--------------:|----------:|
-| AssetExecute | 164,184 | 129,254 | 129,254 | ~206,583 | ~1,178 |
+| Benchmark    | Run1 ns/op | Run2 ns/op | Best ns/op | B/op (approx) | allocs/op |
+| ------------ | ---------: | ---------: | ---------: | ------------: | --------: |
+| AssetExecute |    164,184 |    129,254 |    129,254 |      ~206,583 |    ~1,178 |
 
 Observations:
+
 - Variance acceptable; best value recorded for baseline trend.
 - Alloc profile stable; future optimization may target allocation count reduction.
 
