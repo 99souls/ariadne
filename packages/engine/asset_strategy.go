@@ -73,7 +73,7 @@ type AssetStrategy interface {
 
 // AssetEvent represents a lifecycle occurrence for observability.
 type AssetEvent struct {
-	Type          string        // e.g. asset_download, asset_optimize, asset_stage_error, asset_rewrite
+	Type          string        // e.g. asset_download, asset_stage_error, asset_rewrite
 	URL           string        // asset URL (where applicable)
 	Stage         string        // discover|decide|execute|rewrite
 	BytesIn       int           // pre-optimization bytes
@@ -157,6 +157,14 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 		return nil, err
 	}
 	var refs []AssetRef
+	seen := make(map[string]struct{})
+	add := func(r AssetRef) {
+		if r.URL == "" { return }
+		key := r.Type + "|" + r.URL
+		if _, ok := seen[key]; ok { return }
+		seen[key] = struct{}{}
+		refs = append(refs, r)
+	}
 	base := page.URL
 	resolve := func(raw string) string {
 		u, err := base.Parse(raw)
@@ -174,7 +182,7 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 		if abs == "" {
 			return
 		}
-		refs = append(refs, AssetRef{URL: abs, Type: "img", Attr: "src", Original: v})
+		add(AssetRef{URL: abs, Type: "img", Attr: "src", Original: v})
 	})
 	// Iteration 7: parse srcset (choose first URL for now; future: multiple variants)
 	doc.Find("img[srcset]").Each(func(_ int, sel *goquery.Selection) {
@@ -193,7 +201,18 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 		if abs == "" {
 			return
 		}
-		refs = append(refs, AssetRef{URL: abs, Type: "img", Attr: "srcset", Original: first})
+		add(AssetRef{URL: abs, Type: "img", Attr: "srcset", Original: first})
+	})
+	// <source srcset> inside <picture> or media elements (treat like img)
+	doc.Find("source[srcset]").Each(func(_ int, sel *goquery.Selection) {
+		v, _ := sel.Attr("srcset")
+		if v == "" { return }
+		first := strings.TrimSpace(strings.Split(v, ",")[0])
+		parts := strings.Fields(first)
+		if len(parts) > 0 { first = parts[0] }
+		abs := resolve(first)
+		if abs == "" { return }
+		add(AssetRef{URL: abs, Type: "img", Attr: "srcset", Original: first})
 	})
 	// video/audio sources
 	doc.Find("video source[src], audio source[src]").Each(func(_ int, sel *goquery.Selection) {
@@ -205,7 +224,7 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 		if abs == "" {
 			return
 		}
-		refs = append(refs, AssetRef{URL: abs, Type: "media", Attr: "src", Original: v})
+		add(AssetRef{URL: abs, Type: "media", Attr: "src", Original: v})
 	})
 	doc.Find("link[rel='stylesheet'][href]").Each(func(_ int, sel *goquery.Selection) {
 		v, _ := sel.Attr("href")
@@ -216,7 +235,24 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 		if abs == "" {
 			return
 		}
-		refs = append(refs, AssetRef{URL: abs, Type: "stylesheet", Attr: "href", Original: v})
+		add(AssetRef{URL: abs, Type: "stylesheet", Attr: "href", Original: v})
+	})
+	// Preload hints: map underlying type via 'as'
+	doc.Find("link[rel='preload'][as][href]").Each(func(_ int, sel *goquery.Selection) {
+		v, _ := sel.Attr("href")
+		if v == "" { return }
+		asVal, _ := sel.Attr("as")
+		asVal = strings.ToLower(asVal)
+		var t string
+		switch asVal {
+		case "image": t = "img"
+		case "script": t = "script"
+		case "style", "stylesheet": t = "stylesheet"
+		default: return
+		}
+		abs := resolve(v)
+		if abs == "" { return }
+		add(AssetRef{URL: abs, Type: t, Attr: "href", Original: v})
 	})
 	doc.Find("script[src]").Each(func(_ int, sel *goquery.Selection) {
 		v, _ := sel.Attr("src")
@@ -227,7 +263,19 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 		if abs == "" {
 			return
 		}
-		refs = append(refs, AssetRef{URL: abs, Type: "script", Attr: "src", Original: v})
+		add(AssetRef{URL: abs, Type: "script", Attr: "src", Original: v})
+	})
+	// Document assets via anchors (pdf/doc* etc.) – discovery only (policy may skip)
+	doc.Find("a[href]").Each(func(_ int, sel *goquery.Selection) {
+		v, _ := sel.Attr("href")
+		if v == "" { return }
+		lower := strings.ToLower(v)
+		if !(strings.HasSuffix(lower, ".pdf") || strings.HasSuffix(lower, ".doc") || strings.HasSuffix(lower, ".docx") || strings.HasSuffix(lower, ".ppt") || strings.HasSuffix(lower, ".pptx") || strings.HasSuffix(lower, ".xls") || strings.HasSuffix(lower, ".xlsx")) {
+			return
+		}
+		abs := resolve(v)
+		if abs == "" { return }
+		add(AssetRef{URL: abs, Type: "doc", Attr: "href", Original: v})
 	})
 	if s.metrics != nil {
 		atomic.AddInt64(&s.metrics.discovered, int64(len(refs)))
@@ -289,102 +337,112 @@ func (s *DefaultAssetStrategy) Decide(ctx context.Context, refs []AssetRef, poli
 	return actions, nil
 }
 func (s *DefaultAssetStrategy) Execute(ctx context.Context, actions []AssetAction, policy AssetPolicy) ([]MaterializedAsset, error) {
-    if !policy.Enabled || len(actions) == 0 {
-        return nil, nil
-    }
-    // Filter to executable actions
-    filtered := make([]AssetAction, 0, len(actions))
-    for _, a := range actions {
-        if a.Mode == AssetModeDownload || a.Mode == AssetModeInline {
-            filtered = append(filtered, a)
-        }
-    }
-    if len(filtered) == 0 {
-        return nil, nil
-    }
+	if !policy.Enabled || len(actions) == 0 {
+		return nil, nil
+	}
+	// Filter to executable actions
+	filtered := make([]AssetAction, 0, len(actions))
+	for _, a := range actions {
+		if a.Mode == AssetModeDownload || a.Mode == AssetModeInline {
+			filtered = append(filtered, a)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil, nil
+	}
 
-    workerCount := policy.MaxConcurrent
-    if workerCount <= 0 {
-        workerCount = runtime.NumCPU()
-        if workerCount > 8 { // conservative cap
-            workerCount = 8
-        }
-    }
-    if workerCount > len(filtered) {
-        workerCount = len(filtered)
-    }
+	workerCount := policy.MaxConcurrent
+	if workerCount <= 0 {
+		workerCount = runtime.NumCPU()
+		if workerCount > 8 { // conservative cap
+			workerCount = 8
+		}
+	}
+	if workerCount > len(filtered) {
+		workerCount = len(filtered)
+	}
 
-    jobs := make(chan AssetAction)
-    results := make(chan MaterializedAsset, len(filtered))
-    var wg sync.WaitGroup
-    var totalBytes int64 // cumulative pre-optimization bytes fetched
+	jobs := make(chan AssetAction)
+	results := make(chan MaterializedAsset, len(filtered))
+	var wg sync.WaitGroup
+	var totalBytes int64 // cumulative pre-optimization bytes fetched
 
-    worker := func() {
-        defer wg.Done()
-        for a := range jobs {
-            if ctx.Err() != nil { // context cancelled
-                return
-            }
-            if policy.MaxBytes > 0 && atomic.LoadInt64(&totalBytes) >= policy.MaxBytes {
-                continue
-            }
-            var capRemaining int64
-            if policy.MaxBytes > 0 {
-                capRemaining = policy.MaxBytes - atomic.LoadInt64(&totalBytes)
-                if capRemaining <= 0 {
-                    continue
-                }
-            }
-            start := time.Now()
-            b, err := fetchAsset(ctx, a.Ref.URL, capRemaining)
-            if err != nil {
-                if s.metrics != nil { atomic.AddInt64(&s.metrics.failed, 1) }
-                if s.events != nil {
-                    s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "execute", URL: a.Ref.URL, Error: err.Error()})
-                }
-                continue
-            }
-            preLen := len(b)
-            // account toward total cap
-            atomic.AddInt64(&totalBytes, int64(preLen))
+	worker := func() {
+		defer wg.Done()
+		for a := range jobs {
+			if ctx.Err() != nil { // context cancelled
+				return
+			}
+			if policy.MaxBytes > 0 && atomic.LoadInt64(&totalBytes) >= policy.MaxBytes {
+				continue
+			}
+			var capRemaining int64
+			if policy.MaxBytes > 0 {
+				capRemaining = policy.MaxBytes - atomic.LoadInt64(&totalBytes)
+				if capRemaining <= 0 {
+					continue
+				}
+			}
+			start := time.Now()
+			b, err := fetchAsset(ctx, a.Ref.URL, capRemaining)
+			if err != nil {
+				if s.metrics != nil {
+					atomic.AddInt64(&s.metrics.failed, 1)
+				}
+				if s.events != nil {
+					s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "execute", URL: a.Ref.URL, Error: err.Error()})
+				}
+				continue
+			}
+			preLen := len(b)
+			// account toward total cap
+			atomic.AddInt64(&totalBytes, int64(preLen))
 
-            optimizations := []string{}
-            if policy.Optimize {
-                b2, applied := optimizeBytes(a.Ref.Type, b)
-                if len(applied) > 0 {
-                    optimizations = applied
-                    b = b2
-                }
-            }
-            postLen := len(b)
+			optimizations := []string{}
+			if policy.Optimize {
+				b2, applied := optimizeBytes(a.Ref.Type, b)
+				if len(applied) > 0 {
+					optimizations = applied
+					b = b2
+				}
+			}
+			postLen := len(b)
 
-            hash := hashBytesHex(b)
-            path := computeAssetPath(policy.RewritePrefix, hash, a.Ref.URL)
-            ma := MaterializedAsset{Ref: a.Ref, Bytes: b, Hash: hash, Path: path, Size: postLen, Optimizations: optimizations}
+			hash := hashBytesHex(b)
+			path := computeAssetPath(policy.RewritePrefix, hash, a.Ref.URL)
+			ma := MaterializedAsset{Ref: a.Ref, Bytes: b, Hash: hash, Path: path, Size: postLen, Optimizations: optimizations}
 
-            if s.metrics != nil {
-                atomic.AddInt64(&s.metrics.downloaded, 1)
-                if len(optimizations) > 0 { atomic.AddInt64(&s.metrics.optimized, 1) }
-                atomic.AddInt64(&s.metrics.bytesIn, int64(preLen))
-                atomic.AddInt64(&s.metrics.bytesOut, int64(postLen))
-            }
-            if s.events != nil {
-                s.events.Publish(AssetEvent{Type: "asset_download", Stage: "execute", URL: a.Ref.URL, BytesIn: preLen, BytesOut: postLen, Duration: time.Since(start), Optimizations: optimizations})
-            }
-            results <- ma
-        }
-    }
+			if s.metrics != nil {
+				atomic.AddInt64(&s.metrics.downloaded, 1)
+				if len(optimizations) > 0 {
+					atomic.AddInt64(&s.metrics.optimized, 1)
+				}
+				atomic.AddInt64(&s.metrics.bytesIn, int64(preLen))
+				atomic.AddInt64(&s.metrics.bytesOut, int64(postLen))
+			}
+			if s.events != nil {
+				s.events.Publish(AssetEvent{Type: "asset_download", Stage: "execute", URL: a.Ref.URL, BytesIn: preLen, BytesOut: postLen, Duration: time.Since(start), Optimizations: optimizations})
+			}
+			results <- ma
+		}
+	}
 
-    wg.Add(workerCount)
-    for i := 0; i < workerCount; i++ { go worker() }
-    for _, a := range filtered { jobs <- a }
-    close(jobs)
-    wg.Wait()
-    close(results)
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go worker()
+	}
+	for _, a := range filtered {
+		jobs <- a
+	}
+	close(jobs)
+	wg.Wait()
+	close(results)
 
-    assets := make([]MaterializedAsset, 0, len(filtered))
-    for m := range results { assets = append(assets, m) }
-    return assets, nil
+	assets := make([]MaterializedAsset, 0, len(filtered))
+	for m := range results {
+		assets = append(assets, m)
+	}
+	return assets, nil
 }
 func (s *DefaultAssetStrategy) Rewrite(ctx context.Context, page *engmodels.Page, assets []MaterializedAsset, policy AssetPolicy) (*engmodels.Page, error) {
 	if page == nil || len(assets) == 0 || !policy.Enabled {

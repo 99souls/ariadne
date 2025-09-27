@@ -1,7 +1,7 @@
 # Phase 5D Plan: Asset Strategy Integration
 
-Status: In Progress (Iterations 1–6 complete; Iteration 7 ACTIVE)
-Date: September 27, 2025 (Updated: Iteration 7 concurrency + extended discovery scaffold started)
+Status: In Progress (Iterations 1–7 substantial completion; Iteration 7 ACTIVE)
+Date: September 27, 2025 (Updated: Iteration 7 concurrency, race safety, extended discovery, benchmark, failed metric)
 Related Analysis: See `phase5-engine-architecture-analysis.md` (Section Phase 5D)
 Preceding Phase: 5C (Processor Migration & Config Platform Enhancements) — COMPLETE
 
@@ -62,9 +62,9 @@ Phase 5D introduces a deliberate, non-backward-compatible replacement of the leg
 - [x] Config surface wired + validated (Iteration 1 + validation tests)
 - [x] Processor/pipeline refactored to delegate asset path (Iteration 5 hook integration)
 - [x] Tests (unit, integration, determinism) green (Deterministic rewrite + instrumentation test added)
-- [x] Metrics & events instrumentation (baseline counters + events & tests)
-- [ ] Performance sanity benchmark recorded (Planned Iteration 7)
-- [ ] Race detector & concurrency validation (Planned Iteration 7)
+- [x] Metrics & events instrumentation (baseline counters + events & tests; optimize events coalesced)
+- [x] Performance sanity benchmark recorded (Iteration 7 baseline)
+- [x] Race detector & concurrency validation (Iteration 7 worker pool + atomic metrics)
 - [ ] Documentation updated (API, operations, architecture progress) (Planned Iteration 8)
 - [ ] Phase 5D completion note committed (Iteration 8)
 
@@ -80,10 +80,10 @@ Phase 5D introduces a deliberate, non-backward-compatible replacement of the leg
 | Pipeline Refactor     | Introduce hook & remove legacy pipeline                | Implemented (Iteration 5)                              |
 | Observability         | Metrics counters + events types + tests                | Baseline implemented (Iteration 6); exporter TBD       |
 | Determinism & Hashing | Stable naming + path scheme + tests                    | Implemented & validated                                |
-| Concurrency & Perf    | Parallel Execute, worker pool, baseline benchmark      | Pending (Iteration 7)                                  |
-| Extended Discovery    | srcset, media, docs (parity backlog)                   | Pending (Iteration 7+)                                 |
+| Concurrency & Perf    | Parallel Execute, worker pool, baseline benchmark      | Implemented (Iteration 7)                              |
+| Extended Discovery    | srcset, media, preload, doc anchors                    | Partially Implemented (Iteration 7)                    |
 | Documentation         | API doc, operations guide, migration & progress log    | Pending (Iteration 8)                                  |
-| Benchmark             | Before/after micro-benchmark script                    | Pending (Iteration 7)                                  |
+| Benchmark             | Before/after micro-benchmark script                    | Baseline Added (Iteration 7)                           |
 
 ---
 
@@ -148,16 +148,9 @@ type AssetPolicy struct {
 
 ### 4.4 Concurrency Model
 
-Current (Iterations 1–6):
+Previous (Iterations 1–6): Serial execute model for simplicity.
 
-- Execute stage runs serially per page (simplifies determinism + early correctness).
-
-Planned (Iteration 7):
-
-- Introduce bounded worker pool (default size: min(4, GOMAXPROCS); configurable future `AssetPolicy.MaxConcurrent`).
-- Maintain deterministic final rewrite ordering by sorting materialized assets by hash (already in place).
-- Aggregate errors; non-fatal failures produce events and skip specific assets only.
-- Metrics updated atomically for parallel downloads (may refactor counters to atomic operations if contention observed).
+Current (Iteration 7): Bounded worker pool respecting `AssetPolicy.MaxConcurrent` (fallback to capped NumCPU). Determinism preserved via hash-sorted rewrite, metrics updated atomically, failed downloads increment a separate counter without affecting bytes totals. Optimize events folded into download events (Optimizations field) to reduce event volume.
 
 ### 4.5 Metrics (Implemented Baseline / Additions)
 
@@ -169,6 +162,7 @@ Planned (Iteration 7):
 | assets_skipped_total         | counter | Skipped by policy             |
 | assets_inlined_total         | counter | Inlined (below threshold)     |
 | assets_optimized_total       | counter | Optimization performed        |
+| assets_failed_total          | counter | Failed download attempts      |
 | asset_bytes_in_total         | counter | Bytes downloaded              |
 | asset_bytes_out_total        | counter | Bytes after optimization      |
 | asset_rewrite_failures_total | counter | Rewrite errors                |
@@ -182,9 +176,10 @@ Implementation Notes:
 ### 4.6 Events (Implemented)
 
 - `asset_stage_error` (stage, error)
-- `asset_download` (url, bytes, duration)
-- `asset_optimize` (url, saved_bytes)
+- `asset_download` (url, pre/post bytes, duration, optimizations)
 - `asset_rewrite` (count)
+
+Removed: separate `asset_optimize` event (now coalesced into `asset_download`).
 
 ### 4.7 Failure & Recovery Semantics
 
@@ -221,16 +216,16 @@ Synthetic fixtures placed under `packages/engine/testdata/assets/`.
 
 ## 6. Iteration Plan (Agile Breakdown)
 
-| Iteration | Scope                                                   | Deliverables (Status)                               |
-| --------- | ------------------------------------------------------- | --------------------------------------------------- |
-| 1         | Interface + policy structs + docs stub                  | Strategy + config defaults (Complete)               |
-| 2         | Discovery + basic execute                               | Serial discovery/execute tests (Complete)           |
-| 3         | Policy decision matrix (allow/block, limits, inline)    | Decision + limit tests (Complete)                   |
-| 4         | Optimization hook + hashing + deterministic path        | Path + optimization tests (Complete)                |
-| 5         | Rewrite stage + processor delegation removal            | Hook integration, legacy removal (Complete)         |
-| 6         | Metrics + events instrumentation                        | Counters + events + tests (Complete)                |
+| Iteration | Scope                                                   | Deliverables (Status)                                                             |
+| --------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1         | Interface + policy structs + docs stub                  | Strategy + config defaults (Complete)                                             |
+| 2         | Discovery + basic execute                               | Serial discovery/execute tests (Complete)                                         |
+| 3         | Policy decision matrix (allow/block, limits, inline)    | Decision + limit tests (Complete)                                                 |
+| 4         | Optimization hook + hashing + deterministic path        | Path + optimization tests (Complete)                                              |
+| 5         | Rewrite stage + processor delegation removal            | Hook integration, legacy removal (Complete)                                       |
+| 6         | Metrics + events instrumentation                        | Counters + events + tests (Complete)                                              |
 | 7         | Concurrency + extended discovery + performance baseline | Worker pool (in progress), srcset/media (partial), benchmark (baseline test stub) |
-| 8         | Documentation + polish + release checklist              | Docs, migration guide, completion note (Pending)    |
+| 8         | Documentation + polish + release checklist              | Docs, migration guide, completion note (Pending)                                  |
 
 ---
 
@@ -259,9 +254,9 @@ Synthetic fixtures placed under `packages/engine/testdata/assets/`.
 
 - Merged code (interfaces + default strategy + refactored pipeline) – Done
 - Added + updated tests (unit, integration, determinism, instrumentation) – Done (concurrency pending)
-- Extended discovery parity (srcset/media/doc assets) – Pending
-- Performance benchmark delta documented (before/after table) – Pending
-- Race detector clean report – Pending
+- Extended discovery parity (srcset/media/preload/doc assets) – In Progress (iteration 7 partial)
+- Performance benchmark delta documented (before/after table) – Pending (baseline captured)
+- Race detector clean report – Done (Iteration 7)
 - Updated docs (architecture, API, migration, ops, progress) – Pending
 - Phase 5D completion note appended to progress log – Pending
 
