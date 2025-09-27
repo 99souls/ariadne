@@ -54,12 +54,16 @@ func extractTitleAndMarkdown(htmlStr string) (string, string) {
 			case "h1":
 				if z.Next() == html.TextToken {
 					h := strings.TrimSpace(z.Token().Data)
-					if h != "" { bldr.WriteString("# "+h+"\n\n") }
+					if h != "" {
+						bldr.WriteString("# " + h + "\n\n")
+					}
 				}
 			case "h2":
 				if z.Next() == html.TextToken {
 					h := strings.TrimSpace(z.Token().Data)
-					if h != "" { bldr.WriteString("## "+h+"\n\n") }
+					if h != "" {
+						bldr.WriteString("## " + h + "\n\n")
+					}
 				}
 			case "p":
 				inP = true
