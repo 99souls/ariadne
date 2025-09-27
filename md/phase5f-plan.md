@@ -8,13 +8,15 @@ Owner: Architecture / Core Engine
 
 Phase 5F elevates `engine` to a **standalone, minimally-coupled Go module** and introduces a first-class **CLI layer** that consumes only its public API. This establishes a clean contract boundary before Phase 6 (CLI polish & UX), reduces coupling, simplifies dependency surfaces, and paves the way for future multi-surface delivery (API server, TUI, hosted service).
 
+Update (No Backwards Compatibility Policy): We explicitly do NOT preserve backwards compatibility with the pre-extraction import paths (`ariadne/packages/engine`). A hard cut (“lift & shift”) is acceptable. This removes the need for forwarders, staged deprecation shims, or migration guards beyond ensuring the legacy tree is fully deleted.
+
 Primary Outcomes:
 
-- `engine/` becomes an independent Go module with curated public surface and internal boundaries.
-- Root repository becomes a multi-module workspace via `go.work`.
+- `engine/` is the only authoritative engine implementation (legacy copy removed outright).
+- Root repository operates as a multi-module workspace via `go.work`.
 - A new `cli/` (or `cmd/ariadne/`) module provides a user-facing entrypoint with configuration, metrics/health endpoints wiring, and graceful lifecycle.
-- Backward-compatible migration path with temporary forwarding shims (time-boxed) for existing internal imports.
-- Documentation, versioning, and stability annotations aligned with API expectations.
+- No compatibility layer: old import paths break immediately once legacy tree removed.
+- Documentation & stability annotations reflect a cleaned, curated API surface.
 
 ## 2. Problem Statement
 
@@ -40,7 +42,7 @@ Pain Points:
 4. Extensibility: Strategy interfaces (Fetcher, Processor, OutputSink, AssetStrategy) formalized for plug-ins.
 5. Observability Adapters: HTTP exposure (metrics/health) remains outside engine (adapter pattern) to keep core headless.
 6. Deterministic Versioning: Introduce semantic version baseline (v0.x with documented stability tiers).
-7. Smooth Migration: Forwarders + deprecation notices; no immediate breakage for in-repo references during transition wave.
+7. Hard Cut Simplicity: Remove legacy tree promptly; accept breakage for any unpublished/experimental consumers.
 
 ## 4. Option Analysis
 
@@ -141,29 +143,33 @@ Planned: Minimal move + stub/forwarders.
 Actual: Entire engine tree copied under `engine/` while original `packages/engine/` left intact (full duplication of business logic + tests). `engine/go.mod` created (canonical path `github.com/99souls/ariadne/engine`). `go.work` present. Import normalization incomplete (many files in `engine/` still import `ariadne/packages/engine/...`). No stub README or forwarder-only reduction yet.
 
 Implications:
+
 - Faster availability of isolated module path.
 - Elevated drift risk (two authoritative copies) until deduplication.
 - Larger immediate surface for API pruning work.
 
-Remediation (Wave 2A/2B):
-1. Decide authoritative source (`engine/`).
-2. Add `packages/engine/README-LEGACY.md` freeze notice.
-3. Normalize imports inside `engine/` to canonical module path only.
-4. Introduce grep-based CI guard that counts legacy path occurrences; enforce monotonic decline.
-5. Convert legacy tree to thin forwarders or remove once stability acceptable.
+Remediation (Revised Wave 2):
 
-### Wave 2 – Import Path Refactor (Revised Split)
+1. Authoritative source: `engine/` (DONE).
+2. Freeze notice added (DONE).
+3. Normalize imports inside `engine/` (DONE).
+4. DELETE `packages/engine` entirely (no forwarders) once tests in `engine/` are green and root does not import legacy path.
+5. Remove duplicate tests (keep only `engine/`).
 
-Wave 2A (Normalization):
-- Rewrite imports inside `engine/` to drop `ariadne/packages/engine` references.
-- Add legacy path grep gate in CI / Makefile (`make legacy-imports`).
+### Wave 2 – Hard Dedup & Legacy Removal
 
-Wave 2B (Forwarders & Dedup):
-- Replace bodies of `packages/engine` with forwarders OR delete if safe.
-- Remove duplicate tests to reduce runtime (keep engine/ versions).
-- Validate `go test ./...` parity post-prune.
+Objective: Eliminate the duplicated legacy tree (`packages/engine`) immediately (no forwarders) after confirming `engine/` tests pass.
 
-### Wave 2.5 – Root Purge (Part 1)
+Tasks:
+- Delete `packages/engine` directory (implementation + tests).
+- Remove any residual references (grep for `packages/engine`).
+- Run full workspace tests to ensure no hidden dependency remained.
+- Update CHANGELOG: note breaking removal of old import path.
+- Update README (import examples already using new path – verify).
+
+Exit Criteria: No `packages/engine` directory; `grep -R "packages/engine"` (excluding plan/docs) returns zero occurrences in `.go` sources.
+
+### Wave 2.5 – Root Purge (Part 1) (Unchanged Intent, Executed Earlier if Convenient)
 
 Purpose: Eliminate root runtime entrypoint to prevent dual-path drift.
 
@@ -210,15 +216,7 @@ Tasks:
 - Provide graceful shutdown (SIGINT/SIGTERM) + periodic snapshot log.
 - Add smoke integration test launching engine with in-memory site fixture.
 
-### Wave 5 – Forwarding Shim Removal
-
-Tasks:
-
-- Remove deprecated re-export files.
-- Run `staticcheck`, `golangci-lint` (if configured) to ensure no stale references.
-- Update documentation: migration guide + stability matrix.
-
-### Wave 6 – Versioning & Tag Baseline
+### Wave 5 – Versioning & Tag Baseline (Renumbered; Forwarder Removal Wave Eliminated)
 
 Tasks:
 
@@ -234,17 +232,17 @@ Tasks:
 | T02 | Init engine/go.mod            | 1    | Arch  | T01      | Independent build          |
 | T03 | Filesystem move               | 1    | Arch  | T01      | New layout                 |
 | T04 | Update imports                | 2    | Dev   | T03      | Builds green               |
-| T05 | Add forwarders                | 2    | Dev   | T04      | Transitional compatibility |
+| T05 | (Removed) forwarders (N/A)    | -    | -     | -        | Not applicable             |
 | T06 | Strategy interfaces file      | 3    | Arch  | T04      | Stable extension points    |
 | T07 | Internalize impl packages     | 3    | Arch  | T06      | Reduced surface            |
 | T08 | API doc comments + tiers      | 3    | Docs  | T06      | Stability clarity          |
 | T09 | CLI module skeleton           | 4    | Dev   | T02, RP1 | Basic binary               |
 | T10 | CLI integration test          | 4    | QA    | T09      | Regression guard           |
 | T11 | Metrics/health adapter wiring | 4    | Dev   | T09      | Observability usable       |
-| T12 | Remove forwarders             | 5    | Arch  | T05      | Clean tree                 |
-| T13 | Migration guide doc           | 5    | Docs  | T12      | User adoption              |
-| T14 | Tag engine v0 baseline        | 6    | Maint | T12      | Versioned API              |
-| T15 | README embedding example      | 6    | Docs  | T14      | Developer onboarding       |
+| T12 | (Removed) forwarder removal   | -    | -     | -        | Not applicable             |
+| T13 | Migration guide doc (hard cut)| 5    | Docs  | T07      | User adoption (new path)   |
+| T14 | Tag engine v0 baseline        | 5    | Maint | T07      | Versioned API              |
+| T15 | README embedding example      | 5    | Docs  | T14      | Developer onboarding       |
 
 ### Root Purge Task Additions
 
@@ -253,7 +251,7 @@ Tasks:
 | RP1 | Move root `main.go`                       | 2.5  | Arch  | T04?\*   | No root executable               |
 | RP2 | Root guard script/test                    | 2.5  | Dev   | RP1      | Prevent regression               |
 | RP3 | Inventory root legacy dirs                | 2.5  | Arch  | RP1      | Disposition list                 |
-| RP4 | Forward root imports → engine module path | 2.5  | Dev   | T04      | Single authoritative import path |
+| RP4 | (Dropped) Forward root imports (imports already normalized) | - | - | - | Superseded |
 | RP5 | Archive/remove `cmd/scraper` & others     | 3.5  | Arch  | RP3      | Clean root tree                  |
 | RP6 | Enforce no old import paths (test)        | 3.5  | QA    | RP4      | Early failure on drift           |
 | RP7 | CI grep check (no root \*.go)             | 3.5  | Dev   | RP2      | Automated enforcement            |
@@ -265,7 +263,7 @@ Tasks:
 | Risk                 | Description                                              | Likelihood | Impact            | Mitigation                                               |
 | -------------------- | -------------------------------------------------------- | ---------- | ----------------- | -------------------------------------------------------- |
 | Hidden cross-imports | Residual code outside engine still referencing old paths | Medium     | Build breaks      | Global grep + CI fail-fast                               |
-| Forwarder drift      | Temporary aliases linger too long                        | Medium     | API confusion     | Deadline + lint rule (disallow old path)                 |
+| Hard cut breakage    | External (unpublished) consumers break on removal         | High (accepted) | Low (internal) | Document breaking change in CHANGELOG & README          |
 | Over-exposed APIs    | Forget to internalize helpers                            | High       | Future break cost | Wave 3 audit & doc coverage gate                         |
 | CLI config sprawl    | Config duplication between CLI & engine                  | Medium     | Inconsistency     | Single `engine.Config` authoritative + small CLI overlay |
 | Telemetry coupling   | CLI accidentally reimplements health/metrics logic       | Low        | Code duplication  | Provide adapter package or examples                      |
@@ -287,7 +285,7 @@ CLI Module:
 
 Migration:
 
-- All original imports updated; forwarders removed by Wave 5 completion.
+- All original imports updated; legacy tree physically removed in Wave 2.
 - CHANGELOG includes engine extraction and any breaking changes.
 - Embedding example in root README compiles.
 
@@ -318,7 +316,7 @@ Add CI matrix (future):
 - Plugin discovery registry (fetchers, processors) – design later.
 - Multi-module for adapters (metrics/trace exporters) – revisit after initial split stability.
 
-## 13. Migration Guide (Draft Outline)
+## 13. Migration Guide (Hard Cut Outline)
 
 Original Import Example:
 
@@ -332,11 +330,12 @@ New Import:
 import "github.com/99souls/ariadne/engine"
 ```
 
-Key Changes:
+Key Changes (Breaking):
 
-- Some subpackages now moved under `engine/internal/*` (no longer importable).
-- Use `engine.New(cfg)` and strategy injection via `engine.NewWithStrategies` (stable name TBD).
-- Metrics/health HTTP handlers now provided via adapter examples (`examples/observability`).
+- Old path `ariadne/packages/engine` no longer exists (directory deleted).
+- Some subpackages may move under `engine/internal/*` (not importable) during pruning.
+- Use `engine.New(cfg)` (or future `engine.NewWithStrategies`) for construction.
+- Metrics/health handlers will be provided outside core (adapters/examples).
 
 ## 14. Open Decisions (To Settle Early Wave 1)
 
@@ -348,17 +347,21 @@ Key Changes:
 | Config layering  | Single struct vs layered            | Single authoritative struct       | Prevent drift                                     |
 | Version baseline | v0.5.0 vs v0.1.0                    | v0.5.0                            | Reflect maturity while signaling pre-stable       |
 
-## 15. Next Immediate Actions (Updated After Big-Bang Merge)
+## 15. Next Immediate Actions (Revised – Hard Cut)
 
-1. Wave 2A: Normalize `engine/` internal imports (zero references to `ariadne/packages/engine`).
-2. Add `packages/engine/README-LEGACY.md` clarifying freeze & upcoming removal.
-3. Add Make target + script `legacy-imports` to count legacy path occurrences.
-4. Wave 2B: Convert / remove duplicated legacy packages (start with telemetry & pipeline to cut test duplication).
-5. Relocate root `main.go` (RP1) into future CLI scaffold (even minimal placeholder) to start root purge.
-6. Draft API pruning candidate list (prep for Wave 3 internalization).
-7. Add CI guard (grep) failing if legacy import count increases.
+Status Legend: (DONE) already completed on branch.
 
-Gate to enter Wave 3: engine internally clean + legacy tree reduced to forwarders only (or removed) + root main relocated.
+1. (DONE) Normalize `engine/` internal imports (legacy references = 0).
+2. (DONE) Add legacy freeze notice (README-LEGACY.md) – will be removed alongside deletion.
+3. Delete `packages/engine` tree entirely (implementation + tests).
+4. Run full workspace tests (`go test ./...`) to confirm no hidden dependency.
+5. Relocate root `main.go` (RP1) to future `cli/` scaffold (start purge early).
+6. Create minimal `cli/go.mod` + placeholder command invoking engine.
+7. Draft API pruning candidate list (prep for Wave 3 internalization) and mark likely `internal/` moves.
+8. Update CHANGELOG + README (Breaking: legacy path removed).
+9. Remove `legacy-imports` target once deletion complete (optional) OR repurpose to assert zero forever.
+
+Gate to enter Wave 3: Legacy tree removed; root main relocated; CLI skeleton present; pruning list drafted.
 
 ---
 
