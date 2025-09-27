@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"net/http"
 	"strings"
 	"time"
 
@@ -23,6 +24,8 @@ func main() {
 		checkpointPath string
 		snapshotEvery  time.Duration
 		showVersion    bool
+		metricsAddr    string
+		healthAddr     string
 	)
 	flag.StringVar(&seedList, "seeds", "", "Comma separated list of seed URLs")
 	flag.StringVar(&seedFile, "seed-file", "", "Path to file containing one seed URL per line")
@@ -30,6 +33,8 @@ func main() {
 	flag.StringVar(&checkpointPath, "checkpoint", "checkpoint.log", "Path to checkpoint log file")
 	flag.DurationVar(&snapshotEvery, "snapshot-interval", 10*time.Second, "Interval between progress snapshots (0=disabled)")
 	flag.BoolVar(&showVersion, "version", false, "Show version / build info")
+	flag.StringVar(&metricsAddr, "metrics", "", "Expose metrics on address (e.g. :9090)")
+	flag.StringVar(&healthAddr, "health", "", "Expose health endpoint on address (e.g. :9091)")
 	flag.Parse()
 
 	if showVersion {
@@ -73,6 +78,45 @@ func main() {
 	results, err := eng.Start(ctx, seeds)
 	if err != nil {
 		log.Fatalf("start engine: %v", err)
+	}
+
+	// Optional metrics server placeholder (logic mount point; real adapter lives outside engine core)
+	if metricsAddr != "" {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+			// Placeholder: integrate real metrics exporter adapter in Wave 4 task W4-05
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("# metrics exposition pending adapter integration\n"))
+		})
+		go func() {
+			srv := &http.Server{Addr: metricsAddr, Handler: mux}
+			<-ctx.Done()
+			_ = srv.Shutdown(context.Background())
+		}()
+		go func() {
+			log.Printf("metrics listening on %s", metricsAddr)
+			_ = http.ListenAndServe(metricsAddr, mux) // shutdown handled above
+		}()
+	}
+
+	if healthAddr != "" {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			snap := eng.Snapshot()
+			b, _ := json.Marshal(map[string]any{"ok": true, "resources": snap.Resources})
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(b)
+		})
+		go func() {
+			srv := &http.Server{Addr: healthAddr, Handler: mux}
+			<-ctx.Done()
+			_ = srv.Shutdown(context.Background())
+		}()
+		go func() {
+			log.Printf("health endpoint listening on %s", healthAddr)
+			_ = http.ListenAndServe(healthAddr, mux)
+		}()
 	}
 
 	var ticker *time.Ticker
