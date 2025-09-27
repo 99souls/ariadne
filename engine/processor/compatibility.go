@@ -7,8 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/html"
+
 	// TODO(phase5f-wave3): Reintroduce legacy processor bridging within engine/internal without cross-module import.
-	// Previously used "ariadne/internal/processor"; now temporarily no-op.
+	// Previously used "ariadne/internal/processor"; now temporarily replaced by minimal parser here.
 	"ariadne/packages/engine/models"
 )
 
@@ -17,6 +19,67 @@ type CompatibilityAdapter struct {
 	// contentProcessor *processor.ContentProcessor // removed pending internal relocation
 	policy ProcessPolicy
 	stats  ProcessorStats
+}
+
+// extractTitleAndMarkdown performs a very lightweight HTML walk to get the first <title>
+// and produce naive markdown by mapping <h1>/<h2>/<p> elements.
+func extractTitleAndMarkdown(htmlStr string) (string, string) {
+	if htmlStr == "" {
+		return "", ""
+	}
+	z := html.NewTokenizer(strings.NewReader(htmlStr))
+	var (
+		titleFound bool
+		title      string
+		bldr       strings.Builder
+		inP        bool
+	)
+	for {
+		tt := z.Next()
+		if tt == html.ErrorToken {
+			break
+		}
+		tok := z.Token()
+		switch tt {
+		case html.StartTagToken:
+			switch tok.Data {
+			case "title":
+				if !titleFound {
+					// Next token should be text
+					if z.Next() == html.TextToken {
+						title = strings.TrimSpace(z.Token().Data)
+						titleFound = true
+					}
+				}
+			case "h1":
+				if z.Next() == html.TextToken {
+					h := strings.TrimSpace(z.Token().Data)
+					if h != "" { bldr.WriteString("# "+h+"\n\n") }
+				}
+			case "h2":
+				if z.Next() == html.TextToken {
+					h := strings.TrimSpace(z.Token().Data)
+					if h != "" { bldr.WriteString("## "+h+"\n\n") }
+				}
+			case "p":
+				inP = true
+			}
+		case html.EndTagToken:
+			if tok.Data == "p" && inP {
+				bldr.WriteString("\n\n")
+				inP = false
+			}
+		case html.TextToken:
+			if inP {
+				txt := strings.TrimSpace(tok.Data)
+				if txt != "" {
+					bldr.WriteString(txt + " ")
+				}
+			}
+		}
+	}
+	md := strings.TrimSpace(bldr.String())
+	return title, md
 }
 
 // NewCompatibilityAdapter creates a new adapter for existing processor logic
@@ -58,24 +121,24 @@ func (ca *CompatibilityAdapter) Process(request ProcessRequest) (*ProcessResult,
 	// Use the existing processor logic
 	// BaseURL ignored in transitional no-op path (will be reintegrated when legacy content processor ported).
 
-	// Legacy processing pipeline disabled in module split transitional phase.
-	var err error
+	// Minimal inline processing (temporary) replacing legacy pipeline:
+	// - Extract <title>
+	// - Convert headings & paragraphs to naive markdown
+	if request.Policy.ExtractContent || request.Policy.ConvertToMarkdown {
+		title, markdown := extractTitleAndMarkdown(page.Content)
+		if title != "" {
+			page.Title = title
+		}
+		if request.Policy.ConvertToMarkdown {
+			page.Markdown = markdown
+		}
+	}
 
 	processingTime := time.Since(startTime)
 	ca.stats.ProcessingTime += processingTime
 	ca.stats.PagesProcessed++
 
-	if err != nil {
-		ca.stats.PagesFailed++
-		return &ProcessResult{
-			Page:           page,
-			Success:        false,
-			Error:          err,
-			ProcessingTime: processingTime,
-			Warnings:       warnings,
-		}, nil
-	}
-
+	// Always succeed in minimal adapter path
 	ca.stats.PagesSucceeded++
 
 	// Calculate metrics
