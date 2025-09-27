@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/99souls/ariadne/engine/ratelimit"
 	"ariadne/internal/resources"
+
+	"github.com/99souls/ariadne/engine/ratelimit"
 )
 
 // Phase 3.1 TDD Tests: Multi-Stage Pipeline Architecture
