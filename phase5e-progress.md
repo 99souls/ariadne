@@ -24,7 +24,7 @@ Status: INITIATED (Iteration 1: Metrics Abstraction / Exporter Scaffold)
 - [x] Interfaces & option structs committed
 - [x] No-op provider + tests
 - [x] Prometheus provider skeleton (registry, creation, handlers)
-- [ ] Adapter for existing business metrics (phase 1: read-only exposure)
+- [x] Adapter for existing business metrics (phase 1: read-only exposure)
 - [x] Engine wiring (config flag + default)
 - [x] Basic tests pass (CI green)
 - [ ] Documentation update linking abstraction to existing `telemetry-architecture.md`
@@ -37,4 +37,4 @@ Status: INITIATED (Iteration 1: Metrics Abstraction / Exporter Scaffold)
 
 ## Next Action
 
-Implement adapter mapping existing BusinessMetricsCollector counters into the new Provider interface without double registration; then update telemetry architecture doc to reference the new metrics package.
+Update `telemetry-architecture.md` and `metrics-reference.md` to document the metrics adapter and clarify cumulative snapshot caveat; then close Iteration 1 and begin Iteration 2 (Event Bus scaffolding).
