@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file. The format 
 - Adaptive percentage-based tracer (policy-driven sample percent) replacing always-on tracer.
 - Integrated workload benchmark (`BenchmarkIntegratedWorkload`) simulating page + asset telemetry mix.
 - CLI module scaffold (`cli/`) with initial crawl command (Phase 5F Wave 2.5 initiation).
+- API pruning candidate list (`engine/API_PRUNING_CANDIDATES.md`) drafted (Wave 3 preparation).
 
 ### Breaking
 

@@ -185,12 +185,17 @@ Exit Criteria: Root contains no executable Go files; tests still green.
 
 ### Wave 3 – API Surface Audit & Pruning
 
-Tasks:
+Status: Candidate list drafted (`engine/API_PRUNING_CANDIDATES.md`).
 
-- Identify unintended exports (grep for `exported but not documented`).
-- Move implementation details to `internal/` inside engine module.
-- Introduce `interfaces.go` for strategy contracts.
-- Add doc comments & stability annotations.
+Upcoming Tasks:
+
+1. Review & approve candidate actions (KEEP / INT / TAG / REMOVE).
+2. Create `internal/` subpackages and move INT items.
+3. Introduce consolidated strategy interfaces file (`strategies.go`) or re-export strategy package (decision pending).
+4. Add doc comments & stability annotations (Experimental tags) to all remaining exported symbols.
+5. Remove deprecated alias types (e.g., `FetchedPage`).
+6. Update CHANGELOG (Unreleased > Changed) summarizing pruning adjustments.
+7. Add enforcement test ensuring no forbidden internal package imports from CLI / external modules.
 
 ### Wave 3.5 – Root Purge (Part 2)
 
