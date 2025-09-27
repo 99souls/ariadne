@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/packages/engine/crawler"
-	"ariadne/packages/engine/output"
-	"ariadne/packages/engine/processor"
+	"github.com/99souls/ariadne/engine/crawler"
+	"github.com/99souls/ariadne/engine/output"
+	"github.com/99souls/ariadne/engine/processor"
 )
 
 // TestUnifiedBusinessConfig validates unified configuration design

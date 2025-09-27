@@ -1,6 +1,6 @@
 package output
 
-import "ariadne/packages/engine/models"
+import "github.com/99souls/ariadne/engine/models"
 
 // OutputSink consumes final CrawlResults. Implementations must be safe for
 // concurrent Write calls unless documented otherwise.

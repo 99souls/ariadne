@@ -11,7 +11,7 @@ import (
 
 	// TODO(phase5f-wave3): Reintroduce legacy processor bridging within engine/internal without cross-module import.
 	// Previously used "ariadne/internal/processor"; now temporarily replaced by minimal parser here.
-	"ariadne/packages/engine/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // CompatibilityAdapter bridges the new Processor interface with existing internal processor

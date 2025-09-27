@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
 // TestAssetExecuteConcurrency ensures parallel execution yields deterministic rewrite & metrics integrity.

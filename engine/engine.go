@@ -10,15 +10,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	engmodels "ariadne/packages/engine/models"
-	engpipeline "ariadne/packages/engine/pipeline"
-	engratelimit "ariadne/packages/engine/ratelimit"
-	engresources "ariadne/packages/engine/resources"
-	telemEvents "ariadne/packages/engine/telemetry/events"
-	telemetryhealth "ariadne/packages/engine/telemetry/health"
-	telemetrymetrics "ariadne/packages/engine/telemetry/metrics"
-	telempolicy "ariadne/packages/engine/telemetry/policy"
-	telemetrytracing "ariadne/packages/engine/telemetry/tracing"
+	engmodels "github.com/99souls/ariadne/engine/models"
+	engpipeline "github.com/99souls/ariadne/engine/pipeline"
+	engratelimit "github.com/99souls/ariadne/engine/ratelimit"
+	engresources "github.com/99souls/ariadne/engine/resources"
+	telemEvents "github.com/99souls/ariadne/engine/telemetry/events"
+	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
+	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
+	telempolicy "github.com/99souls/ariadne/engine/telemetry/policy"
+	telemetrytracing "github.com/99souls/ariadne/engine/telemetry/tracing"
 )
 
 // Snapshot is a unified view of engine state (initial minimal subset).

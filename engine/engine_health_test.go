@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	telemetryhealth "ariadne/packages/engine/telemetry/health"
+	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 )
 
 // TestHealthChangeEvent verifies that a health_change event is emitted on status transition.

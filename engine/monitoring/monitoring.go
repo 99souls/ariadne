@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"ariadne/packages/engine/config"
-	"ariadne/packages/engine/strategies"
+	"github.com/99souls/ariadne/engine/config"
+	"github.com/99souls/ariadne/engine/strategies"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

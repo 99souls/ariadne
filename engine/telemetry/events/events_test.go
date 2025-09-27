@@ -1,8 +1,8 @@
 package events
 
 import (
-	metrics "ariadne/packages/engine/telemetry/metrics"
-	"ariadne/packages/engine/telemetry/tracing"
+	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
+	"github.com/99souls/ariadne/engine/telemetry/tracing"
 	"context"
 	"testing"
 	"time"

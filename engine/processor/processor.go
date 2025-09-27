@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"ariadne/packages/engine/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // ProcessRequest encapsulates all parameters needed for content processing

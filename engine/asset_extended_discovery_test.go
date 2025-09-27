@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
 // TestExtendedDiscoveryCoversPreloadSourceAndDocs validates new discovery coverage (Iteration 7 follow-up).

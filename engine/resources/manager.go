@@ -1,7 +1,7 @@
 package resources
 
 import (
-	engmodels "ariadne/packages/engine/models"
+	engmodels "github.com/99souls/ariadne/engine/models"
 	"bufio"
 	"container/list"
 	"context"

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/packages/engine/models"
+	"github.com/99souls/ariadne/engine/models"
 )
 
 // TestEnhancedOutputSink validates the enhanced OutputSink interface

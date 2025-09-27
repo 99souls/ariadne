@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"ariadne/packages/engine/business/policies"
+	"github.com/99souls/ariadne/engine/business/policies"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
