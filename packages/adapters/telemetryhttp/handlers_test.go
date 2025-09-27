@@ -1,3 +1,6 @@
+//go:build legacyadapters
+// +build legacyadapters
+
 package telemetryhttp
 
 import (
