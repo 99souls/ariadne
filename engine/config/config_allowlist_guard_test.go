@@ -18,12 +18,7 @@ func TestConfigExportAllowlist(t *testing.T) {
 		// Core unified config types & constructors
 		"UnifiedBusinessConfig": {}, "GlobalSettings": {},
 		"NewUnifiedBusinessConfig": {}, "DefaultBusinessConfig": {}, "ComposeBusinessConfig": {}, "FromLegacyConfig": {}, "DefaultGlobalSettings": {},
-		// Runtime / dynamic configuration system
-		"RuntimeBusinessConfig": {}, "RuntimeConfigManager": {}, "ConfigValidator": {},
-		"HotReloadSystem": {}, "ConfigChange": {}, "ConfigVersionManager": {}, "ConfigVersion": {},
-		"ABTestingFramework": {}, "ABTest": {}, "ABTestResult": {}, "VariantResult": {}, "TestResultRecord": {},
-		"IntegratedRuntimeSystem": {}, "NewRuntimeConfigManager": {}, "NewHotReloadSystem": {}, "NewConfigVersionManager": {},
-		"NewABTestingFramework": {}, "NewIntegratedRuntimeSystem": {},
+		// NOTE: Runtime / dynamic configuration system has been internalized (W4-03); removed from public allowlist intentionally.
 	}
 
 	_, fname, _, _ := runtime.Caller(0)

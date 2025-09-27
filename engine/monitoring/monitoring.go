@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/99souls/ariadne/engine/config"
 	"github.com/99souls/ariadne/engine/strategies"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -852,11 +851,12 @@ func (ims *IntegratedMonitoringSystem) MonitorStrategyExecution(ctx context.Cont
 }
 
 // MonitorConfigurationChange monitors configuration changes
-func (ims *IntegratedMonitoringSystem) MonitorConfigurationChange(changeType string, oldConfig, newConfig *config.RuntimeBusinessConfig) {
+// MonitorConfigurationChange logs a configuration change event. Runtime config types were internalized; we accept generic version strings.
+func (ims *IntegratedMonitoringSystem) MonitorConfigurationChange(changeType, oldVersion, newVersion string) {
 	if ims.logger != nil {
 		ims.logger.LogConfigurationChange(changeType, map[string]interface{}{
-			"old_version": oldConfig.Version,
-			"new_version": newConfig.Version,
+			"old_version": oldVersion,
+			"new_version": newVersion,
 			"change_type": changeType,
 		})
 	}
