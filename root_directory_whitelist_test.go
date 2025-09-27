@@ -18,9 +18,8 @@ func TestRootDirectoryWhitelist(t *testing.T) {
 	// Transitional legacy directories still pending full migration. List has shrunk
 	// after removal of packages/adapters (telemetryhttp) and legacy pipeline stubs.
 	transitional := map[string]struct{}{
-		"internal": {}, // pipeline tests & historical refs pending final prune
+		"internal": {}, // remaining legacy (config/output) – schedule deletion after migration
 		"cmd":      {}, // old experimental commands scheduled for deletion
-		"packages": {}, // legacy directory still present (adapter files pending physical removal)
 		"test":     {}, // root test harness utilities (may relocate under engine/)
 	}
 
