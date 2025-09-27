@@ -217,13 +217,24 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 
 	e := &Engine{cfg: cfg, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
 
-	// Phase 5E Iteration 1: initialize metrics provider if enabled (non-invasive wiring)
+	// Phase 5E Iteration 1 & 6: initialize metrics provider if enabled with backend selection.
 	if cfg.MetricsEnabled {
-		// For now always use Prometheus provider. Future: allow injection / selection.
-		p := telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
-		e.metricsProvider = p
-		// NOTE: Exposing handler or starting HTTP server is responsibility of caller to avoid
-		// unilaterally opening ports. If PrometheusListenAddr is set future iteration may spawn server.
+		backend := strings.ToLower(cfg.MetricsBackend)
+		switch backend {
+		case "", "prom", "prometheus":
+			p := telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
+			e.metricsProvider = p
+		case "otel", "opentelemetry":
+			p := telemetrymetrics.NewOTelProvider(telemetrymetrics.OTelProviderOptions{})
+			e.metricsProvider = p
+		case "noop":
+			// explicit noop even if enabled
+			e.metricsProvider = telemetrymetrics.NewNoopProvider()
+		default:
+			p := telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
+			e.metricsProvider = p
+		}
+		// NOTE: Exposing HTTP handler remains caller responsibility.
 	}
 
 	// Phase 5E Iteration 2: initialize event bus (metrics provider may be nil; bus tolerates nil -> noop metrics)

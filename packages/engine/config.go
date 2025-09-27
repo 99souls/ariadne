@@ -44,6 +44,12 @@ type Config struct {
 	// PrometheusListenAddr optional address for metrics HTTP exposure (e.g. ":2112").
 	// If empty and MetricsEnabled is true, metrics are still collected but caller must expose handler.
 	PrometheusListenAddr string
+	// MetricsBackend selects the implementation when MetricsEnabled is true. Supported:
+	//   "prom" (default) - built-in Prometheus registry
+	//   "otel"          - OpenTelemetry bridge (iteration 6 experimental)
+	//   "noop"          - explicit no-op (overrides MetricsEnabled true)
+	// Unknown values fall back to the default (prom).
+	MetricsBackend string
 }
 
 // toPipelineConfig adapts the facade Config to the internal pipeline config.
@@ -126,6 +132,7 @@ func Defaults() Config {
 		// Telemetry defaults (Phase 5E): remain disabled to preserve prior footprint
 		MetricsEnabled:       false,
 		PrometheusListenAddr: "",
+		MetricsBackend:       "prom",
 	}
 }
 
