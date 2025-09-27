@@ -1,7 +1,7 @@
 # Phase 5F Plan – Engine Module Extraction & CLI Enablement
 
-Status: In Progress (post unplanned big-bang merge of engine-migration)
-Date: 2025-09-27 (updated)
+Status: In Progress – Wave 2 complete; preparing Wave 2.5 / Wave 3
+Date: 2025-09-27 (updated post pipeline removal & API automation)
 Owner: Architecture / Core Engine
 
 ## 1. Executive Summary
@@ -148,7 +148,7 @@ Tasks:
 
 Exit Criteria: Plan approved; test failing (red) until modules exist.
 
-### Wave 1 – Module Skeleton (Actual vs Plan)
+### Wave 1 – Module Skeleton (Actual vs Plan) (COMPLETED)
 
 Planned: Minimal move + stub/forwarders.
 
@@ -168,7 +168,22 @@ Remediation (Revised Wave 2):
 4. DELETE `packages/engine` entirely (no forwarders) once tests in `engine/` are green and root does not import legacy path.
 5. Remove duplicate tests (keep only `engine/`).
 
-### Wave 2 – Hard Dedup & Legacy Removal
+### Wave 2 – Hard Dedup & Legacy Removal (COMPLETED)
+
+Progress Notes (Wave 2):
+
+- Legacy `packages/engine` tree removed.
+- Public `engine/pipeline` package removed; internal tests migrated under `engine/internal/pipeline`.
+- API report automation added (`cmd/apireport`) + CI freshness drift check.
+- Documentation updated (engine README, packages overview) to reflect internalization.
+- Enforcement tests updated (root whitelist + internal import guard) to allow tooling dir.
+- No remaining `pkg/` or `packages/` directories at root.
+
+Pending Follow-ups (carry to Wave 2.5 / 3):
+
+- CHANGELOG entry explicitly noting breaking removal of public pipeline.
+- Root README audit for stale import path examples.
+- Decision on long-term placement / naming of `cmd/` tooling (keep vs move to `tools/`).
 
 Objective: Eliminate the duplicated legacy tree (`packages/engine`) immediately (no forwarders) after confirming `engine/` tests pass.
 
@@ -182,7 +197,7 @@ Tasks:
 
 Exit Criteria: No `packages/engine` directory; `grep -R "packages/engine"` (excluding plan/docs) returns zero occurrences in `.go` sources.
 
-### Wave 2.5 – Root Purge (Part 1) (Unchanged Intent, Executed Earlier if Convenient)
+### Wave 2.5 – Root Purge (Part 1) (IN PROGRESS)
 
 Purpose: Eliminate root runtime entrypoint to prevent dual-path drift.
 
@@ -193,9 +208,83 @@ Tasks:
 - Document change in CHANGELOG (Unreleased: "root executable moved to cli module").
 - Inventory remaining root `cmd/` directories; flag for Wave 3.5 disposition.
 
-Exit Criteria: Root contains no executable Go files; tests still green.
+Current State:
 
-### Wave 3 – API Surface Audit & Pruning
+- Root contains no application `main.go` (validated) – only tooling remains.
+- `cmd/apireport` present (exception – to be documented or relocated).
+- Directory whitelist test allows `cmd` temporarily.
+
+Next Steps:
+
+1. Decide fate/location of tooling (`cmd/apireport`).
+2. Add CHANGELOG note for root purge milestone & pipeline removal.
+3. Add ROOT_LAYOUT.md (may advance from Wave 3.5 sooner).
+
+Exit Criteria: Root contains no executable Go files; tests still green; tooling policy documented.
+
+#### Wave 2.5 Extension – Root Module Elimination Feasibility Study
+
+Objective: Determine whether the root `go.mod` (module `ariadne`) can be safely removed to achieve a stricter Atomic Root Layout (only workspace file + submodules) and eliminate duplicate dependency graphs.
+
+Current State Snapshot:
+
+- Root `go.mod` defines module `ariadne` and carries a large dependency set duplicating `engine/go.mod`.
+- Root contains: `go.work`, docs, Makefile, enforcement test (`enforcement_main_internal_test.go`), `cmd/apireport/` tool.
+- Submodules: `engine/`, `cli/` (with replace to local engine), (future) `tools/` module not yet created.
+- CI workflows assume `go mod download`, `go build ./...`, `go test ./...` run at repository root.
+- Enforcement test lives in root module (breaks if root module removed without relocation).
+
+Key Options:
+
+1. Remove root module entirely (preferred for purity) – rely solely on `go.work` listing submodules.
+2. Retain root module but strip all dependencies (acts as meta/guard module only) – simpler CI migration, still slightly "leaky".
+3. Introduce dedicated `tools/` multi-package module (e.g., `github.com/99souls/ariadne/tools`) for maintenance commands; keep root module only for guards (transitional), then remove.
+
+Pros (Option 1):
+
+- Eliminates duplicate dependency resolution & accidental drift.
+- Forces tooling/tests to live inside explicitly named modules (clearer boundaries).
+- Strengthens Atomic Root claim (no hidden buildable code at root).
+
+Cons / Risks (Option 1):
+
+- Need CI adjustments: root-level `go mod download` becomes `go work sync` + per-module operations.
+- Root-only tests must be relocated (requires minor path updates in enforcement test).
+- Some Go tooling (older expectations) may assume a root module; contributors must understand workspace mode.
+
+Mitigations:
+
+- Provide `make test` that runs: `go work sync` then `for m in engine cli tools/apireport; do (cd $$m && go test ./...); done`.
+- Move enforcement tests into `cli/` (closest to surface they guard) or create `engine/enforce_test.go` referencing CLI file path via relative path.
+- Add guard script to ensure no accidental reintroduction of `go.mod` at root (or document policy in `ROOT_LAYOUT.md`).
+
+Feasibility Check Points:
+
+- All production code already lives under submodules (PASS).
+- Tool (`cmd/apireport`) can be moved under `tools/apireport` with its own `go.mod` (LOW EFFORT).
+- No external consumers depend on root module path (INTENT: not published) (PASS).
+
+Decision Recommendation: Proceed with Option 1 (full removal) after creating `tools/apireport` and relocating enforcement tests; adjust CI in same PR to avoid red pipeline.
+
+New Tasks (augment Root Purge):
+| ID | Task | Wave | Owner | Blocking | Result |
+|------|----------------------------------------------------------------------|------|-------|----------|--------|
+| RP2.5a | Create `tools/apireport` module; move code from `cmd/apireport` | 2.5 | Dev | None | Tool isolated |
+| RP2.5b | Relocate enforcement test into `cli/` (path adjust) | 2.5 | QA | RP2.5a? | Guard persists in module |
+| RP2.5c | Update CI workflows (tests, builds, release) to build `cli/cmd/ariadne` and run per-module tests | 2.5 | Dev | RP2.5a | CI green post-removal |
+| RP2.5d | Remove root `go.mod` & `go.sum`; prune Makefile targets accordingly | 2.5 | Dev | RP2.5c | No root module |
+| RP2.5e | Add `ROOT_LAYOUT.md` & guard (optional script) verifying absence of root module & stray code | 2.5 | Docs | RP2.5d | Documented invariant |
+| RP2.5f | Add API report invocation update (`go run ./tools/apireport`) | 2.5 | Dev | RP2.5a | Consistent tooling |
+| RP2.5g | Adjust release workflow binary build commands (`go build ./cli/cmd/ariadne`) | 2.5 | Dev | RP2.5c | Release unaffected |
+
+Exit Criteria Addition (for root module removal path):
+
+- `go.mod` absent at root; `go work` lists only submodule paths (engine, cli, tools/apireport).
+- API report generation & enforcement tests pass under new locations.
+- CI pipelines updated and green across matrix.
+- `ROOT_LAYOUT.md` merged describing rationale + guard instructions.
+
+### Wave 3 – API Surface Audit & Pruning (NOT STARTED – PREP DONE)
 
 Status: Candidate list drafted (`engine/API_PRUNING_CANDIDATES.md`).
 
@@ -209,7 +298,7 @@ Upcoming Tasks:
 6. Update CHANGELOG (Unreleased > Changed) summarizing pruning adjustments.
 7. Add enforcement test ensuring no forbidden internal package imports from CLI / external modules.
 
-### Wave 3.5 – Root Purge (Part 2)
+### Wave 3.5 – Root Purge (Part 2) (PENDING)
 
 Purpose: Remove lingering legacy command code & shadow copies of business logic.
 
@@ -244,40 +333,40 @@ Tasks:
 
 ## 8. Detailed Task Matrix
 
-| ID  | Task                           | Wave | Owner | Blocking | Result                   |
-| --- | ------------------------------ | ---- | ----- | -------- | ------------------------ |
-| T01 | Create go.work                 | 1    | Arch  | None     | Workspace active         |
-| T02 | Init engine/go.mod             | 1    | Arch  | T01      | Independent build        |
-| T03 | Filesystem move                | 1    | Arch  | T01      | New layout               |
-| T04 | Update imports                 | 2    | Dev   | T03      | Builds green             |
-| T05 | (Removed) forwarders (N/A)     | -    | -     | -        | Not applicable           |
-| T06 | Strategy interfaces file       | 3    | Arch  | T04      | Stable extension points  |
-| T07 | Internalize impl packages      | 3    | Arch  | T06      | Reduced surface          |
-| T08 | API doc comments + tiers       | 3    | Docs  | T06      | Stability clarity        |
-| T09 | CLI module skeleton            | 4    | Dev   | T02, RP1 | Basic binary             |
-| T10 | CLI integration test           | 4    | QA    | T09      | Regression guard         |
-| T11 | Metrics/health adapter wiring  | 4    | Dev   | T09      | Observability usable     |
-| T12 | (Removed) forwarder removal    | -    | -     | -        | Not applicable           |
-| T13 | Migration guide doc (hard cut) | 5    | Docs  | T07      | User adoption (new path) |
-| T14 | Tag engine v0 baseline         | 5    | Maint | T07      | Versioned API            |
-| T15 | README embedding example       | 5    | Docs  | T14      | Developer onboarding     |
+| ID  | Task                           | Wave | Owner | Blocking | Result                                    |
+| --- | ------------------------------ | ---- | ----- | -------- | ----------------------------------------- |
+| T01 | Create go.work                 | 1    | Arch  | None     | Workspace active                          |
+| T02 | Init engine/go.mod             | 1    | Arch  | T01      | Independent build                         |
+| T03 | Filesystem move                | 1    | Arch  | T01      | New layout                                |
+| T04 | Update imports                 | 2    | Dev   | T03      | Builds green (DONE)                       |
+| T05 | (Removed) forwarders (N/A)     | -    | -     | -        | Not applicable                            |
+| T06 | Strategy interfaces file       | 3    | Arch  | T04      | Stable extension points                   |
+| T07 | Internalize impl packages      | 3    | Arch  | T06      | Reduced surface (PARTIAL – pipeline done) |
+| T08 | API doc comments + tiers       | 3    | Docs  | T06      | Stability clarity (IN PROGRESS – partial) |
+| T09 | CLI module skeleton            | 4    | Dev   | T02, RP1 | Basic binary (PENDING)                    |
+| T10 | CLI integration test           | 4    | QA    | T09      | Regression guard                          |
+| T11 | Metrics/health adapter wiring  | 4    | Dev   | T09      | Observability usable                      |
+| T12 | (Removed) forwarder removal    | -    | -     | -        | Not applicable                            |
+| T13 | Migration guide doc (hard cut) | 5    | Docs  | T07      | User adoption (new path)                  |
+| T14 | Tag engine v0 baseline         | 5    | Maint | T07      | Versioned API                             |
+| T15 | README embedding example       | 5    | Docs  | T14      | Developer onboarding                      |
 
 ### Root Purge Task Additions
 
-| ID   | Task                                                        | Wave | Owner | Blocking | Result                                                                                     |
-| ---- | ----------------------------------------------------------- | ---- | ----- | -------- | ------------------------------------------------------------------------------------------ |
-| RP1  | Move root `main.go`                                         | 2.5  | Arch  | T04?\*   | No root executable                                                                         |
-| RP2  | Root guard script/test                                      | 2.5  | Dev   | RP1      | Prevent regression                                                                         |
-| RP3  | Inventory root legacy dirs                                  | 2.5  | Arch  | RP1      | Disposition list                                                                           |
-| RP4  | (Dropped) Forward root imports (imports already normalized) | -    | -     | -        | Superseded                                                                                 |
-| RP5  | Archive/remove `cmd/scraper` & others                       | 3.5  | Arch  | RP3      | Clean root tree                                                                            |
-| RP6  | Migrate / remove root `internal/` packages                  | 3.5  | Arch  | RP3      | Impl moved under engine/internal                                                           |
-| RP7  | Remove / alias `pkg/` (models & helpers)                    | 3.5  | Arch  | RP6      | DONE: imports rewired; legacy pkg/models removed (residual stub files in progress removal) |
-| RP8  | Remove `packages/` adapters (relocate if still needed)      | 3.5  | Arch  | RP6      | Single engine surface                                                                      |
-| RP9  | Consolidate test utilities under module-scoped internal     | 3.5  | QA    | RP6      | No root test helpers                                                                       |
-| RP10 | Enforce no old import paths (test)                          | 3.5  | QA    | RP6      | Early failure on drift                                                                     |
-| RP11 | CI grep check (no root \*.go) & directory whitelist         | 3.5  | Dev   | RP2      | Automated enforcement                                                                      |
-| RP12 | Add ROOT_LAYOUT.md (doc) & update plan                      | 3.5  | Docs  | RP5-RP8  | Stable documentation                                                                       |
+| ID   | Task                                                        | Wave | Owner | Blocking | Result                                                               |
+| ---- | ----------------------------------------------------------- | ---- | ----- | -------- | -------------------------------------------------------------------- |
+| RP1  | Move root `main.go`                                         | 2.5  | Arch  | T04?\*   | No root executable (DONE)                                            |
+| RP2  | Root guard script/test                                      | 2.5  | Dev   | RP1      | Prevent regression (DONE)                                            |
+| RP3  | Inventory root legacy dirs                                  | 2.5  | Arch  | RP1      | Disposition list                                                     |
+| RP4  | (Dropped) Forward root imports (imports already normalized) | -    | -     | -        | Superseded                                                           |
+| RP5  | Archive/remove `cmd/scraper` & others                       | 3.5  | Arch  | RP3      | Clean root tree (LEGACY dirs already removed; confirm)               |
+| RP6  | Migrate / remove root `internal/` packages                  | 3.5  | Arch  | RP3      | Impl moved under engine/internal                                     |
+| RP7  | Remove / alias `pkg/` (models & helpers)                    | 3.5  | Arch  | RP6      | DONE                                                                 |
+| RP8  | Remove `packages/` adapters (relocate if still needed)      | 3.5  | Arch  | RP6      | Single engine surface (DONE)                                         |
+| RP9  | Consolidate test utilities under module-scoped internal     | 3.5  | QA    | RP6      | No root test helpers (DONE – httpmock moved)                         |
+| RP10 | Enforce no old import paths (test)                          | 3.5  | QA    | RP6      | Early failure on drift (DONE)                                        |
+| RP11 | CI grep check (no root \*.go) & directory whitelist         | 3.5  | Dev   | RP2      | Automated enforcement (PARTIAL – whitelist done; grep check pending) |
+| RP12 | Add ROOT_LAYOUT.md (doc) & update plan                      | 3.5  | Docs  | RP5-RP8  | Stable documentation                                                 |
 
 \*If sequencing prefers, RP1 can occur immediately after T03 (filesystem move) before full import refactor completes.
 
@@ -380,21 +469,26 @@ Key Changes (Breaking):
 | Config layering  | Single struct vs layered            | Single authoritative struct       | Prevent drift                                     |
 | Version baseline | v0.5.0 vs v0.1.0                    | v0.5.0                            | Reflect maturity while signaling pre-stable       |
 
-## 15. Next Immediate Actions (Revised – Hard Cut)
+## 15. Next Immediate Actions (Updated Post Wave 2 Completion)
 
 Status Legend: (DONE) already completed on branch.
 
 1. (DONE) Normalize `engine/` internal imports (legacy references = 0).
 2. (DONE) Add legacy freeze notice (README-LEGACY.md) – will be removed alongside deletion.
 3. (DONE) Delete `packages/engine` tree entirely (implementation + tests).
-4. Run full workspace tests (`go test ./...`) to confirm no hidden dependency.
-5. Relocate root `main.go` (RP1) to future `cli/` scaffold (start purge early).
-6. Create minimal `cli/go.mod` + placeholder command invoking engine.
-7. (DONE) Draft API pruning candidate list (prep for Wave 3 internalization) and mark likely `internal/` moves.
-8. Rewire legacy `ariadne/pkg/models` imports to `github.com/99souls/ariadne/engine/models` (IN PROGRESS – code rewired, alias package pending deletion).
-9. Delete `pkg/models` directory after confirming no external dependency (PENDING).
-10. Update CHANGELOG + README (Breaking: legacy path removed).
-11. Remove `legacy-imports` target once deletion complete (optional) OR repurpose to assert zero forever.
+4. (DONE) Run full workspace tests (`go test ./...`).
+5. (DONE) Relocate root `main.go` (RP1).
+6. Create minimal `cli/go.mod` + placeholder command invoking engine (PENDING – PRIORITY).
+7. (DONE) Draft API pruning candidate list.
+8. (DONE) Rewire legacy `ariadne/pkg/models` imports.
+9. (DONE) Delete `pkg/models` directory.
+10. Update CHANGELOG + README with explicit breaking-change notes (PENDING).
+11. Repurpose or remove `legacy-imports` Make target (DECIDE).
+12. Decide & document policy for tooling directory (`cmd/`).
+13. Add ROOT_LAYOUT.md documenting final whitelist (PENDING).
+14. Begin Wave 3 pruning: introduce `strategies.go` and move internal-only exports.
+
+Gate to enter Wave 3: Legacy tree removed (DONE); root main relocated (DONE); CLI skeleton present (PENDING); pruning list drafted (DONE); legacy pkg/models aliases removed (DONE).
 
 Gate to enter Wave 3: Legacy tree removed; root main relocated; CLI skeleton present; pruning list drafted; legacy pkg/models aliases removed.
 

@@ -3,6 +3,7 @@ module github.com/99souls/ariadne/engine
 go 1.25.1
 
 require (
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gocolly/colly/v2 v2.2.0
@@ -18,6 +19,7 @@ require (
 )
 
 require (
+	github.com/JohannesKaufmann/dom v0.2.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/antchfx/htmlquery v1.3.4 // indirect
 	github.com/antchfx/xmlquery v1.4.4 // indirect
