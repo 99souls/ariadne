@@ -9,6 +9,7 @@ This is the Go-facing API exposed by the configuration subsystem. CLI exposure i
 - `VersionedStore` – Append-only in-memory store with audit log.
 - `Simulator` – Produces `SimulationImpact` describing projected change effects.
 - `Applier` – Orchestrates validate -> simulate -> commit -> emit.
+- `RolloutEvaluator` – Determines per-domain active version during staged rollout.
 - `Dispatcher` – In-process event broadcaster.
 - `MetricsRecorder` – Interface for metrics integration.
 
@@ -56,6 +57,15 @@ res, err := applier.Apply(currentSpec, riskyCandidate, configx.ApplyOptions{Acto
 ```go
 rollbackRes, err := applier.Rollback(3, "operator")
 ```
+
+## Rollout Evaluation
+
+```go
+ev := configx.NewRolloutEvaluator(store)
+activeVersion := ev.ActiveVersionForDomain("example.com")
+```
+
+If the head spec uses `percentage` or `cohort` rollout modes, excluded domains fall back to the previous version until promotion.
 
 ## Events
 

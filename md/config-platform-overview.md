@@ -34,7 +34,13 @@ Current heuristic (MVP):
 
 Future extensions: integrate live metrics baselines, richer risk scoring.
 
-## Rollback
+## Rollout & Rollback
+
+`RolloutEvaluator` provides per-domain active version selection:
+
+- full: all domains receive head version.
+- percentage: deterministic FNV32a hash(domain) < percentage threshold -> head, else previous version.
+- cohort: listed domains receive head; others fall back.
 
 Rollback re-applies a previous `Spec` as a new version with `DiffSummary` = `rollback(<target>)`. It does not delete history, preserving traceability.
 
