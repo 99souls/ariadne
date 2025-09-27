@@ -77,7 +77,7 @@ type Engine interface {
 // Deprecated: use packages/engine/ratelimit
 package ratelimit
 
-import engineRL "ariadne/packages/engine/ratelimit"
+import engineRL "github.com/99souls/ariadne/engine/ratelimit"
 
 type RateLimiter = engineRL.RateLimiter
 // (repeat for required exported symbols)

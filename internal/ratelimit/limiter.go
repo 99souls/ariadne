@@ -1,10 +1,10 @@
 // Package ratelimit (legacy path) now forwards to engine implementation.
-// Deprecated: import "ariadne/packages/engine/ratelimit" instead.
+// Deprecated: import "github.com/99souls/ariadne/engine/ratelimit" instead.
 package ratelimit
 
 import (
-	engmodels "ariadne/packages/engine/models"
-	englimit "ariadne/packages/engine/ratelimit"
+	engmodels "github.com/99souls/ariadne/engine/models"
+	englimit "github.com/99souls/ariadne/engine/ratelimit"
 )
 
 // Type aliases for backward compatibility

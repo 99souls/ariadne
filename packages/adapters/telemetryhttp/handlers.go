@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"ariadne/packages/engine"
-	telemetryhealth "ariadne/packages/engine/telemetry/health"
-	telemetrymetrics "ariadne/packages/engine/telemetry/metrics"
+	"github.com/99souls/ariadne/engine"
+	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
+	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
 
 // HealthHandlerOptions configures health/readiness handlers.

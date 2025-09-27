@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"ariadne/packages/engine"
+	"github.com/99souls/ariadne/engine"
 )
 
 func main() {

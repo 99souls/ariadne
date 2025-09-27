@@ -37,8 +37,8 @@ snapshot:
 
 # Count legacy import path occurrences (Wave 2A guard)
 legacy-imports:
-	@echo "Counting legacy import path occurrences (ariadne/packages/engine)" >&2
-	@COUNT=$$(grep -R "ariadne/packages/engine" -n --include='*.go' . | wc -l | tr -d ' '); \
+	@echo "Counting legacy import path occurrences (github.com/99souls/ariadne/engine)" >&2
+	@COUNT=$$(grep -R "github.com/99souls/ariadne/engine" -n --include='*.go' . | wc -l | tr -d ' '); \
 	echo $$COUNT; \
 	if [ -n "$(EXPECTED)" ]; then \
 		if [ "$$COUNT" -gt "$(EXPECTED)" ]; then \
