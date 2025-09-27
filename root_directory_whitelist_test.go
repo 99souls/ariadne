@@ -20,7 +20,7 @@ func TestRootDirectoryWhitelist(t *testing.T) {
 	transitional := map[string]struct{}{
 		"internal": {}, // pipeline tests & historical refs pending final prune
 		"cmd":      {}, // old experimental commands scheduled for deletion
-		"packages": {}, // still contains historical engine/ subtree pending purge
+		"packages": {}, // legacy directory still present (adapter files pending physical removal)
 		"test":     {}, // root test harness utilities (may relocate under engine/)
 	}
 
