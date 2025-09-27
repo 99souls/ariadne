@@ -130,43 +130,123 @@ func TestComputeAssetPathDeterministic(t *testing.T) {
 	// Synthetic bytes to avoid network.
 	data := []byte("function test  ( ) {   return  42; }\n")
 	hash := hashBytesHex(data)
-	if len(hash) != sha256.Size*2 { t.Fatalf("expected sha256 hex length %d got %d", sha256.Size*2, len(hash)) }
+	if len(hash) != sha256.Size*2 {
+		t.Fatalf("expected sha256 hex length %d got %d", sha256.Size*2, len(hash))
+	}
 	path := computeAssetPath("/assets/", hash, "https://example.com/js/app.js")
-	if !strings.HasPrefix(path, "/assets/") { t.Fatalf("path missing prefix: %s", path) }
+	if !strings.HasPrefix(path, "/assets/") {
+		t.Fatalf("path missing prefix: %s", path)
+	}
 	parts := strings.Split(path[len("/assets/"):], "/")
-	if len(parts) != 2 { t.Fatalf("expected 2 parts after prefix, got %d (%v)", len(parts), parts) }
-	if len(parts[0]) != 2 { t.Fatalf("expected first directory of length 2, got %s", parts[0]) }
-	if !strings.HasSuffix(path, ".js") { t.Fatalf("expected original extension .js preserved, got %s", path) }
+	if len(parts) != 2 {
+		t.Fatalf("expected 2 parts after prefix, got %d (%v)", len(parts), parts)
+	}
+	if len(parts[0]) != 2 {
+		t.Fatalf("expected first directory of length 2, got %s", parts[0])
+	}
+	if !strings.HasSuffix(path, ".js") {
+		t.Fatalf("expected original extension .js preserved, got %s", path)
+	}
 	// Determinism: recompute path for same hash & url
 	path2 := computeAssetPath("/assets/", hash, "https://example.com/js/app.js")
-	if path != path2 { t.Fatalf("expected deterministic path, got %s vs %s", path, path2) }
+	if path != path2 {
+		t.Fatalf("expected deterministic path, got %s vs %s", path, path2)
+	}
 }
 
 func TestOptimizeBytesWhitespaceCollapse(t *testing.T) {
 	css := []byte("body {  color:   red;    background:   white; }\n\n")
 	out, applied := optimizeBytes("stylesheet", css)
-	if len(applied) == 0 || applied[0] != "css_minify" { t.Fatalf("expected css_minify applied, got %v", applied) }
-	if len(out) >= len(css) { t.Fatalf("expected reduced size, in=%d out=%d", len(css), len(out)) }
+	if len(applied) == 0 || applied[0] != "css_minify" {
+		t.Fatalf("expected css_minify applied, got %v", applied)
+	}
+	if len(out) >= len(css) {
+		t.Fatalf("expected reduced size, in=%d out=%d", len(css), len(out))
+	}
 	// Idempotent second pass
 	out2, applied2 := optimizeBytes("stylesheet", out)
-	if len(applied2) != 0 { t.Fatalf("expected no further optimization second pass, got %v", applied2) }
-	if string(out) != string(out2) { t.Fatalf("expected stable output after second pass") }
+	if len(applied2) != 0 {
+		t.Fatalf("expected no further optimization second pass, got %v", applied2)
+	}
+	if string(out) != string(out2) {
+		t.Fatalf("expected stable output after second pass")
+	}
 }
 
 func TestOptimizeBytesJS(t *testing.T) {
 	js := []byte("function   foo( ) {  return   1 + 2 ; }    ")
 	out, applied := optimizeBytes("script", js)
-	if len(applied) == 0 || applied[0] != "js_minify" { t.Fatalf("expected js_minify applied, got %v", applied) }
-	if len(out) >= len(js) { t.Fatalf("expected reduced size for js, in=%d out=%d", len(js), len(out)) }
+	if len(applied) == 0 || applied[0] != "js_minify" {
+		t.Fatalf("expected js_minify applied, got %v", applied)
+	}
+	if len(out) >= len(js) {
+		t.Fatalf("expected reduced size for js, in=%d out=%d", len(js), len(out))
+	}
 }
 
 func TestOptimizeDisabledLeavesBytes(t *testing.T) {
 	// Use helper directly; simulate disabled optimization by skipping optimizeBytes invocation.
 	js := []byte("let   x =  1 ;")
 	out, applied := optimizeBytes("script", js)
-	if len(applied) == 0 { t.Fatalf("expected optimization when enabled helper directly: %v", applied) }
+	if len(applied) == 0 {
+		t.Fatalf("expected optimization when enabled helper directly: %v", applied)
+	}
 	// Simulate disabled by not calling optimizeBytes: ensure hash differs only when we apply.
 	if hashBytesHex(js) == hashBytesHex(out) && string(js) != string(out) {
 		t.Fatalf("hash should change when bytes change; input and output hash equal")
 	}
+}
+
+// --- Hardening tests (post Iteration 4) ---
+func TestDecideEnforcesMaxPerPage(t *testing.T) {
+	s := &DefaultAssetStrategy{}
+	// fabricate refs
+	var refs []AssetRef
+	for i := 0; i < 10; i++ { refs = append(refs, AssetRef{URL: "https://e/x" , Type: "img"}) }
+	policy := AssetPolicy{Enabled: true, MaxPerPage: 3, AllowTypes: []string{"img"}}
+	acts, err := s.Decide(context.TODO(), refs, policy)
+	if err != nil { t.Fatalf("decide: %v", err) }
+	if len(acts) != 3 { t.Fatalf("expected 3 actions capped, got %d", len(acts)) }
+}
+
+func TestDecideAllowFilters(t *testing.T) {
+	s := &DefaultAssetStrategy{}
+	refs := []AssetRef{{URL: "https://e/a.css", Type: "stylesheet"}, {URL: "https://e/a.js", Type: "script"}, {URL: "https://e/a.png", Type: "img"}}
+	policy := AssetPolicy{Enabled: true, AllowTypes: []string{"script"}}
+	acts, err := s.Decide(context.TODO(), refs, policy)
+	if err != nil { t.Fatalf("decide: %v", err) }
+	if len(acts) != 1 || acts[0].Ref.Type != "script" { t.Fatalf("allow filter failed: %+v", acts) }
+}
+
+func TestComputeAssetPathPrefixNormalization(t *testing.T) {
+	hash := strings.Repeat("a", 64)
+	p1 := computeAssetPath("assets", hash, "https://e/x.js")
+	p2 := computeAssetPath("/assets", hash, "https://e/x.js")
+	p3 := computeAssetPath("/assets/", hash, "https://e/x.js")
+	if p1 != p2 || p2 != p3 { t.Fatalf("expected normalized paths equal, got: %s | %s | %s", p1, p2, p3) }
+}
+
+func TestExecuteOptimizeToggle(t *testing.T) {
+	// Override fetchAsset to return deterministic bytes without network.
+	oldFetch := fetchAsset
+	fetchAsset = func(ctx context.Context, rawURL string, cap int64) ([]byte, error) { return []byte("function   x( ){ return  1 ; }"), nil }
+	defer func(){ fetchAsset = oldFetch }()
+	s := &DefaultAssetStrategy{}
+	ref := AssetRef{URL: "https://e/app.js", Type: "script"}
+	actions := []AssetAction{{Ref: ref, Mode: AssetModeDownload}}
+	polNo := AssetPolicy{Enabled: true, RewritePrefix: "/assets/", Optimize: false}
+	matsNo, err := s.Execute(context.TODO(), actions, polNo)
+	if err != nil || len(matsNo) != 1 { t.Fatalf("execute no optimize failed: %v %d", err, len(matsNo)) }
+	polYes := polNo; polYes.Optimize = true
+	matsYes, err := s.Execute(context.TODO(), actions, polYes)
+	if err != nil || len(matsYes) != 1 { t.Fatalf("execute optimize failed: %v %d", err, len(matsYes)) }
+	if matsNo[0].Hash == matsYes[0].Hash && string(matsNo[0].Bytes) != string(matsYes[0].Bytes) { t.Fatalf("hash unchanged despite byte change") }
+	if polYes.Optimize && len(matsYes[0].Optimizations) == 0 { t.Fatalf("expected optimization tag") }
+}
+
+func TestAssetPolicyValidate(t *testing.T) {
+	bad := AssetPolicy{Enabled: true, RewritePrefix: "assets/"}
+	if err := bad.Validate(); err == nil { t.Fatalf("expected validation error for missing leading slash") }
+	good := AssetPolicy{Enabled: true, RewritePrefix: "/assets"}
+	if err := good.Validate(); err != nil { t.Fatalf("unexpected error: %v", err) }
 }
