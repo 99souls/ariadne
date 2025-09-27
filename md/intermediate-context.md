@@ -1,131 +1,80 @@
-# Phase 5A Progress - Interface Definition & Scaffolding
+# Phase 5B Progress - Business Logic Consolidation
 
 **Status**: In Progress  
-**Started**: September 26, 2025  
-**Goal**: Define core business interfaces for Fetcher, Processor, and enhanced OutputSink  
+**Started**: September 27, 2025  
+**Goal**: Transform interface foundation into comprehensive business layer architecture  
+**Current Step**: Step 1 - Business Logic Migration  
 **Approach**: TDD methodology with comprehensive test coverage
 
 ---
 
-## Baseline Metrics (Start of Phase 5A)
+## Phase 5B Progress Tracking
 
-### Code Quality
+### Step 1: Business Logic Migration ✅
 
-- **Lint Status**: ✅ Clean (no issues)
-- **Tests Status**: ✅ All passing
-- **Coverage**: 64.2% total (needs improvement in new packages)
+**Status**: **COMPLETE** ✅  
+**Completion Date**: September 27, 2025  
+**Test Coverage**: 29/29 tests passing  
+**Code Quality**: Zero linting issues  
+**Implementation Time**: ~2 hours
 
-### Coverage by Package
+**Achievements**:
 
-- `packages/engine`: 88.9% ✅
-- `packages/engine/output/assembly`: 92.0% ✅
-- `packages/engine/output/enhancement`: 91.1% ✅
-- `packages/engine/output/html`: 92.8% ✅
-- `packages/engine/output/markdown`: 81.0% ✅
-- `packages/engine/pipeline`: 79.9% ✅
-- `internal/processor`: 78.9% ✅
-- `internal/assets`: 73.5% ✅
+- ✅ **Crawler Business Logic Consolidation**: Created comprehensive `packages/engine/business/crawler/` package
+- ✅ **Policy-Based Decision Making**: Implemented `CrawlingBusinessPolicy` with 4 policy domains
+- ✅ **Business Decision Engine**: Created `CrawlingDecisionMaker` for intelligent crawling decisions
+- ✅ **Site-Specific Rules**: Implemented `SitePolicyManager` with pattern matching and rule inheritance
+- ✅ **Comprehensive Testing**: 29 tests covering all business logic scenarios
 
-### Packages Needing Test Coverage
+**Files Created**:
 
-- `packages/engine/crawler`: [no test files]
-- `packages/engine/models`: 0.0%
-- `packages/engine/ratelimit`: 0.0% (forwarding shim)
-- `packages/engine/resources`: 0.0% (forwarding shim)
+- `packages/engine/business/crawler/policies.go` (103 lines) - Core policy structures and evaluation logic
+- `packages/engine/business/crawler/policies_test.go` (290 lines) - Comprehensive policy testing
+- `packages/engine/business/crawler/decisions.go` (108 lines) - Business decision-making logic
+- `packages/engine/business/crawler/decisions_test.go` (175 lines) - Decision testing with integration scenarios
+- `packages/engine/business/crawler/sites.go` (122 lines) - Site-specific policy management
+- `packages/engine/business/crawler/sites_test.go` (222 lines) - Site policy testing with pattern matching
 
----
+**Business Logic Consolidation**:
 
-## Phase 5A Progress Tracking
+1. **URL Allowance Decisions**: Moved from `internal/crawler.isAllowedURL()` to policy-based evaluation
+2. **Link Following Logic**: Extracted depth and external link rules from hardcoded crawler logic
+3. **Content Selection**: Centralized selector logic with site-specific overrides
+4. **Rate Limiting Rules**: Business-level rate limiting policies with domain-specific settings
 
-### Step 1: Fetcher Interface Design ✅
+**Architecture Benefits Achieved**:
 
-- Status: **COMPLETE** ✅
-- Test Coverage: 8/8 tests passing
-- Code Quality: Lint compliance verified (0 issues)
-- Error Handling: Comprehensive error checking added
-- Files Created:
-  - `packages/engine/crawler/fetcher.go` - Interface definition
-  - `packages/engine/crawler/colly_fetcher.go` - Colly implementation
-  - `packages/engine/crawler/fetcher_test.go` - Comprehensive test suite
+- ✅ **Policy-Driven**: All crawling decisions now configurable through business policies
+- ✅ **Site-Specific**: Fine-grained control over site-specific crawling behavior
+- ✅ **Testable**: Business logic completely isolated and unit-testable
+- ✅ **Extensible**: Clear patterns for adding new business rules and policies
 
-### Step 2: Enhanced Processor Interface (TDD) ✅
+**Integration Points Prepared**:
 
-- Status: **COMPLETE** ✅
-- Test Coverage: 8/8 tests passing (interface + integration tests)
-- Code Quality: Lint compliance verified (0 issues)
-- Backward Compatibility: Full compatibility adapter implemented
-- Files Created:
-  - `packages/engine/processor/processor.go` - Enhanced interface definition
-  - `packages/engine/processor/compatibility.go` - Compatibility adapter with existing processor
-  - `packages/engine/processor/processor_test.go` - Comprehensive test suite with integration tests
+- Ready for integration with existing `CollyFetcher` implementation
+- Business policies can be configured through `UnifiedBusinessConfig`
+- Decision context supports distributed crawling scenarios
 
-### Step 3: Enhanced OutputSink Interface (TDD) ✅
+### Step 2: Policy-Based Processing (Week 1-2)
 
-- Status: **COMPLETE** ✅
-- Test Coverage: 10/10 tests passing (interface + composition + integration tests)
-- Code Quality: Lint compliance verified (0 issues)
-- Backward Compatibility: Full compatibility with existing OutputSink interface
-- Files Created:
-  - `packages/engine/output/enhanced_sink.go` - Enhanced interface definitions and policies
-  - `packages/engine/output/enhanced_sink_impl.go` - Reference implementation with policy support
-  - `packages/engine/output/composite_sink.go` - Composite and routing sink implementations
-  - `packages/engine/output/enhanced_sink_test.go` - Comprehensive test suite with transformations
+- [ ] Enhanced Policy System for processor business logic
+- [ ] Dynamic Rule Engine for content processing decisions  
+- [ ] Policy Configuration with hot-reloading support
 
-### Step 4: Strategy-Aware Engine Constructor
+### Step 3: Strategy Composition (Week 2)
 
-- [ ] Add EngineStrategies struct for dependency injection
-- [ ] Maintain backward compatibility with existing constructor
-- [ ] Integration tests for strategy injection
+- [ ] Advanced Strategy System with composer interface
+- [ ] Multi-Strategy Support for complex processing chains
+- [ ] Strategy Optimization with performance profiling
 
-### Step 5: Configuration Unification Foundation ✅
+### Step 4: Runtime Configuration (Week 2-3)
 
-**Status**: COMPLETED - All requirements implemented with comprehensive testing
+- [ ] Hot-Reloading System for configuration changes
+- [ ] Configuration Management with versioning
+- [ ] Real-time Monitoring of configuration changes
 
-**Implementation**:
+### Step 5: Advanced Monitoring (Week 3)
 
-- Created `packages/engine/config` package with unified configuration system
-- Implemented `UnifiedBusinessConfig` with all component policies and global settings
-- Built comprehensive validation system with edge case handling
-- Created intelligent defaults system with value preservation
-- Added configuration composition and legacy migration support
-- Achieved 47 tests passing with zero lint issues
-
-**Key Achievements**:
-
-- Unified business policy configuration across Fetcher, Processor, OutputSink
-- Comprehensive validation and default systems with boundary condition handling
-- Multi-environment configuration support (development/production)
-- Performance-optimized validation and creation (< 100ms for 1000 operations)
-- Full backward compatibility with existing policy structures
-- Configuration hot-reloading and migration patterns
-
-**Files Added**:
-
-- `packages/engine/config/unified_config.go` (449 lines)
-- `packages/engine/config/unified_config_test.go` (24 tests)
-- `packages/engine/config/advanced_config_test.go` (16 tests)
-- `packages/engine/config/integration_test.go` (7 tests)
-
-**Architecture Benefits**:
-
-- Single source of truth for all engine configuration
-- Policy-driven validation with descriptive error messages
-- Flexible composition patterns for various use cases
-- Foundation for Phase 5B implementation integration
-
-**Quality Metrics**:
-
-- 47 comprehensive tests passing
-- Zero golangci-lint issues
-- 100% compilation success across all engine packages
-- Performance benchmarks within acceptable bounds
-
----
-
-## Progress Log
-
-### 2025-09-26 14:30 - Phase 5A Initialization
-
-- Established baseline metrics
-- All tests passing, lint clean
-- Started with TDD approach for interface definitions
+- [ ] Business Metrics collection and analysis
+- [ ] Observability Integration with tracing
+- [ ] Dashboard Creation for business insights
