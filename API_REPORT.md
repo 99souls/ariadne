@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-27T23:23:59+01:00
+Generated: 2025-09-27T23:28:09+01:00
 
 ## Package `models`
 
@@ -146,7 +146,10 @@ Engine.Stop | method | Stable | Stop gracefully stops the engine and underlying 
 Engine.Tracer | method | Experimental | Tracer returns the engine's tracer implementation.
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
+Fetcher | type | Experimental | Fetcher defines how pages are fetched.
 MaterializedAsset | type |  | MaterializedAsset represents an asset after execution (download / inline / optimization).
+OutputSink | type | Experimental | OutputSink consumes processed pages.
+Processor | type | Experimental | Processor transforms a fetched page into enriched content.
 ResourceSnapshot | type | Experimental | ResourceSnapshot summarizes resource manager internal counters.
 ResumeSnapshot | type | Experimental | ResumeSnapshot contains resume filter statistics.
 Snapshot | type | Stable | Snapshot is a unified view of engine state.

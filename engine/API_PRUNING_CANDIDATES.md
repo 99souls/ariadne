@@ -23,7 +23,7 @@ Objective: Reduce public surface to curated, documented contracts. Items below a
 | Snapshot                    | KEEP       | User-facing introspection                                                            |
 | ResourceSnapshot            | KEEP       | Part of Snapshot                                                                     |
 | ResumeSnapshot              | KEEP       | Part of Snapshot                                                                     |
-| AssetStrategy (if exported) | TAG        | Document extension point or replace with more granular interfaces                    |
+| AssetStrategy (if exported) | TAG (DONE) | Consolidated & annotated in strategies.go                                           |
 | MetricsProvider()           | TAG        | Mark Experimental – may move behind separate telemetry subpackage                    |
 | UpdateTelemetryPolicy       | TAG        | Experimental (policy model may evolve)                                               |
 | Policy()                    | TAG        | Experimental accessor                                                                |
@@ -70,7 +70,7 @@ Intent: Evaluate each for public necessity.
 | Package | Action | Notes |
 | ------- | ------ | ----- |
 | processor | INT | Implementation detail |
-| output (interfaces) | KEEP | OutputSink extension point is user value |
+| output (interfaces) | TAG | OutputSink consolidated & annotated in strategies.go |
 | output/stdout | TAG | Example implementation (mark Experimental) |
 | resources | INT | Manager internalized; expose high-level snapshot only |
 | ratelimit | TAG | Keep if embedding / external tuning desirable; else INT |

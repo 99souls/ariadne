@@ -23,8 +23,10 @@ func TestEngineExportAllowlist(t *testing.T) {
 		"Engine": {}, "Config": {}, "Snapshot": {}, "ResourceSnapshot": {}, "ResumeSnapshot": {},
 		// Construction & strategies placeholder
 		"New": {}, "NewWithStrategies": {}, "EngineStrategies": {},
+		// Consolidated strategy interfaces
+		"Fetcher": {}, "Processor": {}, "OutputSink": {}, "AssetStrategy": {},
 		// Asset subsystem extension points / metrics snapshots
-		"AssetPolicy": {}, "AssetStrategy": {}, "AssetRef": {}, "AssetMode": {}, "AssetAction": {}, "MaterializedAsset": {},
+		"AssetPolicy": {}, "AssetRef": {}, "AssetMode": {}, "AssetAction": {}, "MaterializedAsset": {},
 		"AssetEvent": {}, "AssetEventPublisher": {}, "AssetMetrics": {}, "AssetMetricsSnapshot": {}, "DefaultAssetStrategy": {},
 		// Public enums / consts (asset modes)
 		"AssetModeDownload": {}, "AssetModeSkip": {}, "AssetModeInline": {}, "AssetModeRewrite": {},
