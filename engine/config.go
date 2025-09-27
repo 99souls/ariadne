@@ -1,8 +1,8 @@
 package engine
 
 import (
-	engpipeline "ariadne/packages/engine/pipeline"
-	engresources "ariadne/packages/engine/resources"
+	engpipeline "ariadne/engine/pipeline"
+	engresources "ariadne/engine/resources"
 	"ariadne/pkg/models"
 	"time"
 )

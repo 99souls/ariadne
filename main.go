@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"ariadne/packages/engine"
+	"ariadne/engine"
 )
 
 func main() {

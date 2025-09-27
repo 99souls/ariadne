@@ -1,7 +1,7 @@
 package models
 
 import (
-	engmodels "ariadne/packages/engine/models"
+	engmodels "ariadne/engine/models"
 	"time"
 )
 

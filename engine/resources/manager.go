@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	engmodels "ariadne/packages/engine/models"
+	engmodels "ariadne/engine/models"
 	"sync"
 	"time"
 )

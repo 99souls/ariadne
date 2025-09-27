@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"ariadne/packages/engine/output/assembly"
+	"ariadne/engine/output/assembly"
 	"ariadne/pkg/models"
 )
 

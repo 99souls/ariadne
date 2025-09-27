@@ -1,7 +1,7 @@
-// Deprecated shim: use ariadne/packages/engine/resources instead.
+// Deprecated shim: use ariadne/engine/resources instead.
 package resources
 
-import engres "ariadne/packages/engine/resources"
+import engres "ariadne/engine/resources"
 
 type (
 	Config  = engres.Config

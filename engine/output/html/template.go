@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"ariadne/packages/engine/output"
+	"ariadne/engine/output"
 	"ariadne/pkg/models"
 )
 

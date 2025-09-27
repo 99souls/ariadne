@@ -1,6 +1,6 @@
 package models
 
-import engmodels "ariadne/packages/engine/models"
+import engmodels "ariadne/engine/models"
 
 // Deprecated: use engine/models errors. Aliases maintained for migration.
 var (

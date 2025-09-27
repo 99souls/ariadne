@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"ariadne/packages/engine/output/assembly"
+	"ariadne/engine/output/assembly"
 	"ariadne/pkg/models"
 )
 

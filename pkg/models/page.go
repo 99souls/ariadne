@@ -1,10 +1,10 @@
 package models
 
-// Deprecated model aliases: moved to packages/engine/models.
+// Deprecated model aliases: moved to ariadne/engine/models.
 // These aliases preserve backward compatibility; new code should import
-// "ariadne/packages/engine/models" instead. Removal planned in cleanup phase.
+// "ariadne/engine/models" instead. Removal planned in cleanup phase.
 
-import engmodels "ariadne/packages/engine/models"
+import engmodels "ariadne/engine/models"
 
 type Page = engmodels.Page
 type PageMeta = engmodels.PageMeta
