@@ -7,27 +7,32 @@
 **Branch**: `engine-migration` (continue) or `phase5c-config` (recommended new feature branch)  
 **Planned Duration**: ~2 weeks (4–6 focused sessions)  
 **Blocking Dependencies**: None (all prerequisites satisfied)  
-**Exit Criteria**: All Success Criteria (Section 2) met, zero lint issues, all tests passing.  
+**Exit Criteria**: All Success Criteria (Section 2) met, zero lint issues, all tests passing.
 
 > Revision History:
+>
 > - v1 (initial): Included prospective CLI integration drafts.
 > - v2 (current, deferred CLI): Removed in-phase CLI implementation; CLI moved to future Phase 7 per updated roadmap alignment (see Rationale Section 0.2).
 
 ## 0. Rationale Alignment & Adjustments
 
 ### 0.1 Alignment With Core Roadmap (plan.md)
-The central roadmap sequences user-facing CLI experience after production hardening. Phase 5C focuses on internal platform capabilities (hierarchical config, versioning, audit, rollout). Exposing these through a CLI now would:  
-1. Encourage premature external coupling before internal API stabilizes.  
-2. Increase surface area for testing & documentation while core semantics are still evolving.  
+
+The central roadmap sequences user-facing CLI experience after production hardening. Phase 5C focuses on internal platform capabilities (hierarchical config, versioning, audit, rollout). Exposing these through a CLI now would:
+
+1. Encourage premature external coupling before internal API stabilizes.
+2. Increase surface area for testing & documentation while core semantics are still evolving.
 3. Risk rework when engine facade and package boundaries finalize in later migration slices.
 
 ### 0.2 Adjustment Summary
-Previously drafted CLI file (`cli.go`) and success criteria that referenced interactive commands are now explicitly deferred to a dedicated “CLI Integration & Operator Tooling” phase (designated Phase 7). Phase 5C will deliver a stable *programmatic* API (Go surface) and internal events so that later layers (CLI, service endpoints, automation) can attach without churn.
+
+Previously drafted CLI file (`cli.go`) and success criteria that referenced interactive commands are now explicitly deferred to a dedicated “CLI Integration & Operator Tooling” phase (designated Phase 7). Phase 5C will deliver a stable _programmatic_ API (Go surface) and internal events so that later layers (CLI, service endpoints, automation) can attach without churn.
 
 ### 0.3 Implications
-- Scope narrowed: fewer artifacts this phase; deeper focus on correctness & safety.  
-- Interfaces will be documented in `config-api.md`; no user CLI docs yet.  
-- Tests will exercise API functions directly (simulate, apply, rollback) via Go calls.  
+
+- Scope narrowed: fewer artifacts this phase; deeper focus on correctness & safety.
+- Interfaces will be documented in `config-api.md`; no user CLI docs yet.
+- Tests will exercise API functions directly (simulate, apply, rollback) via Go calls.
 - Observability remains in-scope to guarantee future tooling can consume change events immediately.
 
 ---
@@ -49,20 +54,20 @@ This phase unlocks operational maturity and sets the foundation for plugin ecosy
 
 ## 2. Success Criteria (Must ALL Pass Before Completion)
 
-| Category      | Criterion                                                      | Validation Method                               |
-| ------------- | -------------------------------------------------------------- | ----------------------------------------------- |
-| Hierarchy     | Layered resolution implemented (5 layers)                      | Unit tests (resolution matrix)                  |
-| Versioning    | Each applied config assigned immutable version + hash          | Tests assert monotonic version & stored digest  |
-| Audit         | Append-only audit log with actor, timestamp, diff summary      | Tests read log & verify immutability            |
-| Simulation    | Dry-run evaluation shows diff & projected metric impact (mock) | Simulation test fixtures                        |
-| Hot Reload    | Atomic apply with rollback on validation failure               | Integration-style test with induced failure     |
-| Rollout       | Percentage / cohort-based staged activation                    | Tests vary cohort & assert selective activation |
-| Integrity     | SHA256 (or blake2b) digest mismatch detection                  | Corruption test triggers rejection              |
-| Programmatic API | Stable internal Go API (no CLI) for apply/simulate/rollback | Unit tests invoke exported functions            |
-| Observability | Config change events exported (metrics/log/trace event)        | Monitoring tests assert emission                |
-| Safety        | Validation gate prevents partial invalid merges                | Negative test cases                             |
-| Docs          | Developer & operator (programmatic) guides completed           | Markdown existence + checklist                  |
-| Quality       | Zero lint issues, all new code covered by tests                | Lint + coverage delta                           |
+| Category         | Criterion                                                      | Validation Method                               |
+| ---------------- | -------------------------------------------------------------- | ----------------------------------------------- |
+| Hierarchy        | Layered resolution implemented (5 layers)                      | Unit tests (resolution matrix)                  |
+| Versioning       | Each applied config assigned immutable version + hash          | Tests assert monotonic version & stored digest  |
+| Audit            | Append-only audit log with actor, timestamp, diff summary      | Tests read log & verify immutability            |
+| Simulation       | Dry-run evaluation shows diff & projected metric impact (mock) | Simulation test fixtures                        |
+| Hot Reload       | Atomic apply with rollback on validation failure               | Integration-style test with induced failure     |
+| Rollout          | Percentage / cohort-based staged activation                    | Tests vary cohort & assert selective activation |
+| Integrity        | SHA256 (or blake2b) digest mismatch detection                  | Corruption test triggers rejection              |
+| Programmatic API | Stable internal Go API (no CLI) for apply/simulate/rollback    | Unit tests invoke exported functions            |
+| Observability    | Config change events exported (metrics/log/trace event)        | Monitoring tests assert emission                |
+| Safety           | Validation gate prevents partial invalid merges                | Negative test cases                             |
+| Docs             | Developer & operator (programmatic) guides completed           | Markdown existence + checklist                  |
+| Quality          | Zero lint issues, all new code covered by tests                | Lint + coverage delta                           |
 
 ---
 
@@ -246,16 +251,16 @@ Add fast deterministic tests; avoid real network or filesystem except optional p
 
 ## 8. Incremental Implementation Plan
 
-| Iteration | Focus                          | Output Artifacts                        |
-| --------- | ------------------------------ | --------------------------------------- |
-| 1         | Layer & model scaffolding      | layers.go, model.go, basic tests        |
-| 2         | Resolver + deep merge          | resolver.go + precedence tests          |
-| 3         | Store + versioning + hashing   | store.go, audit.go, tests               |
-| 4         | Validation + simulation stubs  | validation.go, simulation.go            |
-| 5         | Apply pipeline + rollback      | apply.go, rollout.go                    |
-| 6         | Observability events + metrics | events.go, monitoring integration tests |
-| 7         | Hardening & edge cases         | corruption tests, race detector run     |
-| 8 (Phase 7) | CLI integration (deferred)   | Separate CLI pkg, command tests (future)|
+| Iteration   | Focus                          | Output Artifacts                         |
+| ----------- | ------------------------------ | ---------------------------------------- |
+| 1           | Layer & model scaffolding      | layers.go, model.go, basic tests         |
+| 2           | Resolver + deep merge          | resolver.go + precedence tests           |
+| 3           | Store + versioning + hashing   | store.go, audit.go, tests                |
+| 4           | Validation + simulation stubs  | validation.go, simulation.go             |
+| 5           | Apply pipeline + rollback      | apply.go, rollout.go                     |
+| 6           | Observability events + metrics | events.go, monitoring integration tests  |
+| 7           | Hardening & edge cases         | corruption tests, race detector run      |
+| 8 (Phase 7) | CLI integration (deferred)     | Separate CLI pkg, command tests (future) |
 
 Agents MUST commit after each iteration with concise message: `phase5c: <iteration focus>`.
 
@@ -289,14 +294,14 @@ Add trace event: `config.apply`. Add structured log at INFO level.
 
 ## 11. Documentation Deliverables
 
-| File                          | Purpose                                                           |
-| ----------------------------- | ----------------------------------------------------------------- |
-| `PHASE5C_INSTRUCTIONS.md`     | (This file) authoritative phase plan                              |
-| `phase5c-progress.md`         | Running progress log (agents append per iteration)                |
-| `config-platform-overview.md` | Conceptual architecture & lifecycle diagrams                      |
-| `config-operations-guide.md`  | Operator/programmatic runbook (API usage, rollback, recovery)     |
-| `config-api.md`               | Public Go API contracts (godoc excerpts)                          |
-| `cli-design-draft.md` (future)| (Deferred) CLI specification placeholder for Phase 7 (not now)    |
+| File                           | Purpose                                                        |
+| ------------------------------ | -------------------------------------------------------------- |
+| `PHASE5C_INSTRUCTIONS.md`      | (This file) authoritative phase plan                           |
+| `phase5c-progress.md`          | Running progress log (agents append per iteration)             |
+| `config-platform-overview.md`  | Conceptual architecture & lifecycle diagrams                   |
+| `config-operations-guide.md`   | Operator/programmatic runbook (API usage, rollback, recovery)  |
+| `config-api.md`                | Public Go API contracts (godoc excerpts)                       |
+| `cli-design-draft.md` (future) | (Deferred) CLI specification placeholder for Phase 7 (not now) |
 
 ---
 

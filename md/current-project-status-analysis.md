@@ -329,6 +329,7 @@ Based on Phase 5 analysis, the following development phases are identified:
 **Performance**: Sub‑millisecond interface dispatch preserved; no regressions detected
 
 **Delivered Steps**:
+
 - ✅ **Step 1** Business Logic Migration – Business rules (crawler, processor, output) moved to `packages/engine/business/*`; adapters retained isolation
 - ✅ **Step 2** Enhanced Policy System – Unified policy & rule modeling (`policies` package) + validation & retrieval methods
 - ✅ **Step 3** Strategy Composition – Composable strategies with fetching/processing/output orchestration & optimization scaffolding
@@ -336,12 +337,14 @@ Based on Phase 5 analysis, the following development phases are identified:
 - ✅ **Step 5** Advanced Monitoring – Business metrics, Prometheus exporter, OpenTelemetry tracing (provider initialized), structured logging, health checks
 
 **Key Artifacts**:
+
 - `packages/engine/business/*` – Canonical business layer
 - `packages/engine/strategies/` – Composition, optimization & performance tracking
 - `packages/engine/monitoring/` – Integrated metrics, tracing & health endpoints
 - Updated tests enforcing engine-centric authority & policy behavior
 
 **Benefits Achieved**:
+
 - Centralized decision logic → Easier governance & optimization
 - Extensibility unlocked (future plugin / multi-tenant paths clearer)
 - Observability elevated to business semantics (rule success, strategy efficacy)
@@ -352,6 +355,7 @@ Based on Phase 5 analysis, the following development phases are identified:
 **Objective**: Elevate configuration to a first-class, hierarchical, dynamic, auditable system supporting rule evolution, staged rollout, and safe experimentation.
 
 **High-Level Targets (Preview)**:
+
 1. Hierarchical layered config (global → environment → domain → site → transient overrides)
 2. Rule lifecycle management (create, validate, simulate, activate, rollback)
 3. Hot reload with atomic apply & health gating
@@ -472,15 +476,19 @@ Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added sepa
 ### Phase 5+ Success Criteria (Updated)
 
 🎯 **Interface Standardization (5A) – Achieved**
+
 - Interfaces stable, DI patterns proven, test isolation effective.
 
 🎯 **Business Logic Consolidation (5B) – Achieved**
+
 - Engine authoritative for policies, strategies, runtime control & monitoring.
 
 🎯 **Configuration & Policy Management (5C) – Pending**
+
 - Layered configuration with atomic hot reload, versioning, audit, simulation, and safe rollout.
 
 🎯 **Production Excellence (Ongoing)**
+
 - Enhance telemetry: config impact analytics & rule hit distribution.
 - Prepare for future plugin & multi-module distribution (later phases).
 
@@ -491,6 +499,7 @@ Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added sepa
 Ariadne has now completed **Phases 1–4**, **Phase 5A (Interface Standardization)**, and **Phase 5B (Business Logic Consolidation)**. The engine stands as a cohesive, observable, extensible platform with centralized business authority and strong operational guarantees.
 
 **Phase 5B Completion Highlights**:
+
 - 138+ targeted tests validating policies, strategies, runtime config, and monitoring flows
 - Business metrics & tracing integrated for rule and strategy insight
 - Unified sites / link / content / output decision logic under engine governance
