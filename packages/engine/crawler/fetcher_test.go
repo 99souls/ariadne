@@ -13,12 +13,7 @@ func TestFetcherInterface(t *testing.T) {
 	t.Run("should define basic fetch contract", func(t *testing.T) {
 		// This test validates the interface definition exists and has correct method signatures
 		var fetcher Fetcher
-		_ = fetcher // Interface should compile
-		
-		// Basic interface validation - this will fail until we define the interface
-		if fetcher != nil {
-			t.Error("Fetcher should be an interface, not a concrete type")
-		}
+		_ = fetcher // Interface should compile; zero value of an interface is nil. No runtime assertion needed.
 	})
 }
 

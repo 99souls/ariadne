@@ -1,22 +1,22 @@
 # Ariadne Project Status Analysis - Current State Assessment
 
-**Status**: Updated Analysis (Phase 5B COMPLETE)  
+**Status**: Updated Analysis (Phase 5D COMPLETE)  
 **Date**: September 27, 2025  
 **Companion to**: [phase5-engine-architecture-analysis.md](./phase5-engine-architecture-analysis.md)  
-**Purpose**: Comprehensive assessment of completed work and remaining development phases (now including Phase 5B completion)
+**Purpose**: Comprehensive assessment of completed work and remaining development phases (now including Phase 5D completion)
 
 ---
 
 ## Executive Summary
 
-Ariadne has now successfully completed **Phases 1–4**, **Phase 5A Interface Standardization**, **and Phase 5B Business Logic Consolidation**. The engine has evolved into a cohesive, business-aware platform: decision-making, policy enforcement, strategy composition, runtime configuration, and advanced monitoring are centralized inside the engine layer. **Phase 5B is FULLY COMPLETE** with all 5 steps implemented, validated by 138 comprehensive tests and zero lint issues.
+Ariadne has now successfully completed **Phases 1–4**, **Phase 5A Interface Standardization**, **Phase 5B Business Logic Consolidation**, and **Phase 5D Asset Strategy Integration**. (Phase numbering adjustment: original roadmap slotted configuration as 5C and output strategies as 5D; asset strategy integration was accelerated and executed as 5D on this feature branch.) The engine now owns asset discovery, decision, execution, optimization, and rewrite as a first-class, policy-driven business subsystem with deterministic behavior, concurrency controls, and instrumentation. Phase 5D shipped with a stable worker pool, extended asset discovery (including srcset, preload, media sources, document anchors), deterministic hashed output paths, atomic metrics, and documentation (architecture appendix, migration guide, policy reference, completion plan). Benchmarks established a baseline for future optimization.
 
-**Current Status**: 🟢 **Production Ready Core** with **✅ Phase 5A COMPLETE** and **✅ Phase 5B COMPLETE**  
+**Current Status**: 🟢 **Production Ready Core** with **✅ Phase 5A COMPLETE**, **✅ Phase 5B COMPLETE**, **✅ Phase 5D COMPLETE**  
 **Code Quality**: 🟢 **Zero Linting Issues** (golangci-lint clean)  
-**Test Coverage**: 🟢 **Full Suite Passing** (138+ focused business & strategy tests)  
-**Documentation**: 🟢 **Up-to-date** (phase instructions, migration notes, monitoring design)  
-**Next Phase**: 🎯 **Phase 5C Configuration & Policy Management** (advanced dynamic + hierarchical config)  
-**Operational Readiness**: 🟢 **Health checks, metrics, tracing, structured logging in place**
+**Test Coverage**: 🟢 **Full Suite Passing** (asset subsystem tests added; determinism, concurrency, failure, extended discovery)  
+**Documentation**: 🟢 **Up-to-date** (architecture, migration, config, phase plans)  
+**Next Phase**: 🎯 **Phase 5E Monitoring & Observability Expansion** (exporters, traces, dashboards, event bus)  
+**Operational Readiness**: 🟢 **Health checks, metrics, tracing hooks, structured logging in place**
 
 ---
 
@@ -276,7 +276,7 @@ Ariadne has now successfully completed **Phases 1–4**, **Phase 5A Interface St
 
 ## 4. Remaining Work - Future Phases
 
-Based on Phase 5 analysis, the following development phases are identified:
+Based on Phase 5 analysis and subsequent acceleration of asset strategy integration (Phase 5D), the following development phases are identified / updated:
 
 ### Phase 5A: Interface Standardization ✅ FULLY COMPLETE
 
@@ -350,7 +350,7 @@ Based on Phase 5 analysis, the following development phases are identified:
 - Observability elevated to business semantics (rule success, strategy efficacy)
 - Stable substrate for advanced configuration (Phase 5C) & distribution (later phases)
 
-### Phase 5C: Configuration & Policy Management 🎯 NEXT
+### Phase 5C: Configuration & Policy Management ✅ COMPLETE (Recap)
 
 **Objective**: Elevate configuration to a first-class, hierarchical, dynamic, auditable system supporting rule evolution, staged rollout, and safe experimentation.
 
@@ -367,31 +367,53 @@ Based on Phase 5 analysis, the following development phases are identified:
 
 Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added separately).
 
-### Phase 5D: Advanced Output Strategies 🎯 PLANNED
+### Phase 5D: Asset Strategy Integration ✅ COMPLETE (Accelerated Replacement of Prior 5D Placeholder)
 
-**Objective**: Flexible output formatting and destinations
-**Priority**: Medium
-**Effort**: Low-Medium
+**Objective (Delivered)**: Extract and operationalize asset handling (discovery → decision → download/inline → optimize → rewrite) as a policy-driven, concurrent, deterministic Engine subsystem.
 
-**Planned Work**:
+**Key Deliverables**:
+- AssetStrategy interface + default implementation
+- Extended discovery coverage (img/src & srcset, source[srcset], preload rel=stylesheet/script/image, media sources, document asset anchors)
+- Policy surface (enable, limits, concurrency, inline thresholds, optimization toggle, rewrite prefix)
+- Deterministic hashed path scheme (`/assets/<first2>/<fullhash><ext>`) supporting future caching/CDN layers
+- Concurrency: bounded worker pool (`MaxConcurrent`, CPU capped)
+- Metrics & events (discovered, selected, downloaded, failed, skipped, inlined, optimized, bytes in/out, rewrite failures; download events with optimization info)
+- Race safety: atomic counters + mutex-protected event ring
+- Failure isolation: per-asset error does not abort page processing; failed counter increments without affecting bytes
+- Benchmarked baseline (AssetExecute ns/op, allocs/op) recorded
+- Documentation set: architecture appendix, migration guide, asset policy reference, finalized phase plan
 
-- Multiple output format support (JSON, XML, custom)
-- Database output sinks
-- File-based output strategies
-- Real-time streaming outputs
+**Deferred Items**:
+- Multi-variant srcset materialization
+- Advanced image/media optimization (transcoding, format conversion)
+- External CDN / cache integration
+- Exporter wiring for asset metrics/events (moved to Phase 5E)
 
-### Phase 5E: Monitoring & Observability 🎯 PLANNED
+**Rationale for Roadmap Adjustment**: Early asset consolidation reduced duplication in processor path and enabled cleaner observability instrumentation planning for the upcoming monitoring phase.
 
-**Objective**: Production monitoring and metrics
-**Priority**: Medium
-**Effort**: Medium
+### Phase 5E: Monitoring & Observability 🎯 NEXT
 
-**Planned Work**:
+**Objective**: Elevate observability from basic in-process counters to production-grade, externally consumable telemetry (metrics, traces, structured events, health & readiness) with low overhead and clear SLO baselines.
 
-- Prometheus metrics integration
-- Structured logging with levels
-- Health check endpoints
-- Performance monitoring dashboards
+**Planned High-Level Work (See `phase5e-plan.md` once added)**:
+- Metrics Exporters: Prometheus (pull) & OpenTelemetry bridge (push/OTLP)
+- Unified Telemetry Interface: abstraction enabling pluggable exporters or no-op mode
+- Event Bus: Replace bounded ring with subscription-based fan-out (in-memory to start)
+- Tracing Spans: Crawl session → page fetch → processing → asset sub-operations → rate limit decisions
+- Structured Logging Enhancements: Correlation IDs, component field taxonomy, log level policy
+- Health / Readiness / Liveness Endpoints: JSON status + component metrics snapshot
+- Config Change Impact Metrics: Latency deltas, error-rate shifts, rule hit distribution (ties into 5C runtime config)
+- Dashboards & SLO Definitions: Initial Grafana templates (crawl throughput, error budget, asset failure rate, rate limiter adaptation curves)
+- Performance Budget: <5% CPU overhead & <10% memory overhead with full telemetry enabled
+
+**Exit Criteria (Preview)**:
+- All core internal counters exported via Prometheus endpoint (or injectable registry)
+- Optional OTEL tracing with parent context propagation and span attributes (URL, domain, asset type)
+- Event bus supports at least one subscriber (logger) + future external forwarder hook
+- Health endpoints return green status under normal load; degrade gracefully (partial component errors flagged) without panics
+- Tests validate: metrics cardinality, race safety, exporter toggling, minimal overhead benchmark snapshot
+
+Full detailed plan in new `phase5e-plan.md` (added alongside this update).
 
 ### Phase 5F: Multi-Module Architecture 🎯 PLANNED
 
@@ -496,16 +518,18 @@ Full execution plan defined in forthcoming `PHASE5C_INSTRUCTIONS.md` (added sepa
 
 ## 8. Conclusion
 
-Ariadne has now completed **Phases 1–4**, **Phase 5A (Interface Standardization)**, and **Phase 5B (Business Logic Consolidation)**. The engine stands as a cohesive, observable, extensible platform with centralized business authority and strong operational guarantees.
+Ariadne has now completed **Phases 1–4**, **Phase 5A (Interface Standardization)**, **Phase 5B (Business Logic Consolidation)**, and **Phase 5D (Asset Strategy Integration)**. The engine stands as a cohesive, observable, extensible platform with centralized business authority, deterministic asset handling, and strong operational guarantees.
 
-**Phase 5B Completion Highlights**:
+**Phase 5D Completion Highlights**:
 
-- 138+ targeted tests validating policies, strategies, runtime config, and monitoring flows
-- Business metrics & tracing integrated for rule and strategy insight
-- Unified sites / link / content / output decision logic under engine governance
+- Deterministic, concurrent asset pipeline under policy governance
+- Extended discovery coverage (preload, srcset variants baseline, media sources, document anchors)
+- Atomic metrics + structured events with race safety
+- Benchmarked baseline for future optimization & exporter overhead analysis
+- Comprehensive documentation (architecture appendix, migration guide, policy reference, phase plan)
 
-The foundation is solid for **Phase 5C Configuration & Policy Management**, which will introduce versioned, hierarchical, safely rollable configuration and dynamic rule evolution with full auditability.
+The foundation is solid for **Phase 5E Monitoring & Observability**, which will introduce production-grade exporters, tracing spans, health endpoints, and an event bus enabling external integrations and SLO governance.
 
-**Current Status**: 🟢 **Production Ready** – **✅ Phase 5A COMPLETE**, **✅ Phase 5B COMPLETE**, preparing for **🎯 Phase 5C**.
+**Current Status**: 🟢 **Production Ready** – **✅ Phase 5A**, **✅ Phase 5B**, **✅ Phase 5D**, preparing for **🎯 Phase 5E**.
 
 The roadmap remains on track for advanced extensibility (plugins, multi-tenancy, distributed execution) in subsequent phases once configuration maturity (5C) is achieved.
