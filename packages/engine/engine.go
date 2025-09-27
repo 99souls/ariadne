@@ -137,17 +137,24 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 
 // AssetMetricsSnapshot returns current aggregated counters (nil if strategy disabled)
 func (e *Engine) AssetMetricsSnapshot() AssetMetricsSnapshot {
-	if e.assetMetrics == nil { return AssetMetricsSnapshot{} }
+	if e.assetMetrics == nil {
+		return AssetMetricsSnapshot{}
+	}
 	return e.assetMetrics.snapshot()
 }
 
 // assetEventCollector implements AssetEventPublisher capturing events in memory.
-type assetEventCollector struct { engine *Engine }
+type assetEventCollector struct{ engine *Engine }
+
 func (c assetEventCollector) Publish(ev AssetEvent) {
-	if c.engine == nil { return }
+	if c.engine == nil {
+		return
+	}
 	// Append with simple cap to prevent unbounded growth (keep last 1024)
 	c.engine.assetEvents = append(c.engine.assetEvents, ev)
-	if len(c.engine.assetEvents) > 1024 { c.engine.assetEvents = c.engine.assetEvents[len(c.engine.assetEvents)-1024:] }
+	if len(c.engine.assetEvents) > 1024 {
+		c.engine.assetEvents = c.engine.assetEvents[len(c.engine.assetEvents)-1024:]
+	}
 }
 
 // AssetEvents returns a snapshot copy of collected events.

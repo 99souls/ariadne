@@ -17,8 +17,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
-    "time"
 
 	engmodels "ariadne/packages/engine/models"
 
@@ -70,30 +70,30 @@ type AssetStrategy interface {
 
 // AssetEvent represents a lifecycle occurrence for observability.
 type AssetEvent struct {
-	Type      string        // e.g. asset_download, asset_optimize, asset_stage_error, asset_rewrite
-	URL       string        // asset URL (where applicable)
-	Stage     string        // discover|decide|execute|rewrite
-	BytesIn   int           // pre-optimization bytes
-	BytesOut  int           // post-optimization bytes
-	Duration  time.Duration // operation latency (download/optimize)
-	Error     string        // error message if any
-	Optimizations []string  // optimization identifiers applied
+	Type          string        // e.g. asset_download, asset_optimize, asset_stage_error, asset_rewrite
+	URL           string        // asset URL (where applicable)
+	Stage         string        // discover|decide|execute|rewrite
+	BytesIn       int           // pre-optimization bytes
+	BytesOut      int           // post-optimization bytes
+	Duration      time.Duration // operation latency (download/optimize)
+	Error         string        // error message if any
+	Optimizations []string      // optimization identifiers applied
 }
 
 // AssetEventPublisher publishes events (non-blocking behavior recommended).
-type AssetEventPublisher interface { Publish(AssetEvent) }
+type AssetEventPublisher interface{ Publish(AssetEvent) }
 
 // AssetMetrics holds counters for asset processing lifecycle.
 type AssetMetrics struct {
-	discovered         int64
-	selected           int64
-	skipped            int64
-	downloaded         int64
-	inlined            int64
-	optimized          int64
-	bytesIn            int64
-	bytesOut           int64
-	rewriteFailures    int64
+	discovered      int64
+	selected        int64
+	skipped         int64
+	downloaded      int64
+	inlined         int64
+	optimized       int64
+	bytesIn         int64
+	bytesOut        int64
+	rewriteFailures int64
 }
 
 // Snapshot returns immutable view for assertions / reporting.
@@ -110,16 +110,18 @@ type AssetMetricsSnapshot struct {
 }
 
 func (m *AssetMetrics) snapshot() AssetMetricsSnapshot {
-	if m == nil { return AssetMetricsSnapshot{} }
+	if m == nil {
+		return AssetMetricsSnapshot{}
+	}
 	return AssetMetricsSnapshot{
-		Discovered: m.discovered,
-		Selected: m.selected,
-		Skipped: m.skipped,
-		Downloaded: m.downloaded,
-		Inlined: m.inlined,
-		Optimized: m.optimized,
-		BytesIn: m.bytesIn,
-		BytesOut: m.bytesOut,
+		Discovered:      m.discovered,
+		Selected:        m.selected,
+		Skipped:         m.skipped,
+		Downloaded:      m.downloaded,
+		Inlined:         m.inlined,
+		Optimized:       m.optimized,
+		BytesIn:         m.bytesIn,
+		BytesOut:        m.bytesOut,
 		RewriteFailures: m.rewriteFailures,
 	}
 }
@@ -143,7 +145,9 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 	}
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(page.Content))
 	if err != nil {
-        if s.events != nil { s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "discover", Error: err.Error()}) }
+		if s.events != nil {
+			s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "discover", Error: err.Error()})
+		}
 		return nil, err
 	}
 	var refs []AssetRef
@@ -188,7 +192,9 @@ func (s *DefaultAssetStrategy) Discover(ctx context.Context, page *engmodels.Pag
 		}
 		refs = append(refs, AssetRef{URL: abs, Type: "script", Attr: "src", Original: v})
 	})
-	if s.metrics != nil { s.metrics.discovered += int64(len(refs)) }
+	if s.metrics != nil {
+		s.metrics.discovered += int64(len(refs))
+	}
 	return refs, nil
 }
 func (s *DefaultAssetStrategy) Decide(ctx context.Context, refs []AssetRef, policy AssetPolicy) ([]AssetAction, error) {
@@ -233,7 +239,11 @@ func (s *DefaultAssetStrategy) Decide(ctx context.Context, refs []AssetRef, poli
 	if s.metrics != nil {
 		s.metrics.selected += int64(len(actions))
 		s.metrics.skipped += int64(skipped)
-		for _, a := range actions { if a.Mode == AssetModeInline { s.metrics.inlined++ } }
+		for _, a := range actions {
+			if a.Mode == AssetModeInline {
+				s.metrics.inlined++
+			}
+		}
 	}
 	return actions, nil
 }
@@ -257,7 +267,9 @@ func (s *DefaultAssetStrategy) Execute(ctx context.Context, actions []AssetActio
 		start := time.Now()
 		b, err := fetchAsset(ctx, a.Ref.URL, capRemaining)
 		if err != nil {
-			if s.events != nil { s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "execute", URL: a.Ref.URL, Error: err.Error()}) }
+			if s.events != nil {
+				s.events.Publish(AssetEvent{Type: "asset_stage_error", Stage: "execute", URL: a.Ref.URL, Error: err.Error()})
+			}
 			continue
 		}
 		total += int64(len(b))
@@ -274,13 +286,17 @@ func (s *DefaultAssetStrategy) Execute(ctx context.Context, actions []AssetActio
 		out = append(out, MaterializedAsset{Ref: a.Ref, Bytes: b, Hash: hash, Path: path, Size: len(b), Optimizations: optim})
 		if s.metrics != nil {
 			s.metrics.downloaded++
-			if len(optim) > 0 { s.metrics.optimized++ }
+			if len(optim) > 0 {
+				s.metrics.optimized++
+			}
 			s.metrics.bytesIn += int64(len(b)) // after potential optimization we don't know original easily; treat as both
 			s.metrics.bytesOut += int64(len(b))
 		}
 		if s.events != nil {
 			s.events.Publish(AssetEvent{Type: "asset_download", Stage: "execute", URL: a.Ref.URL, BytesIn: len(b), BytesOut: len(b), Duration: time.Since(start), Optimizations: optim})
-			if len(optim) > 0 { s.events.Publish(AssetEvent{Type: "asset_optimize", Stage: "execute", URL: a.Ref.URL, BytesIn: len(b), BytesOut: len(b), Duration: time.Since(start), Optimizations: optim}) }
+			if len(optim) > 0 {
+				s.events.Publish(AssetEvent{Type: "asset_optimize", Stage: "execute", URL: a.Ref.URL, BytesIn: len(b), BytesOut: len(b), Duration: time.Since(start), Optimizations: optim})
+			}
 		}
 		if policy.MaxBytes > 0 && total >= policy.MaxBytes {
 			break
