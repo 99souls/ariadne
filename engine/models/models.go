@@ -128,15 +128,15 @@ type ScraperConfig struct {
 // DefaultConfig returns a baseline ScraperConfig.
 func DefaultConfig() *ScraperConfig {
 	return &ScraperConfig{
-		MaxDepth:       10,
-		MaxPages:       1000,
-		CrawlWorkers:   1,
-		ExtractWorkers: 2,
-		ProcessWorkers: 4,
-		RequestDelay:   1 * time.Second,
-		Timeout:        30 * time.Second,
-		ContentSelectors: []string{"article", ".content", ".main-content", "#content", ".post-content", "main"},
-		RemoveSelectors:  []string{"nav", ".nav", ".navigation", "header", "footer", ".sidebar", ".ads", ".advertisement", "script", "style"},
+		MaxDepth:          10,
+		MaxPages:          1000,
+		CrawlWorkers:      1,
+		ExtractWorkers:    2,
+		ProcessWorkers:    4,
+		RequestDelay:      1 * time.Second,
+		Timeout:           30 * time.Second,
+		ContentSelectors:  []string{"article", ".content", ".main-content", "#content", ".post-content", "main"},
+		RemoveSelectors:   []string{"nav", ".nav", ".navigation", "header", "footer", ".sidebar", ".ads", ".advertisement", "script", "style"},
 		OutputDir:         "./output",
 		OutputFormats:     []string{"markdown"},
 		UserAgent:         "Ariadne/1.0 (Educational Purpose)",
@@ -144,37 +144,45 @@ func DefaultConfig() *ScraperConfig {
 		RespectRobots:     true,
 		EnableCheckpoints: false,
 		RateLimit: RateLimitConfig{
-			Enabled:             true,
-			InitialRPS:          2.0,
-			MinRPS:              0.25,
-			MaxRPS:              8.0,
-			TokenBucketCapacity: 4.0,
-			AIMDIncrease:         0.25,
-			AIMDDecrease:         0.5,
-			LatencyTarget:        1 * time.Second,
-			LatencyDegradeFactor: 2.0,
+			Enabled:                  true,
+			InitialRPS:               2.0,
+			MinRPS:                   0.25,
+			MaxRPS:                   8.0,
+			TokenBucketCapacity:      4.0,
+			AIMDIncrease:             0.25,
+			AIMDDecrease:             0.5,
+			LatencyTarget:            1 * time.Second,
+			LatencyDegradeFactor:     2.0,
 			ErrorRateThreshold:       0.4,
 			MinSamplesToTrip:         10,
 			ConsecutiveFailThreshold: 5,
 			OpenStateDuration:        15 * time.Second,
 			HalfOpenProbes:           3,
-			RetryBaseDelay:   200 * time.Millisecond,
-			RetryMaxDelay:    5 * time.Second,
-			RetryMaxAttempts: 3,
-			StatsWindow:    30 * time.Second,
-			StatsBucket:    2 * time.Second,
-			DomainStateTTL: 2 * time.Minute,
-			Shards:         16,
+			RetryBaseDelay:           200 * time.Millisecond,
+			RetryMaxDelay:            5 * time.Second,
+			RetryMaxAttempts:         3,
+			StatsWindow:              30 * time.Second,
+			StatsBucket:              2 * time.Second,
+			DomainStateTTL:           2 * time.Minute,
+			Shards:                   16,
 		},
 	}
 }
 
 // Validate performs basic sanity checks on the configuration.
 func (c *ScraperConfig) Validate() error {
-	if c.StartURL == "" { return ErrMissingStartURL }
-	if len(c.AllowedDomains) == 0 { return ErrMissingAllowedDomains }
-	if c.MaxDepth < 1 { return ErrInvalidMaxDepth }
-	if c.CrawlWorkers < 1 { c.CrawlWorkers = 1 }
+	if c.StartURL == "" {
+		return ErrMissingStartURL
+	}
+	if len(c.AllowedDomains) == 0 {
+		return ErrMissingAllowedDomains
+	}
+	if c.MaxDepth < 1 {
+		return ErrInvalidMaxDepth
+	}
+	if c.CrawlWorkers < 1 {
+		c.CrawlWorkers = 1
+	}
 	return nil
 }
 
@@ -204,4 +212,6 @@ type CrawlError struct {
 
 func (e *CrawlError) Error() string { return e.Err.Error() }
 func (e *CrawlError) Unwrap() error { return e.Err }
-func NewCrawlError(url, stage string, err error) *CrawlError { return &CrawlError{URL: url, Stage: stage, Err: err} }
+func NewCrawlError(url, stage string, err error) *CrawlError {
+	return &CrawlError{URL: url, Stage: stage, Err: err}
+}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"ariadne/internal/crawler"
+
 	"github.com/99souls/ariadne/engine/models"
 )
 

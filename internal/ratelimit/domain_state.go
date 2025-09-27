@@ -1,10 +1,11 @@
 package ratelimit
 
 import (
-	"github.com/99souls/ariadne/engine/models"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/99souls/ariadne/engine/models"
 )
 
 const latencyEWMALambda = 0.2

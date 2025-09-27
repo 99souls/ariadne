@@ -1,10 +1,11 @@
 package ratelimit
 
 import (
-	"github.com/99souls/ariadne/engine/models"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/99souls/ariadne/engine/models"
 )
 
 func testRateLimitConfig() models.RateLimitConfig {
