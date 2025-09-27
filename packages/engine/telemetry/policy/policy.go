@@ -30,6 +30,12 @@ type HealthPolicy struct {
 type TracingPolicy struct {
 	// SamplePercent 0-100 range; >0 enables sampling (simple percentage sampler for now).
 	SamplePercent float64
+	// ErrorBoostPercent additional percentage added when previous span marked error (future hook).
+	ErrorBoostPercent float64
+	// LatencyBoostThresholdMs if last span duration >= threshold add LatencyBoostPercent sampling (future hook).
+	LatencyBoostThresholdMs int64
+	// LatencyBoostPercent additional percent sampling for high-latency spans.
+	LatencyBoostPercent float64
 }
 
 type EventBusPolicy struct {

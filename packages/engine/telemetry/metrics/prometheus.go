@@ -28,6 +28,9 @@ type PrometheusProvider struct {
 	cardinality map[string]map[string]struct{}
 	cardLimit   int
 
+	exceededOnce map[string]struct{}
+	warnCounter  *prom.CounterVec
+
 	// http handler cached
 	handler http.Handler
 }
@@ -48,14 +51,18 @@ func NewPrometheusProvider(opts PrometheusProviderOptions) *PrometheusProvider {
 	if limit <= 0 {
 		limit = 100
 	}
+	warn := prom.NewCounterVec(prom.CounterOpts{Name: "ariadne_internal_cardinality_exceeded_total", Help: "count of metrics whose label cardinality exceeded limit"}, []string{"metric"})
+	_ = reg.Register(warn) // ignore AlreadyRegisteredError; best effort
 	p := &PrometheusProvider{
-		reg:         reg,
-		counters:    make(map[string]*prom.CounterVec),
-		gauges:      make(map[string]*prom.GaugeVec),
-		histograms:  make(map[string]*prom.HistogramVec),
-		cardinality: make(map[string]map[string]struct{}),
-		cardLimit:   limit,
-		handler:     promhttp.HandlerFor(reg, promhttp.HandlerOpts{}),
+		reg:          reg,
+		counters:     make(map[string]*prom.CounterVec),
+		gauges:       make(map[string]*prom.GaugeVec),
+		histograms:   make(map[string]*prom.HistogramVec),
+		cardinality:  make(map[string]map[string]struct{}),
+		cardLimit:    limit,
+		exceededOnce: make(map[string]struct{}),
+		warnCounter:  warn,
+		handler:      promhttp.HandlerFor(reg, promhttp.HandlerOpts{}),
 	}
 	return p
 }
@@ -175,12 +182,9 @@ func (p *PrometheusProvider) NewHistogram(opts HistogramOpts) Histogram {
 }
 
 func (p *PrometheusProvider) NewTimer(h HistogramOpts) func() Timer {
-	// Timer backed by histogram; we capture start at constructor invocation
-	return func() Timer {
-		hist := p.NewHistogram(h)
-		start := time.Now()
-		return &promTimer{hist: hist, start: start}
-	}
+	// Optimization: create (or reuse) histogram once, then only capture start time per timer.
+	hist := p.NewHistogram(h)
+	return func() Timer { return &promTimer{hist: hist, start: time.Now()} }
 }
 
 func (p *PrometheusProvider) Health(ctx context.Context) error {
@@ -213,7 +217,15 @@ func (p *PrometheusProvider) cardinalityTrack(id string, labelValues []string) {
 	key := fmt.Sprint(labelValues)
 	if _, ok := set[key]; !ok {
 		set[key] = struct{}{}
-		// TODO: emit internal warning metric / log once when limit exceeded (phase 2)
+		if len(set) > p.cardLimit {
+			if _, warned := p.exceededOnce[id]; !warned {
+				p.exceededOnce[id] = struct{}{}
+				if p.warnCounter != nil {
+					p.warnCounter.WithLabelValues(id).Inc()
+				}
+				fmt.Printf("[telemetry][prom] WARNING metric %s exceeded cardinality limit (%d)\n", id, p.cardLimit)
+			}
+		}
 	}
 }
 

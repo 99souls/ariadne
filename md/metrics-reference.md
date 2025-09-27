@@ -1,6 +1,6 @@
 # Metrics Reference (Phase 5E)
 
-Status: Updated (Iteration 7 hardening in progress)
+Status: Complete (Phase 5E) – hardening finished; adaptive sampling & workload benchmark added post-completion
 Date: 2025-09-27
 Related: `phase5e-plan.md`, `telemetry-architecture.md`
 
@@ -119,7 +119,7 @@ Future phases may add: distributed shard metrics (shard_id label), exporter heal
 
 ## 11. Status
 
-Updated – Iterations 1–6 delivered providers (prom, otel), event bus, tracing/logging, health evaluator; Iteration 7 adds OTEL cardinality guard (counter + one-time warning) and benchmark expansion.
+Complete – Providers (noop, prom, otel), event bus, tracing/logging, health evaluator, cardinality guard (prom & otel), overhead benchmarks (micro + integrated workload), adaptive sampling tracer hook.
 
 ### Health Metric Rationale
 

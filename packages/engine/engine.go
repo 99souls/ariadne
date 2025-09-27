@@ -240,8 +240,8 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	// Phase 5E Iteration 2: initialize event bus (metrics provider may be nil; bus tolerates nil -> noop metrics)
 	e.eventBus = telemEvents.NewBus(e.metricsProvider)
 
-	// Phase 5E Iteration 3: initialize tracer (enabled by default this iteration; future flag)
-	e.tracer = telemetrytracing.NewTracer(true)
+	// Phase 5E Iteration 3 + deferred enhancement: adaptive tracer referencing policy sample percent.
+	e.tracer = telemetrytracing.NewAdaptiveTracer(func() float64 { return e.Policy().Tracing.SamplePercent })
 
 	// Phase 5E Iteration 4: initialize health evaluator with basic subsystem probes.
 	// TTL seeded from default policy; may be overridden later via UpdateTelemetryPolicy.

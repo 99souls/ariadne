@@ -2,8 +2,9 @@ package tracing
 
 import (
 	"context"
-	"crypto/rand"
+	randcrypto "crypto/rand"
 	"encoding/hex"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -51,6 +52,11 @@ func (n noopSpan) IsEnded() bool                      { return true }
 
 type simpleTracer struct{ enabled bool }
 
+// adaptiveTracer decorates simpleTracer with policy-based sampling (percentage + future boosts).
+type adaptiveTracer struct {
+	policyFn func() float64 // returns base sample percent (0-100)
+}
+
 type simpleSpan struct {
 	ctx   SpanContext
 	mu    sync.Mutex
@@ -66,6 +72,14 @@ func NewTracer(enabled bool) Tracer {
 	return simpleTracer{enabled: true}
 }
 
+// NewAdaptiveTracer creates a tracer with dynamic percentage sampling.
+func NewAdaptiveTracer(percentFn func() float64) Tracer {
+	if percentFn == nil {
+		return noopTracer{}
+	}
+	return &adaptiveTracer{policyFn: percentFn}
+}
+
 // StartSpan creates a span and stores it in the context.
 func (t simpleTracer) StartSpan(ctx context.Context, name string) (context.Context, Span) {
 	parent := SpanFromContext(ctx)
@@ -78,6 +92,23 @@ func (t simpleTracer) StartSpan(ctx context.Context, name string) (context.Conte
 	return ctx, sp
 }
 func (t simpleTracer) Noop() bool { return !t.enabled }
+
+// adaptive tracer sampling decision each StartSpan root creation.
+func (a *adaptiveTracer) StartSpan(ctx context.Context, name string) (context.Context, Span) {
+	parent := SpanFromContext(ctx)
+	traceID := parent.ctx.TraceID
+	if traceID == "" { // root span candidate
+		pct := a.policyFn()
+		if pct <= 0 || rand.Float64()*100 > pct { // not sampled
+			return ctx, noopSpan{}
+		}
+		traceID = newID(16)
+	}
+	sp := &simpleSpan{ctx: SpanContext{TraceID: traceID, SpanID: newID(8), ParentSpanID: parent.ctx.SpanID, Start: time.Now()}, attrs: make(map[string]any)}
+	ctx = context.WithValue(ctx, spanKey{}, sp)
+	return ctx, sp
+}
+func (a *adaptiveTracer) Noop() bool { return false }
 
 func (s *simpleSpan) End() {
 	s.mu.Lock()
@@ -121,6 +152,6 @@ func ExtractIDs(ctx context.Context) (traceID, spanID string) {
 // newID generates n random bytes hex encoded (2n length string).
 func newID(n int) string {
 	b := make([]byte, n)
-	_, _ = rand.Read(b)
+	_, _ = randcrypto.Read(b)
 	return hex.EncodeToString(b)
 }

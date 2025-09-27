@@ -6,16 +6,17 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- (Planned) Integrated workload benchmark for telemetry overhead (deferred from Phase 5E)
-- (Planned) Adaptive/error-biased trace sampling prototype
+- Adaptive percentage-based tracer (policy-driven sample percent) replacing always-on tracer.
+- Integrated workload benchmark (`BenchmarkIntegratedWorkload`) simulating page + asset telemetry mix.
 
 ### Changed
 
-- (Planned) Prometheus timer allocation optimization
+- Prometheus timer implementation pre-creates histogram (reduces per-timer allocations).
 
 ### Deferred
 
 - External trace exporter wiring (will introduce build tag & binary size note)
+- Error/latency biased sampling boosts (policy fields scaffolded but logic deferred).
 
 ## [Phase 5E Completion] - 2025-09-27
 
