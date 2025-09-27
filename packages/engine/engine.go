@@ -50,6 +50,8 @@ type Engine struct {
 	resumeMetrics resumeState
 	strategies    interface{} // Placeholder for broader strategy sets (future)
 	assetStrategy AssetStrategy
+	assetMetrics  *AssetMetrics
+	assetEvents   []AssetEvent // simple in-memory buffer for now (Iteration 6 minimal impl)
 }
 
 type resumeState struct {
@@ -98,11 +100,14 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	if cfg.AssetPolicy.Enabled {
 		// For now always use DefaultAssetStrategy; future customization could be injected
 		// via options or EngineStrategies.
-		as := &DefaultAssetStrategy{}
+		m := &AssetMetrics{}
+		publisher := assetEventCollector{engine: e}
+		as := NewDefaultAssetStrategy(m, publisher)
 		if err := cfg.AssetPolicy.Validate(); err != nil {
 			return nil, err
 		}
 		e.assetStrategy = as
+		e.assetMetrics = m
 		// Inject hook into pipeline for per-page processing.
 		if e.pl != nil {
 			policy := cfg.AssetPolicy
@@ -128,6 +133,28 @@ func New(cfg Config, opts ...Option) (*Engine, error) {
 	}
 	e.started.Store(true)
 	return e, nil
+}
+
+// AssetMetricsSnapshot returns current aggregated counters (nil if strategy disabled)
+func (e *Engine) AssetMetricsSnapshot() AssetMetricsSnapshot {
+	if e.assetMetrics == nil { return AssetMetricsSnapshot{} }
+	return e.assetMetrics.snapshot()
+}
+
+// assetEventCollector implements AssetEventPublisher capturing events in memory.
+type assetEventCollector struct { engine *Engine }
+func (c assetEventCollector) Publish(ev AssetEvent) {
+	if c.engine == nil { return }
+	// Append with simple cap to prevent unbounded growth (keep last 1024)
+	c.engine.assetEvents = append(c.engine.assetEvents, ev)
+	if len(c.engine.assetEvents) > 1024 { c.engine.assetEvents = c.engine.assetEvents[len(c.engine.assetEvents)-1024:] }
+}
+
+// AssetEvents returns a snapshot copy of collected events.
+func (e *Engine) AssetEvents() []AssetEvent {
+	out := make([]AssetEvent, len(e.assetEvents))
+	copy(out, e.assetEvents)
+	return out
 }
 
 // Start begins processing of the provided seed URLs. It returns a read-only results channel.
