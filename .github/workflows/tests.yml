@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.25]
+  go-version: [1.25.1]
 
     steps:
       - uses: actions/checkout@v4
@@ -42,19 +42,27 @@ jobs:
             (cd $m && go build ./... ) || exit 1;
           done
 
-      - name: Run tests
+      - name: Run tests (with unified coverage)
         run: |
-          set -e
+          set -euo pipefail
           rm -f coverage.out
-            for m in engine cli tools/apireport; do
-              echo "==> test $m";
-              (cd $m && go test -race -coverprofile=coverage.tmp ./... );
-              cat $m/coverage.tmp >> coverage.out; rm $m/coverage.tmp;
-            done
+          first=1
+          for m in engine cli tools/apireport; do
+            echo "==> test $m";
+            (cd $m && go test -race -covermode=atomic -coverprofile=coverage.tmp ./... )
+            if [ $first -eq 1 ]; then
+              cat $m/coverage.tmp > coverage.out
+              first=0
+            else
+              tail -n +2 $m/coverage.tmp >> coverage.out
+            fi
+            rm $m/coverage.tmp
+          done
 
-      - name: Check test coverage
+      - name: Check test coverage summary
         run: |
-          go tool cover -func=coverage.out
+          test -f coverage.out || { echo "coverage.out missing" >&2; exit 1; }
+          go tool cover -func=coverage.out || { echo "cover tool parse failed" >&2; exit 1; }
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           echo "Total test coverage: $COVERAGE%"
           # TODO: Re-enable coverage requirement when coverage improves
