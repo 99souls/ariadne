@@ -15,9 +15,9 @@ import (
 
 // HealthHandlerOptions configures health/readiness handlers.
 type HealthHandlerOptions struct {
-    Engine        *engine.Engine
-    IncludeProbes bool
-    Clock         func() time.Time
+	Engine        *engine.Engine
+	IncludeProbes bool
+	Clock         func() time.Time
 }
 
 type healthResponse struct {
@@ -36,16 +36,30 @@ type readinessTracker struct {
 }
 
 func (rt *readinessTracker) update(cur string, now time.Time) (prev string, changedAt *time.Time) {
-	pRaw := rt.lastStatus.Load(); if pRaw != nil { prev = pRaw.(string) }
-	if prev != cur { rt.lastStatus.Store(cur); nowCopy := now; rt.changedAt.Store(nowCopy); return prev, &nowCopy }
-	cRaw := rt.changedAt.Load(); if cRaw != nil { cc := cRaw.(time.Time); changedAt = &cc }
+	pRaw := rt.lastStatus.Load()
+	if pRaw != nil {
+		prev = pRaw.(string)
+	}
+	if prev != cur {
+		rt.lastStatus.Store(cur)
+		nowCopy := now
+		rt.changedAt.Store(nowCopy)
+		return prev, &nowCopy
+	}
+	cRaw := rt.changedAt.Load()
+	if cRaw != nil {
+		cc := cRaw.(time.Time)
+		changedAt = &cc
+	}
 	return prev, changedAt
 }
 
 var defaultTracker readinessTracker
 
 func NewHealthHandler(opts HealthHandlerOptions) http.Handler {
-	if opts.Clock == nil { opts.Clock = time.Now }
+	if opts.Clock == nil {
+		opts.Clock = time.Now
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if opts.Engine == nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -55,9 +69,15 @@ func NewHealthHandler(opts HealthHandlerOptions) http.Handler {
 		snap := opts.Engine.HealthSnapshot(r.Context())
 		prev, changedAt := defaultTracker.update(string(snap.Overall), opts.Clock())
 		resp := healthResponse{Overall: snap.Overall, Generated: snap.Generated, TTL: snap.TTL}
-		if opts.IncludeProbes { resp.Probes = snap.Probes }
-		if prev != "" && prev != string(snap.Overall) { resp.Previous = prev }
-		if changedAt != nil { resp.ChangedAt = changedAt }
+		if opts.IncludeProbes {
+			resp.Probes = snap.Probes
+		}
+		if prev != "" && prev != string(snap.Overall) {
+			resp.Previous = prev
+		}
+		if changedAt != nil {
+			resp.ChangedAt = changedAt
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resp)
@@ -65,7 +85,9 @@ func NewHealthHandler(opts HealthHandlerOptions) http.Handler {
 }
 
 func NewReadinessHandler(opts HealthHandlerOptions) http.Handler {
-	if opts.Clock == nil { opts.Clock = time.Now }
+	if opts.Clock == nil {
+		opts.Clock = time.Now
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if opts.Engine == nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -76,11 +98,21 @@ func NewReadinessHandler(opts HealthHandlerOptions) http.Handler {
 		prev, changedAt := defaultTracker.update(string(snap.Overall), opts.Clock())
 		ready := snap.Overall == telemetryhealth.StatusHealthy || snap.Overall == telemetryhealth.StatusDegraded
 		resp := healthResponse{Overall: snap.Overall, Generated: snap.Generated, TTL: snap.TTL, Ready: &ready}
-		if opts.IncludeProbes { resp.Probes = snap.Probes }
-		if prev != "" && prev != string(snap.Overall) { resp.Previous = prev }
-		if changedAt != nil { resp.ChangedAt = changedAt }
+		if opts.IncludeProbes {
+			resp.Probes = snap.Probes
+		}
+		if prev != "" && prev != string(snap.Overall) {
+			resp.Previous = prev
+		}
+		if changedAt != nil {
+			resp.ChangedAt = changedAt
+		}
 		w.Header().Set("Content-Type", "application/json")
-		if !ready || snap.Overall == telemetryhealth.StatusUnknown { w.WriteHeader(http.StatusServiceUnavailable) } else { w.WriteHeader(http.StatusOK) }
+		if !ready || snap.Overall == telemetryhealth.StatusUnknown {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 }

@@ -15,14 +15,13 @@ func TestRootDirectoryWhitelist(t *testing.T) {
 		".git": {}, ".github": {},
 	}
 
-	// Transitional legacy directories that still exist but are scheduled for purge.
-	// Shrink this list as each directory is removed. Once empty, remove the logic
-	// and enforce strict failure for any non-allowed directory.
+	// Transitional legacy directories still pending full migration. List has shrunk
+	// after removal of packages/adapters (telemetryhttp) and legacy pipeline stubs.
 	transitional := map[string]struct{}{
-		"internal": {},
-		"cmd":      {},
-		"packages": {},
-		"test":     {},
+		"internal": {}, // pipeline tests & historical refs pending final prune
+		"cmd":      {}, // old experimental commands scheduled for deletion
+		"packages": {}, // still contains historical engine/ subtree pending purge
+		"test":     {}, // root test harness utilities (may relocate under engine/)
 	}
 
 	entries, err := os.ReadDir(".")
