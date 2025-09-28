@@ -292,7 +292,7 @@ Purpose: (Completed) Removed the now-orphaned public `telemetry/metrics` and `te
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
 | Public metrics & events packages no longer exist | `grep -R "telemetry/metrics" engine/telemetry` returns only health/logging; commands exit 1 for removed dirs              |
 | API report signature changed                     | New signature hash differs; removed symbols absent                                                                        |
-| Engine exposes only intended telemetry facade    | API report lists `Engine.MetricsHandler` & observer methods; no legacy provider/event bus constructors                     |
+| Engine exposes only intended telemetry facade    | API report lists `Engine.MetricsHandler` & observer methods; no legacy provider/event bus constructors                    |
 | Tests green                                      | `go test ./...` passes                                                                                                    |
 | Docs free of legacy references                   | Grep shows zero references to removed constructor names (`NewPrometheusProvider`, etc.) outside changelog historical note |
 | Allowlist guard enforces absence                 | Deliberate re-add triggers failure locally                                                                                |
