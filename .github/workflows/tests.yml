@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.25]
+  go-version: [1.25.1]
 
     steps:
       - uses: actions/checkout@v4
@@ -32,21 +32,37 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Download dependencies
-        run: go mod download
+      - name: Workspace sync
+        run: go work sync
 
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Build
-        run: go build -v ./...
-
-      - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out ./...
-
-      - name: Check test coverage
+      - name: Build modules
         run: |
-          go tool cover -func=coverage.out
+          for m in engine cli tools/apireport; do
+            echo "==> build $m";
+            (cd $m && go build ./... ) || exit 1;
+          done
+
+      - name: Run tests (with unified coverage)
+        run: |
+          set -euo pipefail
+          rm -f coverage.out
+          first=1
+          for m in engine cli tools/apireport; do
+            echo "==> test $m";
+            (cd $m && go test -race -covermode=atomic -coverprofile=coverage.tmp ./... )
+            if [ $first -eq 1 ]; then
+              cat $m/coverage.tmp > coverage.out
+              first=0
+            else
+              tail -n +2 $m/coverage.tmp >> coverage.out
+            fi
+            rm $m/coverage.tmp
+          done
+
+      - name: Check test coverage summary
+        run: |
+          test -f coverage.out || { echo "coverage.out missing" >&2; exit 1; }
+          go tool cover -func=coverage.out || { echo "cover tool parse failed" >&2; exit 1; }
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           echo "Total test coverage: $COVERAGE%"
           # TODO: Re-enable coverage requirement when coverage improves
@@ -57,3 +73,14 @@ jobs:
           # else
           #   echo "✅ Test coverage is above 80%"
           # fi
+
+      - name: Verify API report freshness
+        run: |
+          echo "Regenerating API report and checking for drift..."
+          cp API_REPORT.md /tmp/API_REPORT.prev
+          go run ./tools/apireport -out API_REPORT.md
+          if ! diff -u /tmp/API_REPORT.prev API_REPORT.md; then
+            echo "❌ API_REPORT.md is out of date. Run 'make api-report' and commit the changes." >&2
+            exit 1
+          fi
+          echo "✅ API_REPORT.md is up to date"

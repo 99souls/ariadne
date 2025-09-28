@@ -3,28 +3,40 @@ package metrics
 import "context"
 
 // Counter represents a monotonically increasing value.
+//
+// Experimental: Interface shape may change while telemetry surface is pruned.
 type Counter interface {
 	Inc(delta float64, labels ...string)
 }
 
 // Gauge represents a value that can go up or down.
+//
+// Experimental: Interface shape may change while telemetry surface is pruned.
 type Gauge interface {
 	Set(value float64, labels ...string)
 	Add(delta float64, labels ...string)
 }
 
 // Histogram records observations into buckets and tracks count + sum.
+//
+// Experimental.
 type Histogram interface {
 	Observe(value float64, labels ...string)
 }
 
 // Timer is a helper handle for measuring latency.
+//
+// Experimental.
 type Timer interface {
 	// ObserveDuration records the time elapsed since the timer was created in seconds.
 	ObserveDuration(labels ...string)
 }
 
-// Provider is the top-level metrics provider abstraction.
+// Provider is the top-level metrics provider abstraction used by the Engine
+// and potential external adapters to create instrumentation.
+//
+// Experimental: Subject to consolidation (e.g., Engine-level provider wiring)
+// before v1 stability baseline.
 type Provider interface {
 	NewCounter(opts CounterOpts) Counter
 	NewGauge(opts GaugeOpts) Gauge

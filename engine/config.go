@@ -1,54 +1,92 @@
 package engine
 
 import (
-	engpipeline "github.com/99souls/ariadne/engine/pipeline"
-	engresources "github.com/99souls/ariadne/engine/resources"
-	"github.com/99souls/ariadne/engine/models"
 	"time"
+
+	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
+	intresources "github.com/99souls/ariadne/engine/internal/resources"
+	"github.com/99souls/ariadne/engine/models"
 )
 
-// Config is the public configuration surface for the Engine facade. It intentionally
-// narrows and normalizes underlying component configs while allowing advanced
-// callers to inject custom implementations via functional options.
-type Config struct {
-	// Worker settings
-	DiscoveryWorkers  int
-	ExtractionWorkers int
-	ProcessingWorkers int
-	OutputWorkers     int
-	BufferSize        int
+// ResourcesConfig is the public facade configuration for resource management.
+// Experimental: Shape and semantics may change before v1.0.
+// Mirrors internal/resources.Config but kept separate to permit future reduction.
+type ResourcesConfig struct {
+	CacheCapacity      int
+	MaxInFlight        int
+	SpillDirectory     string
+	CheckpointPath     string
+	CheckpointInterval time.Duration
+}
 
-	// Retry policy
-	RetryBaseDelay   time.Duration
-	RetryMaxDelay    time.Duration
+func (rc ResourcesConfig) toInternal() intresources.Config {
+	return intresources.Config{
+		CacheCapacity:      rc.CacheCapacity,
+		MaxInFlight:        rc.MaxInFlight,
+		SpillDirectory:     rc.SpillDirectory,
+		CheckpointPath:     rc.CheckpointPath,
+		CheckpointInterval: rc.CheckpointInterval,
+	}
+}
+
+// Config is the public configuration surface for the Engine facade.
+// Experimental: Field set, names, and semantics may change before v1.0.
+// Most fields are pass-through tuning knobs for underlying subsystems and
+// will be reviewed for reduction / consolidation ahead of a stable baseline.
+type Config struct {
+	// DiscoveryWorkers controls the concurrency of the seed/url discovery stage.
+	// Experimental: May be folded into a single unified worker setting.
+	DiscoveryWorkers int
+	// ExtractionWorkers controls HTML extraction / parsing concurrency.
+	// Experimental.
+	ExtractionWorkers int
+	// ProcessingWorkers controls post-extraction processing (enrichment, classification).
+	// Experimental.
+	ProcessingWorkers int
+	// OutputWorkers controls the number of workers writing results to sinks.
+	// Experimental.
+	OutputWorkers int
+	// BufferSize tunes internal channel buffering between stages.
+	// Experimental: Subject to removal if adaptive backpressure is introduced.
+	BufferSize int
+
+	// RetryBaseDelay is the initial backoff delay for transient fetch failures.
+	// Experimental: Retry model may be replaced by policy struct.
+	RetryBaseDelay time.Duration
+	// RetryMaxDelay caps the exponential backoff delay.
+	// Experimental.
+	RetryMaxDelay time.Duration
+	// RetryMaxAttempts caps the number of retry attempts for a single fetch.
+	// Experimental.
 	RetryMaxAttempts int
 
-	// Adaptive rate limiting
+	// RateLimit configures adaptive per-domain rate limiting.
+	// Experimental: Location may change (likely to move fully under ratelimit/).
 	RateLimit models.RateLimitConfig
 
-	// Resource management
-	Resources engresources.Config
+	// Resources configures in-memory caches and spill / checkpoint behavior.
+	// Experimental: Will be narrowed to higher-level policy before v1.0; implementation hidden.
+	Resources ResourcesConfig
 
-	// Resume settings
-	Resume         bool
-	CheckpointPath string // Overrides Resources.CheckpointPath if set
+	// Resume enables filtering of already-processed seeds based on a checkpoint file.
+	// Experimental: Mechanism & file format may change.
+	Resume bool
+	// CheckpointPath overrides Resources.CheckpointPath when non-empty.
+	// Experimental.
+	CheckpointPath string
 
-	// AssetPolicy defines behavior for asset handling (Phase 5D). Additive; if disabled
-	// the processor behaves as legacy (no strategy invocation). Wiring occurs in Phase 5D iterations.
+	// AssetPolicy defines behavior for asset handling (Phase 5D).
+	// Experimental: Entire asset subsystem is under active iteration.
 	AssetPolicy AssetPolicy
 
-	// --- Phase 5E (Telemetry) incremental surface ---
-	// MetricsEnabled toggles the new metrics provider wiring (prometheus export) when true.
-	// Default remains false to avoid changing existing behavior unless explicitly enabled.
+	// MetricsEnabled toggles metrics collection / instrumentation.
+	// Experimental: May be replaced by a Telemetry struct.
 	MetricsEnabled bool
-	// PrometheusListenAddr optional address for metrics HTTP exposure (e.g. ":2112").
-	// If empty and MetricsEnabled is true, metrics are still collected but caller must expose handler.
+	// PrometheusListenAddr optional HTTP listen address for a Prometheus scrape endpoint.
+	// Experimental: CLI layer may become the canonical place to expose endpoints.
 	PrometheusListenAddr string
-	// MetricsBackend selects the implementation when MetricsEnabled is true. Supported:
-	//   "prom" (default) - built-in Prometheus registry
-	//   "otel"          - OpenTelemetry bridge (iteration 6 experimental)
-	//   "noop"          - explicit no-op (overrides MetricsEnabled true)
-	// Unknown values fall back to the default (prom).
+	// MetricsBackend selects metrics implementation: "prom" (default), "otel", or "noop".
+	// Experimental: Backend selection mechanism may change.
 	MetricsBackend string
 }
 
@@ -56,7 +94,7 @@ type Config struct {
 // engineOptions are internal construction options resolved by New().
 type engineOptions struct {
 	limiter         interface{} // ratelimit.RateLimiter (avoid import cycle comments here)
-	resourceManager *engresources.Manager
+	resourceManager *intresources.Manager
 }
 
 func (c Config) toPipelineConfig(opts engineOptions) *engpipeline.PipelineConfig {
@@ -81,6 +119,8 @@ func (c Config) toPipelineConfig(opts engineOptions) *engpipeline.PipelineConfig
 }
 
 // Defaults returns a Config with reasonable defaults.
+// Defaults returns a Config with conservative starting values.
+// Experimental: Returned default values may be tuned between minor versions pre-v1.
 func Defaults() Config {
 	return Config{
 		DiscoveryWorkers:  2,
@@ -114,7 +154,7 @@ func Defaults() Config {
 			DomainStateTTL:           2 * time.Minute,
 			Shards:                   16,
 		},
-		Resources: engresources.Config{
+		Resources: ResourcesConfig{
 			CacheCapacity:      64,
 			MaxInFlight:        16,
 			CheckpointInterval: 50 * time.Millisecond,

@@ -7,13 +7,59 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
 	"github.com/99souls/ariadne/engine"
+	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
+
+// simpleJSONConfig represents a minimal subset of engine.Config loadable from a JSON file.
+// Experimental: Placeholder until layered config system is implemented.
+type simpleJSONConfig struct {
+	DiscoveryWorkers  *int           `json:"discovery_workers"`
+	ExtractionWorkers *int           `json:"extraction_workers"`
+	ProcessingWorkers *int           `json:"processing_workers"`
+	OutputWorkers     *int           `json:"output_workers"`
+	BufferSize        *int           `json:"buffer_size"`
+	RetryBaseDelay    *time.Duration `json:"retry_base_delay"`
+	RetryMaxDelay     *time.Duration `json:"retry_max_delay"`
+	RetryMaxAttempts  *int           `json:"retry_max_attempts"`
+}
+
+func applySimpleConfig(base engine.Config, sc *simpleJSONConfig) engine.Config {
+	if sc == nil {
+		return base
+	}
+	if sc.DiscoveryWorkers != nil {
+		base.DiscoveryWorkers = *sc.DiscoveryWorkers
+	}
+	if sc.ExtractionWorkers != nil {
+		base.ExtractionWorkers = *sc.ExtractionWorkers
+	}
+	if sc.ProcessingWorkers != nil {
+		base.ProcessingWorkers = *sc.ProcessingWorkers
+	}
+	if sc.OutputWorkers != nil {
+		base.OutputWorkers = *sc.OutputWorkers
+	}
+	if sc.BufferSize != nil {
+		base.BufferSize = *sc.BufferSize
+	}
+	if sc.RetryBaseDelay != nil {
+		base.RetryBaseDelay = *sc.RetryBaseDelay
+	}
+	if sc.RetryMaxDelay != nil {
+		base.RetryMaxDelay = *sc.RetryMaxDelay
+	}
+	if sc.RetryMaxAttempts != nil {
+		base.RetryMaxAttempts = *sc.RetryMaxAttempts
+	}
+	return base
+}
 
 func main() {
 	var (
@@ -23,6 +69,11 @@ func main() {
 		checkpointPath string
 		snapshotEvery  time.Duration
 		showVersion    bool
+		metricsAddr    string
+		healthAddr     string
+		configPath     string
+		metricsBackend string
+		enableMetrics  bool
 	)
 	flag.StringVar(&seedList, "seeds", "", "Comma separated list of seed URLs")
 	flag.StringVar(&seedFile, "seed-file", "", "Path to file containing one seed URL per line")
@@ -30,6 +81,11 @@ func main() {
 	flag.StringVar(&checkpointPath, "checkpoint", "checkpoint.log", "Path to checkpoint log file")
 	flag.DurationVar(&snapshotEvery, "snapshot-interval", 10*time.Second, "Interval between progress snapshots (0=disabled)")
 	flag.BoolVar(&showVersion, "version", false, "Show version / build info")
+	flag.StringVar(&metricsAddr, "metrics", "", "Expose metrics on address (e.g. :9090)")
+	flag.StringVar(&healthAddr, "health", "", "Expose health endpoint on address (e.g. :9091)")
+	flag.StringVar(&configPath, "config", "", "Optional JSON config file (temporary minimal format)")
+	flag.StringVar(&metricsBackend, "metrics-backend", "prom", "Metrics backend: prom|otel|noop (effective only if -metrics set and enabled)")
+	flag.BoolVar(&enableMetrics, "enable-metrics", false, "Enable metrics provider (required to serve metrics)")
 	flag.Parse()
 
 	if showVersion {
@@ -48,6 +104,26 @@ func main() {
 
 	cfg := engine.Defaults()
 	cfg.Resume = resume
+	cfg.CheckpointPath = checkpointPath
+
+	// Merge simple config file if provided
+	if configPath != "" {
+		f, err := os.Open(configPath)
+		if err != nil {
+			log.Fatalf("open config: %v", err)
+		}
+		var sc simpleJSONConfig
+		if err := json.NewDecoder(f).Decode(&sc); err != nil {
+			log.Fatalf("decode config: %v", err)
+		}
+		_ = f.Close()
+		cfg = applySimpleConfig(cfg, &sc)
+	}
+
+	if enableMetrics {
+		cfg.MetricsEnabled = true
+		cfg.MetricsBackend = metricsBackend
+	}
 	cfg.CheckpointPath = checkpointPath
 
 	eng, err := engine.New(cfg)
@@ -73,6 +149,65 @@ func main() {
 	results, err := eng.Start(ctx, seeds)
 	if err != nil {
 		log.Fatalf("start engine: %v", err)
+	}
+
+	// Metrics endpoint adapter (Wave 4 W4-05): prefer provider-native handler when available.
+	if metricsAddr != "" && cfg.MetricsEnabled {
+		mux := http.NewServeMux()
+
+		// Local interface to detect handler-capable providers (e.g., PrometheusProvider).
+		type handlerProvider interface{ MetricsHandler() http.Handler }
+		if mp := eng.MetricsProvider(); mp != nil {
+			// Register a simple build info gauge to guarantee at least one exposed metric.
+			if g := mp.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "build", Name: "info", Help: "Build info metric (static value 1)"}}); g != nil {
+				g.Set(1)
+			}
+			if hp, ok := mp.(handlerProvider); ok && hp.MetricsHandler() != nil {
+				mux.Handle("/metrics", hp.MetricsHandler())
+			} else {
+				// Fallback minimal exposition so /metrics is never 404 when flag supplied.
+				mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte("# HELP ariadne_metrics_placeholder Placeholder metrics because provider has no handler\n# TYPE ariadne_metrics_placeholder gauge\nariadne_metrics_placeholder 1\n"))
+				})
+			}
+		} else {
+			// Metrics explicitly enabled but provider nil (shouldn't happen) – still serve stub.
+			mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("# HELP ariadne_metrics_disabled Metrics enabled flag but provider missing\n# TYPE ariadne_metrics_disabled gauge\nariadne_metrics_disabled 1\n"))
+			})
+		}
+
+		go func() {
+			srv := &http.Server{Addr: metricsAddr, Handler: mux}
+			<-ctx.Done()
+			_ = srv.Shutdown(context.Background())
+		}()
+		go func() {
+			log.Printf("metrics listening on %s (backend=%s)", metricsAddr, cfg.MetricsBackend)
+			if err := http.ListenAndServe(metricsAddr, mux); err != nil && ctx.Err() == nil {
+				log.Printf("metrics server error: %v", err)
+			}
+		}()
+	}
+
+	if healthAddr != "" {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			hs := eng.HealthSnapshot(r.Context())
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": hs.Overall, "probes": hs.Probes, "generated": hs.Generated, "ttl": hs.TTL.Seconds()})
+		})
+		go func() {
+			srv := &http.Server{Addr: healthAddr, Handler: mux}
+			<-ctx.Done()
+			_ = srv.Shutdown(context.Background())
+		}()
+		go func() {
+			log.Printf("health endpoint listening on %s", healthAddr)
+			_ = http.ListenAndServe(healthAddr, mux)
+		}()
 	}
 
 	var ticker *time.Ticker

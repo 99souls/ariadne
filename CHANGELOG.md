@@ -6,22 +6,77 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- engine: Introduced `strategies.go` consolidating `Fetcher`, `Processor`, `OutputSink`, and `AssetStrategy` interfaces with Experimental annotations (Wave 3).
+- config: Added comprehensive Experimental annotations across `engine/config` (unified + runtime config, hot reload, versioning, AB testing) plus export allowlist guard test locking curated surface (Wave 3).
+- engine: Added `engine_resources_snapshot_test.go` guard test ensuring `ResourceSnapshot` present only when resources subsystem configured (Wave 4 W4-04 follow-up).
+- telemetry: Added export allowlist guard test across telemetry subpackages (events, metrics, tracing, policy, health, logging) locking current public surface (Wave 4 W4-07 governance).
+- telemetry: Authored `md/telemetry-boundary.md` documenting current public telemetry surface, pruning candidates, and stability annotations (Wave 4 W4-05 partial).
+- engine: Added helper `SelectMetricsProvider` centralizing backend selection (Prometheus, OTEL, noop) for potential reuse by adapters / future CLI telemetry wiring (Wave 4 W4-05).
+- cli: Implemented provider-aware metrics adapter wiring (Prometheus handler exposure when selected) plus build info gauge registration; health endpoint retained without change (Wave 4 W4-05 adapter finalization).
+- cli: Added integration test `TestCLIMetricsAndHealth` asserting startup log lines for metrics & health servers (replaced flaky HTTP polling approach) (Wave 4 W4-06 hardening).
+- ci: Added CLI smoke workflow (`.github/workflows/cli-smoke.yml`) performing short crawl and probing metrics & health endpoints (Wave 4 W4-09 runtime validation).
+- docs: Enhanced root `README.md` with embedding example and metrics/health quickstart; updated CLI README with metrics adapter notes (Wave 4 W4-08 docs pass).
+
+### Changed
+
+- engine: Marked `OutputSink` and `AssetStrategy` explicitly Experimental in pruning list (consolidated in strategies.go) (Wave 3).
+- engine: Internalized former public resource manager implementation under `engine/internal/resources`; introduced public facade `ResourcesConfig` and preserved snapshot-only exposure (`ResourceSnapshot`) (Wave 4 W4-04).
+- telemetry/metrics: Annotated all metrics interfaces (`Counter`, `Gauge`, `Histogram`, `Timer`, `Provider`) as Experimental and documented planned consolidation (Wave 4 W4-05).
+- engine: `New` now delegates metrics backend initialization to `SelectMetricsProvider` reducing duplication and clarifying intended extension hook (Wave 4 W4-05).
+- cli: Metrics endpoint transitioned from placeholder to provider-backed handler leveraging `engine.SelectMetricsProvider`; simplified verification strategy (log assertion) for deterministic tests (Wave 4 W4-05 / W4-06).
+- config: Internalized former runtime configuration & A/B testing implementation (moved under `engine/internal/runtime`); left guarded stub `runtime.go` to prevent re-expansion (Wave 4 W4-03 partial completion).
+- telemetry: Build info gauge intentionally emitted only via CLI metrics adapter to avoid expanding engine public surface (Wave 4 adapter scope decision).
+
+### Removed
+
+- engine: Removed test-only method `(*Engine).HealthEvaluatorForTest` (Wave 3 API pruning). Tests should supply a `HealthSource` stub to HTTP health/readiness handlers instead.
+- engine: Removed exported functional option type `Option`; constructor now uses only `Config` (Wave 3 API pruning).
+- crawler: Removed deprecated alias `FetchedPage` in favor of `FetchResult` (Wave 3 pruning – breaking pre-v1 acceptable).
+- engine: Deprecated & stubbed former `engine/resources` package (now empty, enforced by allowlist guard) after internalization (Wave 4 W4-04).
+
+### Deprecated
+
+- telemetry/metrics: Deprecated `BusinessCollectorAdapter` and `NewBusinessCollectorAdapter`; transitional shim scheduled for removal or internalization in a future pruning wave (see `md/telemetry-boundary.md`).
+
+### Changed
+
+- telemetryhttp: Handlers now accept `HealthHandlerOptions{Source: HealthSource}` instead of a concrete `*engine.Engine` field. The `HealthSource` interface requires only `HealthSnapshot(context.Context)`, enabling simpler test doubles and eliminating the need for a mutable public hook on `Engine`.
+- engine: Added stability annotations (Experimental / Stable) to `Config` fields, `Engine`, snapshots, telemetry methods, and asset subsystem exports (Wave 3).
+- engine: Introduced export allowlist guard test (`engine_allowlist_guard_test.go`) locking current curated root package surface (Wave 3).
+- strategies: Annotated entire package as Experimental and added export allowlist guard (`strategies_allowlist_test.go`).
+- crawler: Added Experimental annotations to `FetchResult`, `FetchPolicy`, and `FetcherStats`.
+
+### Added
+
 - Adaptive percentage-based tracer (policy-driven sample percent) replacing always-on tracer.
 - Integrated workload benchmark (`BenchmarkIntegratedWorkload`) simulating page + asset telemetry mix.
 - CLI module scaffold (`cli/`) with initial crawl command (Phase 5F Wave 2.5 initiation).
+- API pruning candidate list (`engine/API_PRUNING_CANDIDATES.md`) drafted (Wave 3 preparation).
+- Dedicated API report tooling module (`tools/apireport`) replacing former `cmd/apireport` path.
+- `ROOT_LAYOUT.md` documenting the Atomic Root Layout invariant (no root module; curated directory whitelist).
+- engine: Export allowlist guard for root facade (`TestEngineExportAllowlist`).
+- strategies: Export allowlist guard and comprehensive Experimental doc comments.
 
 ### Breaking
 
 - Removed legacy `packages/engine` tree (hard cut). Old import path `ariadne/packages/engine` no longer exists. Use `github.com/99souls/ariadne/engine`.
+- Removed public `engine/pipeline` package; orchestration is now internal under `engine/internal/pipeline`.
+- Removed root Go module (`go.mod` at repo root) – repository now operates purely as a `go.work` workspace of submodules (`engine`, `cli`, `tools/apireport`). Consumers must update any accidental root-module import assumptions.
+- Root executable entrypoint removed; invoke CLI via `go run ./cli/cmd/ariadne` (or build the binary) instead of `go run .`.
+- Relocated API report generator from `cmd/apireport` to standalone module `tools/apireport`; any scripts referencing old path must be updated.
 
 ### Changed
 
 - Prometheus timer implementation pre-creates histogram (reduces per-timer allocations).
+- Makefile & CI workflows now iterate over explicit module list (no implicit root build).
+- Enforcement tests relocated to `cli/` to guard against importing `engine/internal/*` from the CLI surface.
 
 ### Deferred
 
 - External trace exporter wiring (will introduce build tag & binary size note)
 - Error/latency biased sampling boosts (policy fields scaffolded but logic deferred).
+- Consolidation / possible internalization of `engine/monitoring` and business metrics constructs (pruning list v2 candidate).
+- Potential shrink or removal of large Experimental `UnifiedBusinessConfig` in favor of narrower facade-level config (tracked for pruning list v2).
 
 ## [Phase 5E Completion] - 2025-09-27
 

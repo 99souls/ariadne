@@ -13,7 +13,7 @@ Core engine components (migrated):
 - `packages/engine/models`: shared domain types (Pages, CrawlResult, RateLimitConfig, Errors).
 - `packages/engine/ratelimit`: adaptive domain-aware limiter with circuit breaker.
 - `packages/engine/resources`: cache + spill + checkpoint + in-flight coordination.
-- `packages/engine/pipeline`: multi-stage processing (discovery → extraction → processing → output) with metrics and retries.
+- (internal) `engine/internal/pipeline`: multi-stage processing (discovery → extraction → processing → output) with metrics, retries, backpressure. No longer public; accessed only via facade.
 - `packages/engine/engine`: facade aggregating pipeline + limiter + resources + snapshot.
 
 Remaining internally-scoped domain logic:
@@ -78,7 +78,7 @@ packages/
 		models/            (domain types)
 		ratelimit/         (adaptive limiter)
 		resources/         (cache/spill/checkpoint)
-		pipeline/          (stage orchestration, metrics)
+		internal/pipeline/ (stage orchestration, metrics, retries) [internal only]
 		crawler/           (interfaces + default Colly implementation)
 			colly/
 				colly_crawler.go

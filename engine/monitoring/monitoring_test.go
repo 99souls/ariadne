@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/99souls/ariadne/engine/business/policies"
-	"github.com/99souls/ariadne/engine/config"
 	"github.com/99souls/ariadne/engine/strategies"
 
 	"github.com/stretchr/testify/assert"
@@ -490,10 +489,8 @@ func TestMonitoringIntegration(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		// Simulate configuration change monitoring
-		oldConfig := &config.RuntimeBusinessConfig{Version: "1.0.0"}
-		newConfig := &config.RuntimeBusinessConfig{Version: "1.1.0"}
-		monitoring.MonitorConfigurationChange("policy_update", oldConfig, newConfig)
+		// Simulate configuration change monitoring (runtime config types internalized)
+		monitoring.MonitorConfigurationChange("policy_update", "1.0.0", "1.1.0")
 
 		// Get aggregated metrics
 		metrics := monitoring.GetAggregatedMetrics()

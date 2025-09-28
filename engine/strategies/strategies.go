@@ -1,3 +1,7 @@
+// Package strategies provides experimental strategy composition, execution, and
+// adaptive optimization structures. Experimental: All exported types and
+// functions in this package may change or be removed before v1.0; the public
+// facade does not yet depend on this surface. Treat as a preview extension API.
 package strategies
 
 import (
@@ -12,7 +16,8 @@ import (
 
 // Strategy types and enums
 
-// FetchingStrategyType defines different fetching strategy types
+// Experimental: FetchingStrategyType enumerates fetching strategy styles.
+// May be reduced or renamed.
 type FetchingStrategyType string
 
 const (
@@ -22,17 +27,17 @@ const (
 	AdaptiveFetching   FetchingStrategyType = "adaptive"
 )
 
-// ProcessingStrategyType defines different processing strategy types
+// Experimental: ProcessingStrategyType enumerates processing orchestration modes.
 type ProcessingStrategyType string
 
 const (
-	SequentialProcessing ProcessingStrategyType = "sequential"
-	ParallelProcessing   ProcessingStrategyType = "parallel"
+	SequentialProcessing  ProcessingStrategyType = "sequential"
+	ParallelProcessing    ProcessingStrategyType = "parallel"
 	ConditionalProcessing ProcessingStrategyType = "conditional"
-	PipelineProcessing   ProcessingStrategyType = "pipeline"
+	PipelineProcessing    ProcessingStrategyType = "pipeline"
 )
 
-// OutputStrategyType defines different output strategy types
+// Experimental: OutputStrategyType enumerates output routing modes.
 type OutputStrategyType string
 
 const (
@@ -44,22 +49,23 @@ const (
 
 // Core strategy composition structures
 
-// StrategyComposer interface defines the main strategy composition API
+// Experimental: StrategyComposer composes policies into executable strategies.
+// Interface shape may change; optimization & validation may relocate.
 type StrategyComposer interface {
 	ComposeStrategies(policies *policies.BusinessPolicies) (*ComposedStrategies, error)
 	ValidateComposition(*ComposedStrategies) error
 	OptimizeComposition(*ComposedStrategies) (*ComposedStrategies, error)
 }
 
-// ComposedStrategies represents a complete set of composed strategies
+// Experimental: ComposedStrategies aggregates composed strategy configurations.
 type ComposedStrategies struct {
 	FetchingStrategy   ComposedFetchingStrategy   `json:"fetching_strategy"`
 	ProcessingStrategy ComposedProcessingStrategy `json:"processing_strategy"`
 	OutputStrategy     ComposedOutputStrategy     `json:"output_strategy"`
-	Metadata          StrategyMetadata           `json:"metadata"`
+	Metadata           StrategyMetadata           `json:"metadata"`
 }
 
-// ComposedFetchingStrategy defines the fetching strategy configuration
+// Experimental: ComposedFetchingStrategy configuration; field set may shrink.
 type ComposedFetchingStrategy struct {
 	Strategies     []FetchingStrategyType `json:"strategies"`
 	Concurrency    int                    `json:"concurrency"`
@@ -69,35 +75,35 @@ type ComposedFetchingStrategy struct {
 	AdaptiveConfig *AdaptiveConfiguration `json:"adaptive_config,omitempty"`
 }
 
-// ComposedProcessingStrategy defines the processing strategy configuration
+// Experimental: ComposedProcessingStrategy configuration; subject to rename.
 type ComposedProcessingStrategy struct {
-	Strategies       []ProcessingStrategyType           `json:"strategies"`
-	Steps            []string                           `json:"steps"`
-	QualityThreshold float64                            `json:"quality_threshold"`
-	ParallelSteps    bool                               `json:"parallel_steps"`
-	Concurrency      int                                `json:"concurrency"`
-	ConditionalRules map[string]ProcessingCondition     `json:"conditional_rules,omitempty"`
+	Strategies       []ProcessingStrategyType       `json:"strategies"`
+	Steps            []string                       `json:"steps"`
+	QualityThreshold float64                        `json:"quality_threshold"`
+	ParallelSteps    bool                           `json:"parallel_steps"`
+	Concurrency      int                            `json:"concurrency"`
+	ConditionalRules map[string]ProcessingCondition `json:"conditional_rules,omitempty"`
 }
 
-// ComposedOutputStrategy defines the output strategy configuration
+// Experimental: ComposedOutputStrategy configuration; subject to simplification.
 type ComposedOutputStrategy struct {
-	Strategies         []OutputStrategyType       `json:"strategies"`
-	DefaultFormat      string                     `json:"default_format"`
-	CompressionEnabled bool                       `json:"compression_enabled"`
-	RoutingRules       map[string]string          `json:"routing_rules"`
-	MultiSinkConfig    *MultiSinkConfiguration    `json:"multi_sink_config,omitempty"`
+	Strategies         []OutputStrategyType    `json:"strategies"`
+	DefaultFormat      string                  `json:"default_format"`
+	CompressionEnabled bool                    `json:"compression_enabled"`
+	RoutingRules       map[string]string       `json:"routing_rules"`
+	MultiSinkConfig    *MultiSinkConfiguration `json:"multi_sink_config,omitempty"`
 }
 
 // Supporting configuration structures
 
-// RetryConfiguration defines retry behavior for strategies
+// Experimental: RetryConfiguration for fetching; may move under facade policy.
 type RetryConfiguration struct {
 	MaxRetries    int           `json:"max_retries"`
 	InitialDelay  time.Duration `json:"initial_delay"`
 	BackoffFactor float64       `json:"backoff_factor"`
 }
 
-// AdaptiveConfiguration defines adaptive strategy behavior
+// Experimental: AdaptiveConfiguration for concurrency adaptation.
 type AdaptiveConfiguration struct {
 	InitialConcurrency int     `json:"initial_concurrency"`
 	MaxConcurrency     int     `json:"max_concurrency"`
@@ -105,20 +111,20 @@ type AdaptiveConfiguration struct {
 	PerformanceWindow  int     `json:"performance_window"`
 }
 
-// ProcessingCondition defines conditional processing rules
+// Experimental: ProcessingCondition expresses conditional actions.
 type ProcessingCondition struct {
 	Condition string   `json:"condition"`
 	Actions   []string `json:"actions"`
 }
 
-// MultiSinkConfiguration defines multi-sink output behavior
+// Experimental: MultiSinkConfiguration for multi-sink output.
 type MultiSinkConfiguration struct {
 	SinkTypes []string `json:"sink_types"`
 	FanOut    bool     `json:"fan_out"`
 	Failover  bool     `json:"failover"`
 }
 
-// StrategyMetadata contains metadata about the composed strategies
+// Experimental: StrategyMetadata metadata; diagnostic only pre-v1.0.
 type StrategyMetadata struct {
 	ComposedAt    time.Time `json:"composed_at"`
 	Version       string    `json:"version"`
@@ -128,20 +134,20 @@ type StrategyMetadata struct {
 
 // Execution and monitoring structures
 
-// StrategyExecutor handles the execution of composed strategies
+// Experimental: StrategyExecutor executes composed strategies; API not stable.
 type StrategyExecutor struct {
 	strategies *ComposedStrategies
 	mutex      sync.RWMutex
 }
 
-// ExecutionPlan defines how strategies will be executed
+// Experimental: ExecutionPlan derived execution details.
 type ExecutionPlan struct {
 	FetchingPlan   FetchingExecutionPlan   `json:"fetching_plan"`
 	ProcessingPlan ProcessingExecutionPlan `json:"processing_plan"`
 	OutputPlan     OutputExecutionPlan     `json:"output_plan"`
 }
 
-// FetchingExecutionPlan defines fetching execution details
+// Experimental: FetchingExecutionPlan execution details.
 type FetchingExecutionPlan struct {
 	URLs        []string      `json:"urls"`
 	Concurrency int           `json:"concurrency"`
@@ -149,14 +155,14 @@ type FetchingExecutionPlan struct {
 	BatchSize   int           `json:"batch_size"`
 }
 
-// ProcessingExecutionPlan defines processing execution details
+// Experimental: ProcessingExecutionPlan execution details.
 type ProcessingExecutionPlan struct {
 	Steps       []string `json:"steps"`
 	Concurrency int      `json:"concurrency"`
 	BatchSize   int      `json:"batch_size"`
 }
 
-// OutputExecutionPlan defines output execution details
+// Experimental: OutputExecutionPlan execution details.
 type OutputExecutionPlan struct {
 	Format      string            `json:"format"`
 	Compression bool              `json:"compression"`
@@ -165,13 +171,13 @@ type OutputExecutionPlan struct {
 
 // Performance monitoring structures
 
-// StrategyPerformanceMonitor tracks strategy performance
+// Experimental: StrategyPerformanceMonitor collects runtime metrics.
 type StrategyPerformanceMonitor struct {
 	metrics map[string]*StrategyMetrics
 	mutex   sync.RWMutex
 }
 
-// StrategyMetrics contains performance metrics for a strategy
+// Experimental: StrategyMetrics metrics snapshot.
 type StrategyMetrics struct {
 	AverageLatency time.Duration `json:"average_latency"`
 	SuccessRate    float64       `json:"success_rate"`
@@ -180,28 +186,28 @@ type StrategyMetrics struct {
 	LastUpdated    time.Time     `json:"last_updated"`
 }
 
-// PerformanceMetrics aggregates all strategy performance metrics
+// Experimental: PerformanceMetrics aggregated metrics.
 type PerformanceMetrics struct {
 	FetchingMetrics   map[string]*StrategyMetrics `json:"fetching_metrics"`
 	ProcessingMetrics map[string]*StrategyMetrics `json:"processing_metrics"`
 	OutputMetrics     map[string]*StrategyMetrics `json:"output_metrics"`
 }
 
-// PerformanceRecommendations provides optimization suggestions
+// Experimental: PerformanceRecommendations suggestions; heuristic.
 type PerformanceRecommendations struct {
-	Suggestions    []string                    `json:"suggestions"`
-	OptimalConfigs map[string]interface{}      `json:"optimal_configs"`
-	Warnings       []string                    `json:"warnings"`
+	Suggestions    []string               `json:"suggestions"`
+	OptimalConfigs map[string]interface{} `json:"optimal_configs"`
+	Warnings       []string               `json:"warnings"`
 }
 
 // Optimization structures
 
-// StrategyOptimizer handles strategy optimization
+// Experimental: StrategyOptimizer heuristic optimizer.
 type StrategyOptimizer struct {
 	optimizationRules map[string]OptimizationRule
 }
 
-// OptimizationRule defines how to optimize strategies
+// Experimental: OptimizationRule rule definition.
 type OptimizationRule struct {
 	Condition string      `json:"condition"`
 	Action    string      `json:"action"`
@@ -209,22 +215,22 @@ type OptimizationRule struct {
 	Value     interface{} `json:"value"`
 }
 
-// AdaptiveStrategyManager handles dynamic strategy adjustments
+// Experimental: AdaptiveStrategyManager dynamic adjustment manager.
 type AdaptiveStrategyManager struct {
 	adjustmentHistory []StrategyAdjustment
 	mutex             sync.RWMutex
 }
 
-// StrategyAdjustment records a strategy adjustment
+// Experimental: StrategyAdjustment record.
 type StrategyAdjustment struct {
-	Timestamp    time.Time         `json:"timestamp"`
-	PreviousConfig interface{}     `json:"previous_config"`
-	NewConfig     interface{}     `json:"new_config"`
-	Reason        string          `json:"reason"`
-	Impact        string          `json:"impact"`
+	Timestamp      time.Time   `json:"timestamp"`
+	PreviousConfig interface{} `json:"previous_config"`
+	NewConfig      interface{} `json:"new_config"`
+	Reason         string      `json:"reason"`
+	Impact         string      `json:"impact"`
 }
 
-// PerformanceFeedback provides real-time performance feedback
+// Experimental: PerformanceFeedback input to adaptive adjustments.
 type PerformanceFeedback struct {
 	Latency     time.Duration `json:"latency"`
 	SuccessRate float64       `json:"success_rate"`
@@ -235,14 +241,16 @@ type PerformanceFeedback struct {
 
 // Implementation
 
-// NewStrategyComposer creates a new strategy composer
+// NewStrategyComposer creates a new strategy composer.
+// Experimental.
 func NewStrategyComposer() StrategyComposer {
 	return &strategyComposerImpl{}
 }
 
 type strategyComposerImpl struct{}
 
-// ComposeStrategies creates composed strategies from business policies
+// ComposeStrategies creates composed strategies from business policies.
+// Experimental.
 func (sc *strategyComposerImpl) ComposeStrategies(businessPolicies *policies.BusinessPolicies) (*ComposedStrategies, error) {
 	if businessPolicies == nil {
 		return nil, errors.New("business policies cannot be nil")
@@ -308,7 +316,7 @@ func (sc *strategyComposerImpl) composeFetchingStrategy(policies *policies.Busin
 	if policies.CrawlingPolicy != nil && len(policies.CrawlingPolicy.SiteRules) > 1 {
 		// Multiple sites suggest parallel fetching
 		fetchingStrategy.Strategies = []FetchingStrategyType{ParallelFetching}
-		
+
 		// Add fallback for reliability
 		if fetchingStrategy.RetryEnabled {
 			fetchingStrategy.Strategies = append(fetchingStrategy.Strategies, FallbackFetching)
@@ -336,15 +344,15 @@ func (sc *strategyComposerImpl) composeFetchingStrategy(policies *policies.Busin
 func (sc *strategyComposerImpl) composeProcessingStrategy(policies *policies.BusinessPolicies, composed *ComposedStrategies) error {
 	processingStrategy := ComposedProcessingStrategy{
 		QualityThreshold: 0.5, // Default threshold
-		ParallelSteps:   false,
-		Concurrency:     1,
+		ParallelSteps:    false,
+		Concurrency:      1,
 	}
 
 	// Configure based on processing policies
 	if policies.ProcessingPolicy != nil {
 		processingStrategy.QualityThreshold = policies.ProcessingPolicy.QualityThreshold
 		processingStrategy.Steps = policies.ProcessingPolicy.ProcessingSteps
-		
+
 		// Determine processing strategy type
 		if len(processingStrategy.Steps) > 3 && composed.FetchingStrategy.Concurrency > 5 {
 			// Complex processing with high concurrency suggests parallel processing
@@ -355,7 +363,7 @@ func (sc *strategyComposerImpl) composeProcessingStrategy(policies *policies.Bus
 			// Simple processing suggests sequential
 			processingStrategy.Strategies = []ProcessingStrategyType{SequentialProcessing}
 		}
-		
+
 		// Add conditional processing for quality-based decisions
 		if processingStrategy.QualityThreshold > 0.3 {
 			processingStrategy.Strategies = append(processingStrategy.Strategies, ConditionalProcessing)
@@ -391,7 +399,7 @@ func (sc *strategyComposerImpl) composeOutputStrategy(policies *policies.Busines
 		outputStrategy.DefaultFormat = policies.OutputPolicy.DefaultFormat
 		outputStrategy.CompressionEnabled = policies.OutputPolicy.Compression
 		outputStrategy.RoutingRules = policies.OutputPolicy.RoutingRules
-		
+
 		// Determine output strategy type
 		if len(outputStrategy.RoutingRules) > 1 {
 			// Multiple routing rules suggest conditional routing
@@ -400,7 +408,7 @@ func (sc *strategyComposerImpl) composeOutputStrategy(policies *policies.Busines
 			// Simple output
 			outputStrategy.Strategies = []OutputStrategyType{SimpleOutput}
 		}
-		
+
 		// Add multi-sink for high-throughput scenarios
 		if composed.FetchingStrategy.Concurrency > 10 {
 			outputStrategy.Strategies = append(outputStrategy.Strategies, MultiSinkOutput)
@@ -420,7 +428,8 @@ func (sc *strategyComposerImpl) composeOutputStrategy(policies *policies.Busines
 	return nil
 }
 
-// ValidateComposition validates a composed strategy
+// ValidateComposition validates a composed strategy.
+// Experimental.
 func (sc *strategyComposerImpl) ValidateComposition(composed *ComposedStrategies) error {
 	if composed == nil {
 		return errors.New("composed strategies cannot be nil")
@@ -458,15 +467,15 @@ func (sc *strategyComposerImpl) validateFetchingStrategy(strategy *ComposedFetch
 	if strategy.Concurrency <= 0 {
 		return errors.New("concurrency must be positive")
 	}
-	
+
 	if strategy.Timeout <= 0 {
 		return errors.New("timeout must be positive")
 	}
-	
+
 	if strategy.RetryEnabled && strategy.RetryConfig.MaxRetries <= 0 {
 		return errors.New("retry enabled but max retries is not positive")
 	}
-	
+
 	return nil
 }
 
@@ -474,11 +483,11 @@ func (sc *strategyComposerImpl) validateProcessingStrategy(strategy *ComposedPro
 	if strategy.QualityThreshold < 0 || strategy.QualityThreshold > 1 {
 		return errors.New("quality threshold must be between 0 and 1")
 	}
-	
+
 	if strategy.ParallelSteps && strategy.Concurrency <= 0 {
 		return errors.New("parallel steps enabled but concurrency is not positive")
 	}
-	
+
 	return nil
 }
 
@@ -486,7 +495,7 @@ func (sc *strategyComposerImpl) validateOutputStrategy(strategy *ComposedOutputS
 	if strategy.DefaultFormat == "" {
 		return errors.New("default format cannot be empty")
 	}
-	
+
 	return nil
 }
 
@@ -496,25 +505,26 @@ func (sc *strategyComposerImpl) checkStrategyConflicts(composed *ComposedStrateg
 	if containsConflictingStrategies(fetchingStrategies, []FetchingStrategyType{ParallelFetching, SequentialFetching}) {
 		return errors.New("parallel and sequential fetching strategies conflict")
 	}
-	
+
 	return nil
 }
 
 func (sc *strategyComposerImpl) validateResourceConstraints(composed *ComposedStrategies) error {
 	maxConcurrency := 100 // Reasonable limit
-	
+
 	if composed.FetchingStrategy.Concurrency > maxConcurrency {
 		return fmt.Errorf("fetching concurrency %d exceeds maximum %d", composed.FetchingStrategy.Concurrency, maxConcurrency)
 	}
-	
+
 	if composed.ProcessingStrategy.Concurrency > maxConcurrency {
 		return fmt.Errorf("processing concurrency %d exceeds maximum %d", composed.ProcessingStrategy.Concurrency, maxConcurrency)
 	}
-	
+
 	return nil
 }
 
-// OptimizeComposition optimizes a composed strategy
+// OptimizeComposition optimizes a composed strategy.
+// Experimental.
 func (sc *strategyComposerImpl) OptimizeComposition(composed *ComposedStrategies) (*ComposedStrategies, error) {
 	if composed == nil {
 		return nil, errors.New("composed strategies cannot be nil")
@@ -526,7 +536,7 @@ func (sc *strategyComposerImpl) OptimizeComposition(composed *ComposedStrategies
 	if optimized.FetchingStrategy.Concurrency > 50 {
 		optimized.FetchingStrategy.Concurrency = 50 // Cap at reasonable limit
 	}
-	
+
 	if optimized.FetchingStrategy.Timeout < 5*time.Second {
 		optimized.FetchingStrategy.Timeout = 5 * time.Second // Minimum reasonable timeout
 	}
@@ -549,10 +559,10 @@ func containsConflictingStrategies[T comparable](strategies []T, conflictingPair
 	if len(conflictingPair) != 2 {
 		return false
 	}
-	
+
 	hasFirst := false
 	hasSecond := false
-	
+
 	for _, strategy := range strategies {
 		if strategy == conflictingPair[0] {
 			hasFirst = true
@@ -561,20 +571,22 @@ func containsConflictingStrategies[T comparable](strategies []T, conflictingPair
 			hasSecond = true
 		}
 	}
-	
+
 	return hasFirst && hasSecond
 }
 
 // Strategy execution implementation
 
-// NewStrategyExecutor creates a new strategy executor
+// NewStrategyExecutor creates a new strategy executor.
+// Experimental.
 func NewStrategyExecutor(strategies *ComposedStrategies) *StrategyExecutor {
 	return &StrategyExecutor{
 		strategies: strategies,
 	}
 }
 
-// CreateExecutionPlan creates an execution plan for the given URLs
+// CreateExecutionPlan creates an execution plan for the given URLs.
+// Experimental.
 func (se *StrategyExecutor) CreateExecutionPlan(ctx context.Context, urls []string) (*ExecutionPlan, error) {
 	if len(urls) == 0 {
 		return nil, errors.New("no URLs provided")
@@ -609,25 +621,27 @@ func calculateBatchSize(urlCount, concurrency int) int {
 	if concurrency <= 0 {
 		return 1
 	}
-	
+
 	batchSize := urlCount / concurrency
 	if batchSize < 1 {
 		return 1
 	}
-	
+
 	return batchSize
 }
 
 // Performance monitoring implementation
 
-// NewStrategyPerformanceMonitor creates a new performance monitor
+// NewStrategyPerformanceMonitor creates a new performance monitor.
+// Experimental.
 func NewStrategyPerformanceMonitor() *StrategyPerformanceMonitor {
 	return &StrategyPerformanceMonitor{
 		metrics: make(map[string]*StrategyMetrics),
 	}
 }
 
-// RecordFetchingPerformance records fetching strategy performance
+// RecordFetchingPerformance records fetching strategy performance.
+// Experimental.
 func (spm *StrategyPerformanceMonitor) RecordFetchingPerformance(strategyType string, latency time.Duration, success bool) {
 	spm.mutex.Lock()
 	defer spm.mutex.Unlock()
@@ -647,7 +661,8 @@ func (spm *StrategyPerformanceMonitor) RecordFetchingPerformance(strategyType st
 	metric.LastUpdated = time.Now()
 }
 
-// RecordProcessingPerformance records processing strategy performance
+// RecordProcessingPerformance records processing strategy performance.
+// Experimental.
 func (spm *StrategyPerformanceMonitor) RecordProcessingPerformance(strategyType string, latency time.Duration, quality float64) {
 	spm.mutex.Lock()
 	defer spm.mutex.Unlock()
@@ -663,7 +678,8 @@ func (spm *StrategyPerformanceMonitor) RecordProcessingPerformance(strategyType 
 	metric.LastUpdated = time.Now()
 }
 
-// RecordOutputPerformance records output strategy performance
+// RecordOutputPerformance records output strategy performance.
+// Experimental.
 func (spm *StrategyPerformanceMonitor) RecordOutputPerformance(strategyType string, latency time.Duration, success bool) {
 	spm.mutex.Lock()
 	defer spm.mutex.Unlock()
@@ -683,7 +699,8 @@ func (spm *StrategyPerformanceMonitor) RecordOutputPerformance(strategyType stri
 	metric.LastUpdated = time.Now()
 }
 
-// GetMetrics returns current performance metrics
+// GetMetrics returns current performance metrics.
+// Experimental.
 func (spm *StrategyPerformanceMonitor) GetMetrics() *PerformanceMetrics {
 	spm.mutex.RLock()
 	defer spm.mutex.RUnlock()
@@ -696,7 +713,7 @@ func (spm *StrategyPerformanceMonitor) GetMetrics() *PerformanceMetrics {
 
 	for key, metric := range spm.metrics {
 		metricCopy := *metric // Copy the metric
-		
+
 		if len(key) > 9 && key[:9] == "fetching_" {
 			strategyType := key[9:]
 			metrics.FetchingMetrics[strategyType] = &metricCopy
@@ -712,10 +729,11 @@ func (spm *StrategyPerformanceMonitor) GetMetrics() *PerformanceMetrics {
 	return metrics
 }
 
-// AnalyzePerformance provides performance analysis and recommendations
+// AnalyzePerformance provides performance analysis and recommendations.
+// Experimental.
 func (spm *StrategyPerformanceMonitor) AnalyzePerformance() *PerformanceRecommendations {
 	metrics := spm.GetMetrics()
-	
+
 	recommendations := &PerformanceRecommendations{
 		Suggestions:    make([]string, 0),
 		OptimalConfigs: make(map[string]interface{}),
@@ -725,12 +743,12 @@ func (spm *StrategyPerformanceMonitor) AnalyzePerformance() *PerformanceRecommen
 	// Analyze fetching performance
 	for strategyType, metric := range metrics.FetchingMetrics {
 		if metric.SuccessRate < 0.9 {
-			recommendations.Suggestions = append(recommendations.Suggestions, 
+			recommendations.Suggestions = append(recommendations.Suggestions,
 				fmt.Sprintf("Consider adding retry logic to %s fetching strategy", strategyType))
 		}
-		
+
 		if metric.AverageLatency > 10*time.Second {
-			recommendations.Warnings = append(recommendations.Warnings, 
+			recommendations.Warnings = append(recommendations.Warnings,
 				fmt.Sprintf("High latency detected in %s fetching strategy", strategyType))
 		}
 	}
@@ -740,14 +758,16 @@ func (spm *StrategyPerformanceMonitor) AnalyzePerformance() *PerformanceRecommen
 
 // Optimization implementation
 
-// NewStrategyOptimizer creates a new strategy optimizer
+// NewStrategyOptimizer creates a new strategy optimizer.
+// Experimental.
 func NewStrategyOptimizer() *StrategyOptimizer {
 	return &StrategyOptimizer{
 		optimizationRules: make(map[string]OptimizationRule),
 	}
 }
 
-// OptimizeBasedOnMetrics optimizes strategies based on performance metrics
+// OptimizeBasedOnMetrics optimizes strategies based on performance metrics.
+// Experimental.
 func (so *StrategyOptimizer) OptimizeBasedOnMetrics(strategy *ComposedStrategies, metrics *PerformanceMetrics) (*ComposedStrategies, error) {
 	if strategy == nil {
 		return nil, errors.New("strategy cannot be nil")
@@ -763,7 +783,7 @@ func (so *StrategyOptimizer) OptimizeBasedOnMetrics(strategy *ComposedStrategies
 				optimized.FetchingStrategy.Concurrency = optimized.FetchingStrategy.Concurrency / 2
 			}
 		}
-		
+
 		if metric.AverageLatency > 5*time.Second {
 			// Increase timeout if latency is high
 			optimized.FetchingStrategy.Timeout = metric.AverageLatency * 2
@@ -775,58 +795,60 @@ func (so *StrategyOptimizer) OptimizeBasedOnMetrics(strategy *ComposedStrategies
 
 // Adaptive strategy management
 
-// NewAdaptiveStrategyManager creates a new adaptive strategy manager
+// NewAdaptiveStrategyManager creates a new adaptive strategy manager.
+// Experimental.
 func NewAdaptiveStrategyManager() *AdaptiveStrategyManager {
 	return &AdaptiveStrategyManager{
 		adjustmentHistory: make([]StrategyAdjustment, 0),
 	}
 }
 
-// AdjustStrategy adjusts strategy based on performance feedback
+// AdjustStrategy adjusts strategy based on performance feedback.
+// Experimental.
 func (asm *AdaptiveStrategyManager) AdjustStrategy(strategy *ComposedStrategies, feedback *PerformanceFeedback) (*ComposedStrategies, error) {
 	if strategy == nil {
 		return nil, errors.New("strategy cannot be nil")
 	}
-	
+
 	if feedback == nil {
 		return strategy, nil // No feedback, no adjustment
 	}
 
 	adjusted := *strategy // Create a copy
 	adjustmentMade := false
-	
+
 	// Adjust fetching concurrency based on success rate and resource usage
 	if feedback.SuccessRate < 0.9 && adjusted.FetchingStrategy.Concurrency > 1 {
 		previousConcurrency := adjusted.FetchingStrategy.Concurrency
 		adjusted.FetchingStrategy.Concurrency = int(float64(adjusted.FetchingStrategy.Concurrency) * 0.8)
-		
+
 		asm.recordAdjustment(StrategyAdjustment{
-			Timestamp:     time.Now(),
+			Timestamp:      time.Now(),
 			PreviousConfig: previousConcurrency,
-			NewConfig:     adjusted.FetchingStrategy.Concurrency,
-			Reason:        "low success rate",
-			Impact:        "reduced concurrency",
+			NewConfig:      adjusted.FetchingStrategy.Concurrency,
+			Reason:         "low success rate",
+			Impact:         "reduced concurrency",
 		})
 		adjustmentMade = true
 	} else if feedback.SuccessRate > 0.95 && feedback.CPUUsage < 0.7 && adjusted.FetchingStrategy.AdaptiveConfig != nil {
 		// Increase concurrency if performance is good and resources are available
 		previousConcurrency := adjusted.FetchingStrategy.Concurrency
 		newConcurrency := int(float64(adjusted.FetchingStrategy.Concurrency) * 1.2)
-		
+
 		if newConcurrency <= adjusted.FetchingStrategy.AdaptiveConfig.MaxConcurrency {
 			adjusted.FetchingStrategy.Concurrency = newConcurrency
-			
+
 			asm.recordAdjustment(StrategyAdjustment{
-				Timestamp:     time.Now(),
+				Timestamp:      time.Now(),
 				PreviousConfig: previousConcurrency,
-				NewConfig:     adjusted.FetchingStrategy.Concurrency,
-				Reason:        "good performance and available resources",
-				Impact:        "increased concurrency",
+				NewConfig:      adjusted.FetchingStrategy.Concurrency,
+				Reason:         "good performance and available resources",
+				Impact:         "increased concurrency",
 			})
 			adjustmentMade = true
 		}
 	}
-	
+
 	if !adjustmentMade {
 		return strategy, nil // No adjustment needed
 	}
@@ -837,9 +859,9 @@ func (asm *AdaptiveStrategyManager) AdjustStrategy(strategy *ComposedStrategies,
 func (asm *AdaptiveStrategyManager) recordAdjustment(adjustment StrategyAdjustment) {
 	asm.mutex.Lock()
 	defer asm.mutex.Unlock()
-	
+
 	asm.adjustmentHistory = append(asm.adjustmentHistory, adjustment)
-	
+
 	// Keep only last 100 adjustments
 	if len(asm.adjustmentHistory) > 100 {
 		asm.adjustmentHistory = asm.adjustmentHistory[1:]

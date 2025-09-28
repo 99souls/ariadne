@@ -1,15 +1,17 @@
 package ratelimit
 
 import (
-	engmodels "github.com/99souls/ariadne/engine/models"
 	"math"
 	"sync"
 	"time"
+
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
+// Internal tuning constant for latency smoothing.
 const latencyEWMALambda = 0.2
 
-type circuitState int
+type circuitState int // internal state enum (unexported intentionally)
 
 const (
 	circuitClosed circuitState = iota
@@ -175,6 +177,13 @@ func (ds *domainState) openBreaker(now time.Time) {
 	ds.breaker.state = circuitOpen
 	ds.breaker.openedAt = now
 	ds.breaker.halfOpenSuccesses = 0
+}
+
+// allowRequest mirrors legacy helper used by tests; retained for parity during migration.
+func (ds *domainState) allowRequest(cfg engmodels.RateLimitConfig, now time.Time) bool {
+	ds.mu.Lock()
+	defer ds.mu.Unlock()
+	return ds.allowRequestLocked(cfg, now)
 }
 func effectiveOpenDuration(d time.Duration) time.Duration {
 	if d <= 0 {
