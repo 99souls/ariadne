@@ -1,9 +1,10 @@
 package metrics
 
 import (
-	legacy "github.com/99souls/ariadne/engine/internal/monitoring"
 	"net/http/httptest"
 	"testing"
+
+	legacy "github.com/99souls/ariadne/engine/internal/monitoring"
 )
 
 func TestNoopProviderBasic(t *testing.T) {
