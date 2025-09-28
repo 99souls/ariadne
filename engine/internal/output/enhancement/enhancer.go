@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/99souls/ariadne/engine/output/assembly"
+	"github.com/99souls/ariadne/engine/internal/output/assembly"
 	"github.com/99souls/ariadne/engine/models"
 )
 

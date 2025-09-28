@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/99souls/ariadne/engine/output"
+	"github.com/99souls/ariadne/engine/internal/output"
 	"github.com/99souls/ariadne/engine/models"
 )
 

@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/99souls/ariadne/engine/internal/output"
 	"github.com/99souls/ariadne/engine/models"
-	"github.com/99souls/ariadne/engine/output"
 )
 
 // Sink writes each CrawlResult as a compact JSON line to stdout.
@@ -20,8 +20,11 @@ type Sink struct {
 func New() *Sink { return &Sink{enc: json.NewEncoder(os.Stdout), write: os.Stdout} }
 
 func (s *Sink) Write(r *models.CrawlResult) error {
-	if r == nil { return nil }
-	s.mu.Lock(); defer s.mu.Unlock()
+	if r == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.enc.Encode(r)
 }
 
