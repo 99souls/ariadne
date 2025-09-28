@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-28T14:08:49+01:00
+Generated: 2025-09-28T14:24:03+01:00
 
 ## Package `models`
 
@@ -104,10 +104,6 @@ v1.0. Types and functions here may be renamed, relocated (some content may
 move under internal/), or significantly reduced in scope. Consumers should
 treat all identifiers as Experimental unless/until explicitly promoted to
 Stable in documentation.
-
-(no exported symbols)
-
-## Package `resources`
 
 (no exported symbols)
 

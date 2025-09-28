@@ -41,6 +41,7 @@ All notable changes to this project will be documented in this file. The format 
 - config: Removed vestigial `engine/config/runtime.go` stub (runtime system internalized; guard no longer required) (C1 pruning).
 - engine: Removed public access to business implementation packages (`engine/business/*`) and monitoring metrics scaffolding (`engine/monitoring`) by internalization (C2 pruning – breaking pre-v1 acceptable).
 - config: Removed experimental unified configuration layer (`UnifiedBusinessConfig`, advanced runtime layering & AB testing helpers) and associated tests; public `config` package now intentionally exposes no symbols (C3 pruning – simplifies facade and prevents re-expansion of config surface).
+- engine: Internalized public crawler, processor, and output concrete implementation packages (`engine/crawler`, `engine/processor`, `engine/output` including sinks, assembly, enhancement, html, markdown, stdout) under `engine/internal/` (C4 pruning). Removed their public tests; updated imports; regenerated API report. Facade unchanged (interfaces `Fetcher`, `Processor`, `OutputSink` remain). Pre-v1 breaking change acceptable; all tests green.
 
 ### Deprecated
 
