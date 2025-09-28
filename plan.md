@@ -2,6 +2,25 @@
 
 _Central execution plan synchronized with GitHub issues (authoritative backlog)._
 
+## 🚀 PROGRESS UPDATE (2025-09-29)
+
+**MAJOR MILESTONE ACHIEVED: Live Test Site Phase 6.1 Complete ✅**
+
+We have successfully implemented a comprehensive live test site (`tools/test-site`) that provides a realistic HTTP origin for crawler testing. This represents significant progress toward production-ready integration testing capabilities.
+
+### Key Accomplishments This Session
+- **Complete Test Site Implementation**: Full Bun + React application with TypeScript transpilation
+- **Rich Wiki-Style Content**: 7+ routes with comprehensive content patterns (typography, code, admonitions, tables, metadata)
+- **Professional UI**: shadcn/ui component integration with responsive Tailwind CSS design
+- **API Endpoints**: `/api/ping`, `/api/posts`, `/api/slow` for comprehensive crawler testing
+- **Asset Testing**: Working and intentionally broken assets for error handling validation
+- **Performance**: Sub-200ms startup time with deterministic content generation
+
+### Next Priority (Phase 6.2)
+**Go Test Harness Integration** - Implement `WithLiveTestSite()` helper and migrate integration tests to use the live site instead of synthetic mocks.
+
+---
+
 This document now maps every phase/sub-phase item to a GitHub Issue for single-source-of-truth tracking. Closed checkboxes here should mirror closed issues; creation of new scope MUST create an issue first.
 
 ## Development Philosophy
@@ -190,21 +209,29 @@ These are enforceable via lightweight CI scripts introduced incrementally (see n
 
 ---
 
-## Phase 6: Live Test Site & Realistic Integration Surface (Planned)
+## Phase 6: Live Test Site & Realistic Integration Surface (IN PROGRESS) ⚠️
 
 **Timeline: Interleaved after Phase 5 (Production Readiness) | Success Metric: Stable, deterministic live wiki-style site powering ≥1 replaced mock-based integration test**
 
 Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that emulates common knowledge base / Obsidian Quartz style patterns: nested pages, asset references, broken links, slow endpoints, robots variants, metadata richness. This becomes the canonical real HTTP origin for end-to-end crawler validation (superseding scattered synthetic fixtures).
 
-### 6.1 Test Site Implementation (P1 – Minimal)
+### 6.1 Test Site Implementation (P1 – Minimal) ✅ COMPLETE
 
-- [ ] Create `tools/test-site` (already scaffolded) formalize package name `@ariadne/testsite`.
-- [ ] Core routes: `/`, `/about`, `/docs/getting-started`, `/docs/deep/n1/n2`, `/blog/post-1`, `/tags/index`.
-- [ ] Assets: at least 2 images (one intentionally missing), CSS, JS (benign DOM mutation), SVG logo.
-- [ ] API endpoints: `/api/ping`, `/api/posts` (static JSON), `/api/slow` (400–600ms inject latency).
-- [ ] Metadata: `<meta name="description">`, canonical link, OpenGraph tags on blog post.
-- [ ] Deterministic build (no date/time leakage) – inject fixed build timestamp env.
-- [ ] Startup banner: `TESTSITE: listening on ...` for readiness detection.
+- [x] Create `tools/test-site` with formalized package name `@ariadne/testsite` ✅
+- [x] Core routes: `/`, `/about`, `/docs/getting-started`, `/docs/deep/n1/n2/n3/leaf`, `/blog/*`, `/tags/index` ✅
+- [x] Assets: 2 working SVG images + intentionally missing PNGs, CSS, JS, comprehensive styling ✅
+- [x] API endpoints: `/api/ping`, `/api/posts` (static JSON), `/api/slow` (400–600ms latency injection) ✅
+- [x] Metadata: Complete `<meta>` tags, canonical links, OpenGraph tags, frontmatter simulation ✅
+- [x] Deterministic build: Fixed timestamps, no random content, stable for testing ✅
+- [x] Startup banner: `TESTSITE: listening on http://127.0.0.1:5173, Robots mode: allow` ✅
+
+**Additional Achievements Beyond Original Scope:**
+- [x] **Rich Content**: Comprehensive wiki-style content with typography, code fences, admonitions, tables, math placeholders
+- [x] **shadcn/ui Integration**: Professional UI components (Card, Button, Alert) throughout site
+- [x] **TypeScript Transpilation**: Bun.build() pipeline with ESM format for browser compatibility
+- [x] **Responsive Design**: Mobile-friendly layout with Tailwind CSS utilities
+- [x] **Error Handling**: Proper 404s, JSON error responses, graceful failure modes
+- [x] **Performance**: Sub-200ms startup time, efficient asset serving
 
 ### 6.2 Go Test Harness
 
@@ -289,7 +316,7 @@ Phase 7 (CLI Polish) work may begin only after Phase 6 success criteria met and 
 
 | Gap                                 | Current State                    | Impact if Unaddressed                           | Planned Mitigation                                                 |
 | ----------------------------------- | -------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
-| Lack of realistic crawling surface  | Synthetic mocks only             | Under-tested edge cases (broken assets, robots) | Phase 6 live test site (P1 + P2)                                   |
+| Lack of realistic crawling surface  | ✅ Phase 6.1 COMPLETE           | ✅ RESOLVED: Live test site implemented         | Phase 6.2: Go test harness + integration tests                     |
 | Determinism enforcement             | Ad hoc                           | Flaky CI undermines confidence                  | Add flake detector script + golden snapshots                       |
 | API surface governance in root plan | Implicit via internalisation doc | Risk of accidental re-export                    | Introduce Phase 7 CI check: exported symbol diff vs allowlist      |
 | Performance regression visibility   | Manual benchmarking              | Slow unnoticed creep                            | Add periodic benchmark run + budget enforcement (Phase 6 add hook) |

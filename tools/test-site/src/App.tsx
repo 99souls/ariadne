@@ -1,13 +1,13 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Navigation } from "./components/Navigation";
 import { HomePage } from "./routes/HomePage";
 import { AboutPage } from "./routes/AboutPage";
 import { DocsGettingStarted } from "./routes/DocsGettingStarted";
-import { BlogIndex } from "./routes/blog/BlogIndex";
-import { BlogPost } from "./routes/blog/BlogPost";
+import { BlogIndex } from "./routes/BlogIndex";
+import { BlogPost } from "./routes/BlogPost";
 import { TagsIndex } from "./routes/TagsIndex";
-import { DeepLeafPage } from "./routes/labs/depth/depth2/depth3/DeepLeafPage";
+import { DeepLeafPage } from "./routes/DeepLeafPage";
 import "./index.css";
 
 export function App() {
@@ -36,7 +36,7 @@ export function App() {
             element={<DocsGettingStarted />}
           />
           <Route path="/blog" element={<BlogIndex />} />
-          <Route path="/blog/:postId" element={<BlogPost />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/tags" element={<TagsIndex />} />
           <Route
             path="/labs/depth/depth2/depth3/leaf"

@@ -85,6 +85,36 @@ const server = serve({
       }
     }
 
+    // Handle TypeScript/JavaScript modules
+    if (
+      pathname.endsWith(".tsx") ||
+      pathname.endsWith(".ts") ||
+      pathname.endsWith(".jsx") ||
+      pathname.endsWith(".js")
+    ) {
+      const filePath = resolve(process.cwd(), "src", pathname.slice(1));
+      try {
+        const result = await Bun.build({
+          entrypoints: [filePath],
+          format: "esm",
+          target: "browser",
+        });
+
+        if (result.success && result.outputs[0]) {
+          const jsContent = await result.outputs[0].text();
+          return new Response(jsContent, {
+            headers: { "Content-Type": "application/javascript" },
+          });
+        } else {
+          console.error("Build failed:", result.logs);
+          return new Response("Build Error", { status: 500 });
+        }
+      } catch (error) {
+        console.error("Module error:", error);
+        return new Response("Module Not Found", { status: 404 });
+      }
+    }
+
     // Serve React app for all other routes
     const indexPath = resolve(process.cwd(), "src/index.html");
     return new Response(file(indexPath), {
