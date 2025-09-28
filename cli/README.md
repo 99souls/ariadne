@@ -38,19 +38,19 @@ go run ./cli/cmd/ariadne -config config.json -seeds https://example.com
 
 Available flags (current Wave 4):
 
-| Flag               | Purpose                                                            |
-| ------------------ | ------------------------------------------------------------------ |
-| -seeds             | Comma separated seed URLs                                          |
-| -seed-file         | File with one seed per line (comments with #)                      |
-| -resume            | Resume mode (skip seeds found in checkpoint)                       |
-| -checkpoint        | Checkpoint log path (default checkpoint.log)                       |
-| -snapshot-interval | Progress snapshot cadence (0 disables)                             |
-| -metrics           | Metrics listen address (requires -enable-metrics)                  |
-| -enable-metrics    | Enable metrics provider selection                                  |
-| -metrics-backend   | prom | otel | noop (effective only if -enable-metrics is supplied) |
-| -health            | Health endpoint listen address                                     |
-| -config            | Minimal JSON config overlay (temporary)                            |
-| -version           | Print version / build info                                         |
+| Flag               | Purpose                                           |
+| ------------------ | ------------------------------------------------- | ---- | ---------------------------------------------------- |
+| -seeds             | Comma separated seed URLs                         |
+| -seed-file         | File with one seed per line (comments with #)     |
+| -resume            | Resume mode (skip seeds found in checkpoint)      |
+| -checkpoint        | Checkpoint log path (default checkpoint.log)      |
+| -snapshot-interval | Progress snapshot cadence (0 disables)            |
+| -metrics           | Metrics listen address (requires -enable-metrics) |
+| -enable-metrics    | Enable metrics provider selection                 |
+| -metrics-backend   | prom                                              | otel | noop (effective only if -enable-metrics is supplied) |
+| -health            | Health endpoint listen address                    |
+| -config            | Minimal JSON config overlay (temporary)           |
+| -version           | Print version / build info                        |
 
 Metrics adapter notes:
 

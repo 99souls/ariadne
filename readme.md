@@ -23,7 +23,7 @@ go work sync
 Run a tiny crawl (stdout JSONL sink):
 
 ```bash
-go run ./cli/cmd/ariadne --seeds https://example.com --limit 25
+go run ./cli/cmd/ariadne --seeds https://example.com --snapshot-interval 5s
 ```
 
 Example output line:
@@ -44,6 +44,44 @@ make api-report
 
 This invokes the `tools/apireport` module to regenerate `API_REPORT.md` and CI will fail if drift is detected.
 
+Enable metrics (Prometheus) & health endpoints (experimental surface):
+
+```bash
+go run ./cli/cmd/ariadne -seeds https://example.com \
+  -enable-metrics -metrics :9090 -health :9091 -snapshot-interval 0 &
+sleep 1
+curl -s http://localhost:9090/metrics | grep ariadne_build_info || echo "metric not found yet"
+curl -s http://localhost:9091/healthz
+```
+
+Embedding the engine (minimal example):
+
+```go
+package main
+
+import (
+  "context"
+  "log"
+  "github.com/99souls/ariadne/engine"
+)
+
+func main() {
+  cfg := engine.Defaults()
+  eng, err := engine.New(cfg)
+  if err != nil { log.Fatal(err) }
+  defer eng.Stop()
+  results, err := eng.Start(context.Background(), []string{"https://example.com"})
+  if err != nil { log.Fatal(err) }
+  for r := range results {
+    _ = r // process result
+  }
+  snap := eng.Snapshot()
+  _ = snap // inspect snapshot fields
+}
+```
+
+See `md/telemetry-boundary.md` for telemetry stability notes.
+
 ## Core Flow (Simplified)
 
 1. Seed ingestion
@@ -58,7 +96,7 @@ This invokes the `tools/apireport` module to regenerate `API_REPORT.md` and CI w
 - Resource manager (seen URL set + spill-to-disk + checkpoint journal) enabling resume mode
 - Internal pipeline stages with bounded concurrency + backpressure coordination
 - Config layering (defaults → env → file(s) → flags) with normalization helpers
-- Telemetry hooks: metrics, tracing, event bus, health snapshots (curated public exposure; internals private)
+- Telemetry hooks: metrics, tracing, event bus, health snapshots (curated public exposure; internals private; see `md/telemetry-boundary.md` for evolving surface & stability)
 - Asset & change strategies (experimental) to reduce redundant fetches
 
 ## Why Another Crawler?

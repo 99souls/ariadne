@@ -10,15 +10,15 @@ Status: Draft (Wave 4) – Establishing which telemetry symbols remain intention
 
 ## Current Public Telemetry Packages
 
-| Package | Purpose | Intentional Public Symbols | Notes / Candidate Changes |
-|---------|---------|----------------------------|---------------------------|
-| `telemetry` (root) | Aggregated governance test location | (No additional exports beyond guards) | Keep empty facade; may add high-level adapter registration later. |
-| `telemetry/events` | Lightweight event bus for internal & adapter consumption | `Event`, `Subscription`, `Bus`, `BusStats`, `NewBus`, category constants | Potential future facade to hide `Bus` behind Engine-managed channel; keep for now. |
-| `telemetry/metrics` | Abstraction over concrete metrics providers | Interfaces: `Provider`, `Counter`, `Gauge`, `Histogram`, `Timer`; Opt structs; Constructors: `NewPrometheusProvider`, `NewOTelProvider`, `NewNoopProvider`; Provider option types; Legacy adapter: `BusinessCollectorAdapter` | Candidate: internalize `BusinessCollectorAdapter` after replacing legacy `monitoring` dependency or move under `internal/telemetryadapter`. |
-| `telemetry/tracing` | Basic span/tracer abstraction + adaptive sampling | `Tracer`, `Span`, `SpanContext`, constructors (`NewTracer`, `NewAdaptiveTracer`), helpers (`SpanFromContext`, `ExtractIDs`) | Keep minimal; evaluate splitting adaptive policy into policy package. |
-| `telemetry/policy` | Aggregated runtime policy knobs | `TelemetryPolicy`, `HealthPolicy`, `TracingPolicy`, `EventBusPolicy`, `Default` | Long-term: relocate to `engine/config` or expose snapshot only. |
-| `telemetry/health` | Health snapshot + evaluator helpers | `Snapshot`, `ProbeResult`, `Status`, `Probe`, `ProbeFunc`, `Evaluator`, `NewEvaluator`, status helpers (`Healthy`, etc.), status constants | Consider shrinking: export only `Snapshot` + constructor & status constants if evaluators are always engine-owned. |
-| `telemetry/logging` | Logging facade thin layer | `Logger`, `NewLogger`, `New` | Potential collapse into single `NewLogger` and deprecate `New`. |
+| Package             | Purpose                                                  | Intentional Public Symbols                                                                                                                                                                                                    | Notes / Candidate Changes                                                                                                                   |
+| ------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `telemetry` (root)  | Aggregated governance test location                      | (No additional exports beyond guards)                                                                                                                                                                                         | Keep empty facade; may add high-level adapter registration later.                                                                           |
+| `telemetry/events`  | Lightweight event bus for internal & adapter consumption | `Event`, `Subscription`, `Bus`, `BusStats`, `NewBus`, category constants                                                                                                                                                      | Potential future facade to hide `Bus` behind Engine-managed channel; keep for now.                                                          |
+| `telemetry/metrics` | Abstraction over concrete metrics providers              | Interfaces: `Provider`, `Counter`, `Gauge`, `Histogram`, `Timer`; Opt structs; Constructors: `NewPrometheusProvider`, `NewOTelProvider`, `NewNoopProvider`; Provider option types; Legacy adapter: `BusinessCollectorAdapter` | Candidate: internalize `BusinessCollectorAdapter` after replacing legacy `monitoring` dependency or move under `internal/telemetryadapter`. |
+| `telemetry/tracing` | Basic span/tracer abstraction + adaptive sampling        | `Tracer`, `Span`, `SpanContext`, constructors (`NewTracer`, `NewAdaptiveTracer`), helpers (`SpanFromContext`, `ExtractIDs`)                                                                                                   | Keep minimal; evaluate splitting adaptive policy into policy package.                                                                       |
+| `telemetry/policy`  | Aggregated runtime policy knobs                          | `TelemetryPolicy`, `HealthPolicy`, `TracingPolicy`, `EventBusPolicy`, `Default`                                                                                                                                               | Long-term: relocate to `engine/config` or expose snapshot only.                                                                             |
+| `telemetry/health`  | Health snapshot + evaluator helpers                      | `Snapshot`, `ProbeResult`, `Status`, `Probe`, `ProbeFunc`, `Evaluator`, `NewEvaluator`, status helpers (`Healthy`, etc.), status constants                                                                                    | Consider shrinking: export only `Snapshot` + constructor & status constants if evaluators are always engine-owned.                          |
+| `telemetry/logging` | Logging facade thin layer                                | `Logger`, `NewLogger`, `New`                                                                                                                                                                                                  | Potential collapse into single `NewLogger` and deprecate `New`.                                                                             |
 
 ## Allowlist Guard Alignment
 
@@ -34,13 +34,13 @@ Status: Draft (Wave 4) – Establishing which telemetry symbols remain intention
 
 ## Annotations Plan
 
-| Symbol Category | Stability Tag (Target) | Rationale |
-|-----------------|------------------------|-----------|
-| Core interfaces (`metrics.Provider`, `tracing.Tracer`) | Experimental (promote later) | Need usage validation externally. |
-| Legacy adapter (`BusinessCollectorAdapter`) | Deprecated (pre-removal) | Transitional shim; discourage adoption. |
-| Policy structs | Experimental (possible redesign) | Likely consolidated into config. |
-| Health evaluator pieces | Experimental (shrink surface) | Evaluate simpler API. |
-| Logging constructors | Experimental → Stable (once narrowed) | Low risk stable front door. |
+| Symbol Category                                        | Stability Tag (Target)                | Rationale                               |
+| ------------------------------------------------------ | ------------------------------------- | --------------------------------------- |
+| Core interfaces (`metrics.Provider`, `tracing.Tracer`) | Experimental (promote later)          | Need usage validation externally.       |
+| Legacy adapter (`BusinessCollectorAdapter`)            | Deprecated (pre-removal)              | Transitional shim; discourage adoption. |
+| Policy structs                                         | Experimental (possible redesign)      | Likely consolidated into config.        |
+| Health evaluator pieces                                | Experimental (shrink surface)         | Evaluate simpler API.                   |
+| Logging constructors                                   | Experimental → Stable (once narrowed) | Low risk stable front door.             |
 
 ## Migration Considerations
 
@@ -56,9 +56,10 @@ Status: Draft (Wave 4) – Establishing which telemetry symbols remain intention
 
 ## Decision Log
 
-| Date | Decision | Outcome |
-|------|----------|---------|
+| Date       | Decision                                 | Outcome                                  |
+| ---------- | ---------------------------------------- | ---------------------------------------- |
 | 2025-09-28 | Lock initial telemetry allowlist (W4-07) | Guard test merged; boundary doc drafted. |
 
 ---
+
 Draft; will iterate as pruning v2 list is formalized.

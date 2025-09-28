@@ -12,6 +12,10 @@ All notable changes to this project will be documented in this file. The format 
 - telemetry: Added export allowlist guard test across telemetry subpackages (events, metrics, tracing, policy, health, logging) locking current public surface (Wave 4 W4-07 governance).
 - telemetry: Authored `md/telemetry-boundary.md` documenting current public telemetry surface, pruning candidates, and stability annotations (Wave 4 W4-05 partial).
 - engine: Added helper `SelectMetricsProvider` centralizing backend selection (Prometheus, OTEL, noop) for potential reuse by adapters / future CLI telemetry wiring (Wave 4 W4-05).
+- cli: Implemented provider-aware metrics adapter wiring (Prometheus handler exposure when selected) plus build info gauge registration; health endpoint retained without change (Wave 4 W4-05 adapter finalization).
+- cli: Added integration test `TestCLIMetricsAndHealth` asserting startup log lines for metrics & health servers (replaced flaky HTTP polling approach) (Wave 4 W4-06 hardening).
+- ci: Added CLI smoke workflow (`.github/workflows/cli-smoke.yml`) performing short crawl and probing metrics & health endpoints (Wave 4 W4-09 runtime validation).
+- docs: Enhanced root `README.md` with embedding example and metrics/health quickstart; updated CLI README with metrics adapter notes (Wave 4 W4-08 docs pass).
 
 ### Changed
 
@@ -19,6 +23,9 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Internalized former public resource manager implementation under `engine/internal/resources`; introduced public facade `ResourcesConfig` and preserved snapshot-only exposure (`ResourceSnapshot`) (Wave 4 W4-04).
 - telemetry/metrics: Annotated all metrics interfaces (`Counter`, `Gauge`, `Histogram`, `Timer`, `Provider`) as Experimental and documented planned consolidation (Wave 4 W4-05).
 - engine: `New` now delegates metrics backend initialization to `SelectMetricsProvider` reducing duplication and clarifying intended extension hook (Wave 4 W4-05).
+- cli: Metrics endpoint transitioned from placeholder to provider-backed handler leveraging `engine.SelectMetricsProvider`; simplified verification strategy (log assertion) for deterministic tests (Wave 4 W4-05 / W4-06).
+- config: Internalized former runtime configuration & A/B testing implementation (moved under `engine/internal/runtime`); left guarded stub `runtime.go` to prevent re-expansion (Wave 4 W4-03 partial completion).
+- telemetry: Build info gauge intentionally emitted only via CLI metrics adapter to avoid expanding engine public surface (Wave 4 adapter scope decision).
 
 ### Removed
 
@@ -68,6 +75,8 @@ All notable changes to this project will be documented in this file. The format 
 
 - External trace exporter wiring (will introduce build tag & binary size note)
 - Error/latency biased sampling boosts (policy fields scaffolded but logic deferred).
+- Consolidation / possible internalization of `engine/monitoring` and business metrics constructs (pruning list v2 candidate).
+- Potential shrink or removal of large Experimental `UnifiedBusinessConfig` in favor of narrower facade-level config (tracked for pruning list v2).
 
 ## [Phase 5E Completion] - 2025-09-27
 
