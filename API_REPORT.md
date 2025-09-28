@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-28T14:24:03+01:00
+Generated: 2025-09-28T14:40:15+01:00
 
 ## Package `models`
 

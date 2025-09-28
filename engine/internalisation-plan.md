@@ -209,15 +209,17 @@ Remaining larger implementation exposure: `engine/ratelimit` (interface + concre
 ### Readiness for C5 (Ratelimit Internalisation)
 
 Coupling review:
+
 - Engine facade depends on: `RateLimiter` interface, `LimiterSnapshot`, `AdaptiveRateLimiter` constructor (indirectly in `engine.New`).
 - Internal pipeline depends on interface + `ErrCircuitOpen`, `Permit`, `Feedback` types.
 - Tests rely on concrete `AdaptiveRateLimiter` (unit tests in `ratelimit/` package) and on `NewAdaptiveRateLimiter` inside integration tests.
 
-Design intent post-internalisation: external users require only snapshot visibility & *optional* configuration fields (already in `models.RateLimitConfig`). They do not require direct construction or subtype awareness of the adaptive limiter.
+Design intent post-internalisation: external users require only snapshot visibility & _optional_ configuration fields (already in `models.RateLimitConfig`). They do not require direct construction or subtype awareness of the adaptive limiter.
 
 ### Proposed Minimal Public Set After C5
 
 Keep (possibly relocated to root `engine` package OR a tiny shim subpackage):
+
 - Interface: `RateLimiter` (question: do we need to expose this? Only if embedders may plug a custom limiter soon. If not, we can hide and replace with unexported field; snapshot suffices.)
 - Error: `ErrCircuitOpen` (exposed only if callers should distinguish circuit state during Start/stream operations; otherwise convert to generic transient classification internally).
 - Snapshot: `LimiterSnapshot`, `DomainSummary` (read-only data needed for observability).
@@ -226,6 +228,7 @@ Keep (possibly relocated to root `engine` package OR a tiny shim subpackage):
 Decision recommendation: Expose ONLY `LimiterSnapshot` via `Engine.Snapshot()` and remove public `RateLimiter` + `AdaptiveRateLimiter` entirely (leanest future-proof path). If extension story needed later, reintroduce a narrow `rate` interface in a versioned path.
 
 ### Migration Mechanics
+
 1. Move entire `engine/ratelimit` directory to `engine/internal/ratelimit`.
 2. Introduce (in `engine/snapshot.go` or existing snapshot file) any type aliases required if we preserve exported `LimiterSnapshot` / `DomainSummary` (e.g., `type LimiterSnapshot = internalratelimit.LimiterSnapshot`). Alternatively redefine a trimmed struct filled by an adapter function.
 3. Remove imports of `engine/ratelimit` from public files; replace construction in `engine.New` with internal factory `internal/ratelimit.NewAdaptiveLimiter(cfg)`.
@@ -238,10 +241,12 @@ Fallback / rollback: Single directory move revertible; alias strategy allows pha
 ### Critical Positioning Assessment
 
 Strengths:
+
 - High test coverage around rate limiter logic (unit + integration) reduces regression risk during move.
 - Prior moves validated import path update process & API report governance.
 
 Weak Spots / Risks:
+
 - Public removal of `RateLimiter` interface may break any hypothetical downstream mocks (low probability pre‑1.0, but note). Mitigation: keep interface temporarily in root if uncertain.
 - Snapshot struct shape may still evolve; internalising now keeps agility but we should freeze field naming pre v0.2.0.
 - Telemetry still broad; delaying its internalisation until after ratelimit is fine, but large surface remains temporarily (accept risk for sequencing simplicity).
@@ -252,14 +257,14 @@ Decision: Proceed with C5 adopting leanest approach (no public ratelimit package
 
 ## 14. Updated Risk Assessment (Incremental Delta for C5–C8)
 
-| Risk | Phase | Likelihood | Impact | Mitigation |
-|------|-------|------------|--------|------------|
-| Hidden external reliance on `engine/ratelimit` concrete types | C5 | Low | Low | Pre‑1.0; document CHANGELOG; provide clear migration note (no replacement needed). |
-| Losing ability to inject custom limiter post C5 | C5 | Medium (future need) | Medium | Keep a private hook; if demand emerges add a stable `LimiterProvider` option later. |
-| Aliasing vs redefining snapshot leads to accidental re-export of internal types | C5 | Low | Low | Prefer redefining minimal snapshot struct over alias if uncertain; verify via API report. |
-| Telemetry internalisation (events/tracing) touches many tests simultaneously | C6 | Medium | Medium/High | Stage: internalise packages one at a time (events → tracing → policy) with interim adapters. |
-| Config layering removal breaks undocumented internal tests | C7 | Low | Low | Grep usages first; migrate tests to new config pattern before delete. |
-| Final allowlist tightening misses a straggler symbol | C8 | Low | Low | Add temporary audit script diffing `go list -deps` exported sets vs API report. |
+| Risk                                                                            | Phase | Likelihood           | Impact      | Mitigation                                                                                   |
+| ------------------------------------------------------------------------------- | ----- | -------------------- | ----------- | -------------------------------------------------------------------------------------------- |
+| Hidden external reliance on `engine/ratelimit` concrete types                   | C5    | Low                  | Low         | Pre‑1.0; document CHANGELOG; provide clear migration note (no replacement needed).           |
+| Losing ability to inject custom limiter post C5                                 | C5    | Medium (future need) | Medium      | Keep a private hook; if demand emerges add a stable `LimiterProvider` option later.          |
+| Aliasing vs redefining snapshot leads to accidental re-export of internal types | C5    | Low                  | Low         | Prefer redefining minimal snapshot struct over alias if uncertain; verify via API report.    |
+| Telemetry internalisation (events/tracing) touches many tests simultaneously    | C6    | Medium               | Medium/High | Stage: internalise packages one at a time (events → tracing → policy) with interim adapters. |
+| Config layering removal breaks undocumented internal tests                      | C7    | Low                  | Low         | Grep usages first; migrate tests to new config pattern before delete.                        |
+| Final allowlist tightening misses a straggler symbol                            | C8    | Low                  | Low         | Add temporary audit script diffing `go list -deps` exported sets vs API report.              |
 
 ---
 
@@ -271,8 +276,8 @@ Step-by-step (PR scope ≤ ~300 LOC net diff expected):
 2. Move directory: `git mv engine/ratelimit engine/internal/ratelimit`.
 3. Create new file `engine/ratelimit_facade.go` (if we retain snapshot structs) OR enhance existing engine snapshot file to embed limiter metrics.
 4. Define (if retained):
-	- `type LimiterSnapshot = internalratelimit.LimiterSnapshot` (or trimmed copy if we want to prune fields).
-	- Optionally drop `DomainSummary` if not required externally (verify usage outside tests).
+   - `type LimiterSnapshot = internalratelimit.LimiterSnapshot` (or trimmed copy if we want to prune fields).
+   - Optionally drop `DomainSummary` if not required externally (verify usage outside tests).
 5. Update `engine/engine.go` constructor to import `engine/internal/ratelimit` instead of public path.
 6. Update internal pipeline imports.
 7. Remove obsolete allowlist guard test `engine/ratelimit/ratelimit_allowlist_guard_test.go` (will be moved with package; delete since package no longer public).
@@ -285,6 +290,7 @@ Step-by-step (PR scope ≤ ~300 LOC net diff expected):
 Open decision before coding: alias vs redefine snapshot. Default: ALIAS (fast, zero struct copy) unless we intend to prune fields immediately.
 
 Success Criteria (C5):
+
 - API report no longer lists `Package \`ratelimit\``.
 - All tests green; no public compile errors.
 - Snapshot access unchanged for external caller code referencing `engine.Snapshot().Limiter`.
