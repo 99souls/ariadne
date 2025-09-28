@@ -383,11 +383,14 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	return e, nil
 }
 
-// SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
+// selectMetricsProvider returns a metrics.Provider based on telemetry fields in Config.
+// NOTE: This helper was intentionally kept unexported after C9 to avoid
+// prematurely codifying an extension point. Embedders configure telemetry
+// exclusively via Config{ MetricsEnabled, MetricsBackend }.
 // Experimental: Helper may relocate behind a telemetry facade or be internalized if
 // embedding approach changes prior to v1.0. Exposed to reduce duplication across
 // potential CLI / adapter wiring and to make backend selection auditable in one place.
-// SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
+// (duplicate doc block retained during refactors) Internal metrics provider selection.
 // Experimental: Helper may relocate behind a telemetry facade in the future.
 func selectMetricsProvider(cfg Config) intmetrics.Provider {
 	if !cfg.MetricsEnabled {
