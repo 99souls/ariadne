@@ -1,6 +1,6 @@
 # API Report
 
-Signature: 35c8493f267ee054a24bad074b6108e3a09a0c86df26638e6d20097ee2b94062
+Signature: 1f404747584245701e0c8e341f6a9abff87d9686c5149d40a812f09f5e8c4141
 
 ## Package `engine`
 
@@ -30,12 +30,14 @@ Engine.EventBus | method | Experimental | EventBus exposes the telemetry event b
 Engine.HealthSnapshot | method | Experimental | HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
 Engine.MetricsProvider | method | Experimental | MetricsProvider returns the active metrics provider (may be nil if disabled).
 Engine.Policy | method | Experimental | Policy returns the current telemetry policy snapshot.
+Engine.RegisterEventObserver | method | Experimental | RegisterEventObserver adds an observer invoked synchronously for each internal telemetry
 Engine.Snapshot | method | Stable | Snapshot returns a unified state view.
 Engine.Start | method | Stable | Start begins processing of the provided seed URLs and returns a read-only results channel.
 Engine.Stop | method | Stable | Stop gracefully stops the engine and underlying components.
 Engine.Tracer | method | Experimental | Tracer returns the engine's tracer implementation.
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
+EventObserver | type |  | EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
 Fetcher | type | Experimental | Fetcher defines how pages are fetched.
 LimiterDomainState | type | Experimental | LimiterDomainState summarizes recent domain-level adaptive state.
 LimiterSnapshot | type | Experimental | LimiterSnapshot is a public, reduced view of the internal adaptive rate limiter state.
@@ -47,6 +49,8 @@ ResourcesConfig | type | Experimental | ResourcesConfig is the public facade con
 ResumeSnapshot | type | Experimental | ResumeSnapshot contains resume filter statistics.
 SelectMetricsProvider | func | Experimental | SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
 Snapshot | type | Stable | Snapshot is a unified view of engine state.
+TelemetryEvent | type | Experimental | TelemetryEvent is a reduced, stable event representation for external observers.
+TelemetryOptions | type | Experimental | TelemetryOptions configures high-level telemetry behavior. Implementation choices
 
 ## Package `config`
 

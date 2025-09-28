@@ -32,6 +32,49 @@ type Snapshot struct {
 	Resume    *ResumeSnapshot              `json:"resume,omitempty"`
 }
 
+// TelemetryEvent is a reduced, stable event representation for external observers.
+// Experimental: Field set may evolve (additive) pre-v1.0. Replaces direct access to
+// internal event bus over time (Phase C6).
+type TelemetryEvent struct {
+	Time     time.Time              `json:"time"`
+	Category string                 `json:"category"`
+	Type     string                 `json:"type"`
+	Severity string                 `json:"severity,omitempty"`
+	TraceID  string                 `json:"trace_id,omitempty"`
+	SpanID   string                 `json:"span_id,omitempty"`
+	Labels   map[string]string      `json:"labels,omitempty"`
+	Fields   map[string]any         `json:"fields,omitempty"`
+}
+
+// EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
+// should be deferred to goroutines. Registered observers are invoked synchronously.
+type EventObserver func(ev TelemetryEvent)
+
+// TelemetryOptions configures high-level telemetry behavior. Implementation choices
+// (Prometheus vs OTEL, tracer sampling strategy, bus implementation) are internalized.
+// Experimental: Option set may change pre-v1.0; disabling all yields zero overhead paths.
+type TelemetryOptions struct {
+	EnableMetrics bool    `json:"enable_metrics"`
+	EnableTracing bool    `json:"enable_tracing"`
+	EnableEvents  bool    `json:"enable_events"`
+	EnableHealth  bool    `json:"enable_health"`
+	MetricsBackend string `json:"metrics_backend,omitempty"` // "prom" (default) | "otel" | "noop"
+	SamplingPercent float64 `json:"sampling_percent,omitempty"` // tracing root sample percentage if tracing enabled
+}
+
+// telemetryConfigFromLegacy maps legacy Config fields (pre-C6) onto TelemetryOptions.
+// Temporary helper; will be removed once Config is refactored to embed TelemetryOptions directly.
+func telemetryConfigFromLegacy(cfg Config) TelemetryOptions {
+	return TelemetryOptions{
+		EnableMetrics: cfg.MetricsEnabled,
+		EnableTracing: true,  // legacy behavior always created a tracer (adaptive) – keep until config evolves
+		EnableEvents:  true,  // legacy behavior always initialized bus
+		EnableHealth:  true,  // legacy behavior always initialized evaluator
+		MetricsBackend: cfg.MetricsBackend,
+		SamplingPercent: 5,   // mirrors previous default adaptive tracer percent (placeholder)
+	}
+}
+
 // LimiterSnapshot is a public, reduced view of the internal adaptive rate limiter state.
 // Experimental: Field set may shrink prior to v1.0; external consumers should treat as
 // best-effort diagnostics (subject to consolidation under a future telemetry facade).
@@ -75,6 +118,7 @@ type ResumeSnapshot struct {
 // should occur.
 type Engine struct {
 	cfg           Config
+	telemetry     TelemetryOptions
 	pl            *engpipeline.Pipeline
 	limiter       intrat.RateLimiter
 	rm            *intresources.Manager
@@ -101,6 +145,10 @@ type Engine struct {
 
 	// Telemetry policy (atomic snapshot). Nil => use internal defaults from policy.Default().
 	telemetryPolicy atomic.Pointer[telempolicy.TelemetryPolicy]
+
+	// Phase C6: externally registered event observers (facade) fed from internal bus.
+	eventObserversMu sync.RWMutex
+	eventObservers   []EventObserver
 }
 
 // Policy returns the current telemetry policy snapshot.
@@ -240,32 +288,44 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	pc := (&cfg).toPipelineConfig(engineOptions{limiter: limiter, resourceManager: rm})
 	pl := engpipeline.NewPipeline(pc)
 
-	e := &Engine{cfg: cfg, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
+	telemOpts := telemetryConfigFromLegacy(cfg)
+	e := &Engine{cfg: cfg, telemetry: telemOpts, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
 
 	// Initialize metrics provider (Wave 4 W4-05: delegated to helper for reuse & clarity)
 	e.metricsProvider = SelectMetricsProvider(cfg)
 	// NOTE: Exposing HTTP handler / endpoint binding remains caller responsibility (CLI or embedding app).
 
-	// Phase 5E Iteration 2: initialize event bus (metrics provider may be nil; bus tolerates nil -> noop metrics)
-	e.eventBus = telemEvents.NewBus(e.metricsProvider)
+	// Phase 5E Iteration 2 / C6 start: initialize event bus only if events enabled
+	if telemOpts.EnableEvents {
+		 e.eventBus = telemEvents.NewBus(e.metricsProvider)
+	}
 
-	// Phase 5E Iteration 3 + deferred enhancement: adaptive tracer referencing policy sample percent.
-	e.tracer = telemetrytracing.NewAdaptiveTracer(func() float64 { return e.Policy().Tracing.SamplePercent })
+	// Phase 5E Iteration 3 (C6 adaptation): tracer only if enabled
+	if telemOpts.EnableTracing {
+		 e.tracer = telemetrytracing.NewAdaptiveTracer(func() float64 {
+			 // If policy sampling set use it, else fallback to TelemetryOptions SamplingPercent
+			 pct := e.Policy().Tracing.SamplePercent
+			 if pct <= 0 {
+				 return telemOpts.SamplingPercent
+			 }
+			 return pct
+		 })
+	}
 
-	// Phase 5E Iteration 4: initialize health evaluator with basic subsystem probes.
-	// TTL seeded from default policy; may be overridden later via UpdateTelemetryPolicy.
+	// Phase 5E Iteration 4 (C6 adaptation): health only if enabled
 	initialPolicy := telempolicy.Default()
 	e.telemetryPolicy.Store(&initialPolicy)
-	limiterProbe, resourceProbe, pipelineProbe := e.healthProbes()
-	e.healthEval = telemetryhealth.NewEvaluator(initialPolicy.Health.ProbeTTL, limiterProbe, resourceProbe, pipelineProbe)
-	// Create health status gauge if metrics enabled
-	if e.metricsProvider != nil {
-		g := e.metricsProvider.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "health", Name: "status", Help: "Engine overall health status (1=healthy,0.5=degraded,0=unhealthy,-1=unknown)"}})
-		if g != nil {
-			e.healthStatusGauge = g
-			// initialize value to unknown until first snapshot read
-			g.Set(-1)
-		}
+	if telemOpts.EnableHealth {
+		 limiterProbe, resourceProbe, pipelineProbe := e.healthProbes()
+		 e.healthEval = telemetryhealth.NewEvaluator(initialPolicy.Health.ProbeTTL, limiterProbe, resourceProbe, pipelineProbe)
+		 // Create health status gauge if metrics enabled
+		 if e.metricsProvider != nil {
+			 g := e.metricsProvider.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "health", Name: "status", Help: "Engine overall health status (1=healthy,0.5=degraded,0=unhealthy,-1=unknown)"}})
+			 if g != nil {
+				 e.healthStatusGauge = g
+				 g.Set(-1) // initialize unknown
+			 }
+		 }
 	}
 
 	// Phase 5D Iteration 5: initialize asset strategy if enabled
@@ -392,10 +452,41 @@ func (e *Engine) HealthSnapshot(ctx context.Context) telemetryhealth.Snapshot {
 	}
 	cur := string(snap.Overall)
 	if prev != "" && prev != cur && e.eventBus != nil {
-		_ = e.eventBus.Publish(telemEvents.Event{Category: telemEvents.CategoryHealth, Type: "health_change", Severity: "info", Fields: map[string]interface{}{"previous": prev, "current": cur}})
+		iev := telemEvents.Event{Category: telemEvents.CategoryHealth, Type: "health_change", Severity: "info", Fields: map[string]interface{}{"previous": prev, "current": cur}}
+		_ = e.eventBus.Publish(iev)
+		// Bridge to facade observers
+		e.dispatchEvent(iev)
 	}
 	e.lastHealth.Store(cur)
 	return snap
+}
+
+// RegisterEventObserver adds an observer invoked synchronously for each internal telemetry
+// event. Safe for concurrent use. No-op if nil provided.
+// Experimental: May gain filtering / async delivery options pre-v1.0.
+func (e *Engine) RegisterEventObserver(obs EventObserver) {
+	if e == nil || obs == nil {
+		return
+	}
+	e.eventObserversMu.Lock()
+	e.eventObservers = append(e.eventObservers, obs)
+	e.eventObserversMu.Unlock()
+}
+
+// dispatchEvent maps an internal bus event to the public TelemetryEvent and notifies observers.
+// Called where we publish to the internal bus (limited injection points initially: health changes).
+func (e *Engine) dispatchEvent(ev telemEvents.Event) {
+	e.eventObserversMu.RLock()
+	if len(e.eventObservers) == 0 {
+		e.eventObserversMu.RUnlock()
+		return
+	}
+	observers := append([]EventObserver(nil), e.eventObservers...)
+	e.eventObserversMu.RUnlock()
+	pub := TelemetryEvent{Time: ev.Time, Category: ev.Category, Type: ev.Type, Severity: ev.Severity, TraceID: ev.TraceID, SpanID: ev.SpanID, Labels: ev.Labels, Fields: ev.Fields}
+	for _, o := range observers { // synchronous; observers must be fast
+		func() { defer func() { _ = recover() }(); o(pub) }()
+	}
 }
 
 // Start begins processing of the provided seed URLs and returns a read-only results channel.

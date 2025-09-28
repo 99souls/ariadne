@@ -11,23 +11,27 @@ repos:
     hooks:
       - id: golangci-lint
         name: golangci-lint (modules)
-        entry: bash -c 'for m in engine cli tools/apireport; do echo "[lint] $m"; (cd $m && golangci-lint run ./...) || exit 1; done'
+        entry: >-
+          bash -c "for m in engine cli tools/apireport; do echo '[lint] $m'; (cd $m && golangci-lint run ./...) || exit 1; done"
         language: system
         pass_filenames: false
   - repo: local
     hooks:
       - id: go-test-modules
         name: go test (short) all modules
-        entry: bash -c 'for m in engine cli tools/apireport; do echo "[test] $m"; (cd $m && go test -short ./...) || exit 1; done'
+        entry: >-
+          bash -c "for m in engine cli tools/apireport; do echo '[test] $m'; (cd $m && go test -short ./...) || exit 1; done"
         language: system
         pass_filenames: false
       - id: api-report-drift
         name: api report drift check
-        entry: bash -c 'cp API_REPORT.md /tmp/API_REPORT.prev && go run ./tools/apireport -out API_REPORT.md && if ! diff -u /tmp/API_REPORT.prev API_REPORT.md; then echo "API report drift. Run: make api-report" >&2; exit 1; fi'
+        entry: >-
+          bash -c "cp API_REPORT.md /tmp/API_REPORT.prev && go run ./tools/apireport -out API_REPORT.md && if ! diff -u /tmp/API_REPORT.prev API_REPORT.md; then echo 'API report drift. Run: make api-report' >&2; exit 1; fi"
         language: system
         pass_filenames: false
       - id: go-mod-tidy-check
         name: go mod tidy check
-        entry: bash -c 'status=0; for m in engine cli tools/apireport; do (cd $m && go mod tidy); git diff --quiet || status=1; git checkout -- . ; done; if [ $status -ne 0 ]; then echo "go.mod/go.sum drift detected. Run make tidy" >&2; exit 1; fi'
+        entry: >-
+          bash -c "status=0; for m in engine cli tools/apireport; do (cd $m && go mod tidy); git diff --quiet || status=1; git checkout -- . ; done; if [ $status -ne 0 ]; then echo 'go.mod/go.sum drift detected. Run make tidy' >&2; exit 1; fi"
         language: system
         pass_filenames: false
