@@ -2,7 +2,7 @@ This directory houses non-public engine implementation packages migrated from th
 
 Migration status:
 
-- ratelimit (DONE: moved to public engine/ratelimit API surface)
+- ratelimit (DONE: internalized; implementation moved here from former public package)
 - resources (DONE: engine/resources provides public API; legacy shim removed)
 - assets (INTERNALIZED: code relocated to engine/internal/assets; tests to be restored)
 - crawler (INTERNALIZED: code relocated to engine/internal/crawler; tests to be restored)

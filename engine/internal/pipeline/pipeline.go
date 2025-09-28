@@ -13,9 +13,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	intrat "github.com/99souls/ariadne/engine/internal/ratelimit"
 	intresources "github.com/99souls/ariadne/engine/internal/resources"
 	"github.com/99souls/ariadne/engine/models"
-	"github.com/99souls/ariadne/engine/ratelimit"
 )
 
 // (Verbatim copy begins)
@@ -27,7 +27,7 @@ type PipelineConfig struct {
 	OutputWorkers     int `yaml:"output_workers" json:"output_workers"`
 	BufferSize        int `yaml:"buffer_size" json:"buffer_size"`
 
-	RateLimiter      ratelimit.RateLimiter `yaml:"-" json:"-"`
+	RateLimiter      intrat.RateLimiter    `yaml:"-" json:"-"`
 	RetryBaseDelay   time.Duration         `yaml:"retry_base_delay" json:"retry_base_delay"`
 	RetryMaxDelay    time.Duration         `yaml:"retry_max_delay" json:"retry_max_delay"`
 	RetryMaxAttempts int                   `yaml:"retry_max_attempts" json:"retry_max_attempts"`
@@ -81,7 +81,7 @@ type Pipeline struct {
 	resultCount                                       int64
 	discoveryWG, extractionWG, processingWG, outputWG sync.WaitGroup
 	retryWG                                           sync.WaitGroup
-	limiter                                           ratelimit.RateLimiter
+	limiter                                           intrat.RateLimiter
 	resourceManager                                   *intresources.Manager
 	randMu                                            sync.Mutex
 	rand                                              *rand.Rand
@@ -360,7 +360,7 @@ func (p *Pipeline) randomizedDelay(max time.Duration) time.Duration {
 	defer p.randMu.Unlock()
 	return time.Duration(p.rand.Float64() * float64(max))
 }
-func (p *Pipeline) acquirePermit(task extractionTask, domain string) (ratelimit.Permit, error) {
+func (p *Pipeline) acquirePermit(task extractionTask, domain string) (intrat.Permit, error) {
 	if p.limiter == nil || domain == "" {
 		return nil, nil
 	}
@@ -432,7 +432,7 @@ func (p *Pipeline) extractionWorker() {
 					return
 				}
 				p.updateStageMetrics("extraction", false)
-				if errors.Is(err, ratelimit.ErrCircuitOpen) && p.shouldRetry(task) {
+				if errors.Is(err, intrat.ErrCircuitOpen) && p.shouldRetry(task) {
 					delay := p.backoffDelay(task.attempt + 1)
 					p.scheduleRetry(task.url, task.attempt+1, delay)
 					continue
@@ -478,7 +478,7 @@ func (p *Pipeline) extractionWorker() {
 				}
 				releaseSlot()
 				if p.limiter != nil && domain != "" {
-					p.limiter.Feedback(domain, ratelimit.Feedback{StatusCode: 200, Latency: latency})
+					p.limiter.Feedback(domain, intrat.Feedback{StatusCode: 200, Latency: latency})
 				}
 				if !p.forwardToProcessing(page, false) {
 					return
@@ -486,7 +486,7 @@ func (p *Pipeline) extractionWorker() {
 			} else {
 				releaseSlot()
 				if p.limiter != nil && domain != "" {
-					p.limiter.Feedback(domain, ratelimit.Feedback{StatusCode: 503, Latency: latency, Err: errors.New("extraction failed")})
+					p.limiter.Feedback(domain, intrat.Feedback{StatusCode: 503, Latency: latency, Err: errors.New("extraction failed")})
 				}
 				p.updateStageMetrics("extraction", false)
 				if p.shouldRetry(task) {

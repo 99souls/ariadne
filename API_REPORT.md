@@ -1,54 +1,6 @@
 # API Report
 
-Generated: 2025-09-28T14:08:49+01:00
-
-## Package `models`
-
-Name | Kind | Stability | Summary
------|------|-----------|--------
-CrawlError | type | Experimental | CrawlError wraps a stage-specific error with page context.
-CrawlError.Error | method |  | 
-CrawlError.Unwrap | method |  | 
-CrawlResult | type | Experimental | CrawlResult represents the result of processing a single URL through the pipeline.
-CrawlStats | type | Experimental | CrawlStats aggregates crawl progress metrics.
-ErrAssetDownloadFailed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrContentNotFound | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrFileWriteFailed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrHTMLParsingFailed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrHTTPError | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrInvalidMaxDepth | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrMarkdownConversion | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrMaxDepthExceeded | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrMaxPagesExceeded | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrMissingAllowedDomains | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrMissingStartURL | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrOutputDirCreation | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrTemplateExecution | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-ErrURLNotAllowed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
-OpenGraphMeta | type | Experimental | OpenGraphMeta captures a subset of Open Graph tags.
-Page | type | Stable | Page represents a single scraped web page with its content and metadata.
-PageMeta | type | Experimental | PageMeta contains structured metadata extracted from the page.
-RateLimitConfig | type | Experimental | RateLimitConfig defines adaptive per-domain rate limiting behavior.
-ScraperConfig | type | Experimental | ScraperConfig holds crawler configuration formerly defined in legacy pkg/models.
-ScraperConfig.Validate | method | Experimental | Validate performs basic sanity checks on the configuration.
-
-## Package `ratelimit`
-
-Name | Kind | Stability | Summary
------|------|-----------|--------
-AdaptiveRateLimiter | type | Experimental | AdaptiveRateLimiter implements RateLimiter using AIMD + circuit breaking.
-AdaptiveRateLimiter.Acquire | method |  | 
-AdaptiveRateLimiter.Close | method |  | 
-AdaptiveRateLimiter.Feedback | method |  | 
-AdaptiveRateLimiter.Snapshot | method |  | 
-AdaptiveRateLimiter.WithClock | method |  | 
-Clock | type | Experimental | Clock abstracts time operations for deterministic testing.
-DomainSummary | type | Experimental | DomainSummary reports per-domain adaptive state.
-ErrCircuitOpen | var | Experimental | ErrCircuitOpen signals requests are temporarily denied due to breaker state.
-Feedback | type | Experimental | Feedback supplies outcome metrics from completed requests.
-LimiterSnapshot | type | Experimental | LimiterSnapshot aggregates limiter-level counters.
-Permit | type |  | Permit represents an acquired capacity token.
-RateLimiter | type | Experimental | RateLimiter is the adaptive per-domain limiter interface.
+Signature: 35c8493f267ee054a24bad074b6108e3a09a0c86df26638e6d20097ee2b94062
 
 ## Package `engine`
 
@@ -85,6 +37,8 @@ Engine.Tracer | method | Experimental | Tracer returns the engine's tracer imple
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
 Fetcher | type | Experimental | Fetcher defines how pages are fetched.
+LimiterDomainState | type | Experimental | LimiterDomainState summarizes recent domain-level adaptive state.
+LimiterSnapshot | type | Experimental | LimiterSnapshot is a public, reduced view of the internal adaptive rate limiter state.
 MaterializedAsset | type |  | MaterializedAsset represents an asset after execution (download / inline / optimization).
 OutputSink | type | Experimental | OutputSink consumes processed pages.
 Processor | type | Experimental | Processor transforms a fetched page into enriched content.
@@ -107,7 +61,33 @@ Stable in documentation.
 
 (no exported symbols)
 
-## Package `resources`
+## Package `models`
 
-(no exported symbols)
+Name | Kind | Stability | Summary
+-----|------|-----------|--------
+CrawlError | type | Experimental | CrawlError wraps a stage-specific error with page context.
+CrawlError.Error | method |  | 
+CrawlError.Unwrap | method |  | 
+CrawlResult | type | Experimental | CrawlResult represents the result of processing a single URL through the pipeline.
+CrawlStats | type | Experimental | CrawlStats aggregates crawl progress metrics.
+ErrAssetDownloadFailed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrContentNotFound | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrFileWriteFailed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrHTMLParsingFailed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrHTTPError | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrInvalidMaxDepth | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrMarkdownConversion | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrMaxDepthExceeded | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrMaxPagesExceeded | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrMissingAllowedDomains | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrMissingStartURL | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrOutputDirCreation | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrTemplateExecution | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+ErrURLNotAllowed | var | Experimental | Domain-specific errors (copied for locality; keep values identical)
+OpenGraphMeta | type | Experimental | OpenGraphMeta captures a subset of Open Graph tags.
+Page | type | Stable | Page represents a single scraped web page with its content and metadata.
+PageMeta | type | Experimental | PageMeta contains structured metadata extracted from the page.
+RateLimitConfig | type | Experimental | RateLimitConfig defines adaptive per-domain rate limiting behavior.
+ScraperConfig | type | Experimental | ScraperConfig holds crawler configuration formerly defined in legacy pkg/models.
+ScraperConfig.Validate | method | Experimental | Validate performs basic sanity checks on the configuration.
 

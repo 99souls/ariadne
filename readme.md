@@ -149,3 +149,40 @@ See `LICENSE` (permissive). Open an issue for clarifications.
 ## Guiding Principles
 
 Useful > flashy. Explicit over magic. Small, well-documented surfaces > sprawling implicit behavior.
+
+## Developer Hooks (Optional DX Boost)
+
+This repo ships a `.pre-commit-config.yaml` that runs (fast):
+
+- Formatting / whitespace hygiene
+- `golangci-lint` across all modules
+- `go test -short` across modules
+- API report drift check (regenerates in a temp location and diffs)
+- `go mod tidy` drift detector (fails fast if a module file would change)
+
+Install the hooks (after installing `pre-commit`):
+
+```bash
+make hooks
+```
+
+Install `pre-commit` if missing:
+
+```bash
+pipx install pre-commit        # or: pip install --user pre-commit
+# macOS (brew): brew install pre-commit
+```
+
+Skip hooks for an emergency commit:
+
+```bash
+git commit -m "wip" --no-verify
+```
+
+Regenerate API report manually when you intend a surface change:
+
+```bash
+make api-report
+```
+
+Hooks intentionally use `-short` tests to keep latency low; CI still runs the full matrix including race + full tests.

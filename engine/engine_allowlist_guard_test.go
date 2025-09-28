@@ -21,6 +21,8 @@ func TestEngineExportAllowlist(t *testing.T) {
 	allowed := map[string]struct{}{
 		// Core types
 		"Engine": {}, "Config": {}, "ResourcesConfig": {}, "Snapshot": {}, "ResourceSnapshot": {}, "ResumeSnapshot": {},
+		// Rate limiter reduced public snapshot (Phase C5)
+		"LimiterSnapshot": {}, "LimiterDomainState": {},
 		// Construction & strategies placeholder
 		"New": {}, "NewWithStrategies": {}, "EngineStrategies": {},
 		// Consolidated strategy interfaces

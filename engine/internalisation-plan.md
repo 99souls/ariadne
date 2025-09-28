@@ -2,8 +2,8 @@
 
 A structured, low-risk sequence to reduce the public API surface of the `engine` module while preserving user value and enabling faster internal iteration.
 
-> Status: DRAFT (Phase5f branch)
-> Target window: Pre–`v0.2.0` (still <1.0 so breaking changes allowed, but we stage deprecations for trust)
+> Status: ACTIVE (hard-cut mode – no deprecation shims pre-1.0)
+> Target window: Pre–`v0.2.0` (pre-1.0 so breaking changes allowed; we prefer direct removal over staged deprecation to reduce maintenance drag)
 
 ---
 
@@ -11,7 +11,7 @@ A structured, low-risk sequence to reduce the public API surface of the `engine`
 
 1. Encapsulate implementation details (telemetry, ratelimit, resources, asset execution) behind the facade.
 2. Present a **small, coherent, documentable public surface**.
-3. Maintain a _graceful deprecation experience_ (transitional aliases + docs) even pre-1.0.
+3. Prefer immediate hard cuts (direct removal) pre-1.0; CHANGELOG entry is sufficient notice.
 4. Unlock future deep refactors (pipeline concurrency, alternative metrics backends, storage backends) without public breakage.
 
 ### Key Principles
@@ -19,7 +19,7 @@ A structured, low-risk sequence to reduce the public API surface of the `engine`
 - "Stable by default" – only types the embedder must configure or consume remain exported.
 - "Snapshots not internals" – expose aggregate, immutable views (health, limiter, resources) instead of live objects.
 - Phased small PRs (≤ ~400 LOC diff) to keep review focused and bisectable.
-- Each phase: (a) introduce new façade, (b) migrate internal call sites/tests, (c) add deprecation shims, (d) remove shims next phase.
+- Each phase: introduce/adjust façade (if needed), migrate internal call sites/tests, and remove old symbols in the same change (no deprecation shims).
 
 ---
 
@@ -40,15 +40,15 @@ A structured, low-risk sequence to reduce the public API surface of the `engine`
 
 ## Phase Overview
 
-| Phase        | Goal                                 | Deliverables                                                 | Removal / Deprecation Introduced                         |
-| ------------ | ------------------------------------ | ------------------------------------------------------------ | -------------------------------------------------------- |
-| 0            | Baseline & guard                     | API snapshot, allowlist script                               | None                                                     |
-| 1            | Health & Events wrap                 | `engine.Health`, `SubscribeEvents()`; internal bus/evaluator | Mark old `EventBus()` & health snapshot types deprecated |
-| 2            | Telemetry policy & metrics narrowing | New `TelemetryPolicy` subset; `MetricsHandler()` facade      | Deprecate direct provider access, tracing concrete types |
-| 3            | Rate limit & resources internal      | Move packages under `internal/`; expose snapshots only       | Deprecate imports `engine/ratelimit`, `engine/resources` |
-| 4            | Asset surface pruning                | Hide strategy internals; keep metrics snapshot + config      | Deprecate `AssetStrategy` (unless plugin roadmap locked) |
-| 5            | Cleanup & enforcement                | Remove shims; enforce allowlist CI                           | Remove deprecated symbols                                |
-| 6 (optional) | Extension plugin story               | Stable plugin interfaces if demanded                         | N/A                                                      |
+| Phase        | Goal                                 | Deliverables                                                 | Removal (Hard Cut)                                   |
+| ------------ | ------------------------------------ | ------------------------------------------------------------ | ---------------------------------------------------- |
+| 0            | Baseline & guard                     | API snapshot, allowlist script                               | None                                                 |
+| 1            | Health & Events wrap                 | `engine.Health`, `SubscribeEvents()`; internal bus/evaluator | Remove legacy `EventBus()` access when facade ready  |
+| 2            | Telemetry policy & metrics narrowing | New `TelemetryPolicy` subset; `MetricsHandler()` facade      | Remove direct provider/tracing concrete exports      |
+| 3            | Rate limit & resources internal      | Move packages under `internal/`; expose snapshots only       | Remove public impl packages                          |
+| 4            | Asset surface pruning                | Hide strategy internals; keep metrics snapshot + config      | Remove unneeded strategy concretes (maybe interface) |
+| 5            | Cleanup & enforcement                | Allowlist + CI enforcement                                   | Remove any residual legacy symbols                   |
+| 6 (optional) | Extension plugin story               | Stable plugin interfaces if demanded                         | N/A                                                  |
 
 ---
 
@@ -184,12 +184,90 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 [x] C1 Remove adapters/, resources/, strategies/ dir, runtime stub (branch: c1-prune-initial)
 * [x] C2: Internalized monitoring/ and business/* packages (moved to internal/, updated imports, allowlists unaffected except runtime import path, changelog pending entry) – reduced public surface; legacy adapter in telemetry now references internal monitoring
 * [x] C3: Remove `config/unified_config.go` (+ tests) – no external usage; shrink surface (branch: c3-slim-config-remove-unified)
-[] C4 Internalize crawler/, processor/, output/ implementations
-[] C5 Internalize ratelimit/
+* [x] C4 Internalize crawler/, processor/, output/ implementations (moved impl packages under internal/, deleted public impl tests, updated all import paths, regenerated API report; facade strategy interfaces only)
+[x] C5 Internalize ratelimit/ (implementation moved under `engine/internal/ratelimit`; legacy `engine/ratelimit` package stub REMOVED – physical deletion complete). Limiter snapshot now always non-nil: when limiter disabled an empty `LimiterSnapshot` struct is returned to simplify callers.
 [] C6 Internalize telemetry internals (events, tracing, policy)
 [] C7 Internalize configx/ (or delete)
 [] C8 Final allowlist + API report shrink commit
 ```
+
+---
+
+## 13. Progress Summary (Post-C4) & Positioning
+
+### Achievements So Far
+
+- C1: Removed legacy adapter & scaffolding (telemetry HTTP handlers, resources stub, strategies/ dir, runtime stub) – immediate surface shrink.
+- C2: Internalised monitoring & business implementation packages under `internal/`, eliminating broad implementation leakage while keeping tests green.
+- C3: Deleted unified config layer – simplified configuration story; `engine/config` now intentionally empty (guarded) preventing re-expansion.
+- C4: Internalised crawler, processor, output (all sinks & enhancement pipelines) implementations. Public surface now offers only interfaces (`Fetcher`, `Processor`, `OutputSink`, `AssetStrategy`) + facade types. API report updated; symbol count reduced (implementation packages disappeared).
+
+### Current Public Surface Snapshot (Delta Focus)
+
+Remaining larger implementation exposure (post C5): telemetry packages (events, metrics, tracing, policy) pending C6; config layering (`configx/`) still public (C7). Asset subsystem exports intentionally retained pending decision (hard-cut approach will remove directly if pruned).
+
+### C5 (Ratelimit Internalisation) – Completed
+
+Coupling review:
+
+- Engine facade depends on: `RateLimiter` interface, `LimiterSnapshot`, `AdaptiveRateLimiter` constructor (indirectly in `engine.New`).
+- Internal pipeline depends on interface + `ErrCircuitOpen`, `Permit`, `Feedback` types.
+- Tests rely on concrete `AdaptiveRateLimiter` (unit tests in `ratelimit/` package) and on `NewAdaptiveRateLimiter` inside integration tests.
+
+Design intent realised: external users require only snapshot visibility & optional configuration fields (already in `models.RateLimitConfig`). Direct construction & subtype awareness removed. Snapshot invariant strengthened (always non-nil) eliminating nil-guard boilerplate in consumers.
+
+### Minimal Public Set After C5 (Result)
+
+Outcome: Only `LimiterSnapshot` (plain data) remains externally reachable via `Engine.Snapshot()`. All construction, interfaces, circuit-breaker errors, and permit/feedback mechanics are internal. Future extension (custom limiter) would introduce a fresh narrow interface if justified.
+
+### Migration Mechanics (Executed)
+
+1. Moved `engine/ratelimit` → `engine/internal/ratelimit`.
+2. Updated `engine.New`, pipeline, and tests to internal path.
+3. Removed public interfaces/errors/permit+feedback types (hard cut, no aliases).
+4. Snapshot struct surfaced only via `Engine.Snapshot()`; pointer always populated (empty when disabled).
+5. Added tests asserting non-nil limiter snapshot invariant.
+6. CHANGELOG updated (C5 entry + invariant note). Legacy stub folder subsequently deleted (hard cut finalized).
+
+### Critical Positioning Assessment
+
+Strengths:
+
+- High test coverage around rate limiter logic (unit + integration) reduces regression risk during move.
+- Prior moves validated import path update process & API report governance.
+
+Weak Spots / Risks:
+
+- Public removal of `RateLimiter` interface may break any hypothetical downstream mocks (low probability pre‑1.0, but note). Mitigation: keep interface temporarily in root if uncertain.
+- Snapshot struct shape may still evolve; internalising now keeps agility but we should freeze field naming pre v0.2.0.
+- Telemetry still broad; delaying its internalisation until after ratelimit is fine, but large surface remains temporarily (accept risk for sequencing simplicity).
+
+Decision: Proceed with C5 adopting leanest approach (no public ratelimit package, possibly alias snapshot types) – improves future algorithm experimentation (different adaptation algorithms) with zero API churn.
+
+---
+
+## 14. Updated Risk Assessment (Incremental Delta for C5–C8)
+
+| Risk                                                                            | Phase | Likelihood           | Impact      | Mitigation                                                                                   |
+| ------------------------------------------------------------------------------- | ----- | -------------------- | ----------- | -------------------------------------------------------------------------------------------- |
+| Hidden external reliance on `engine/ratelimit` concrete types                   | C5    | Low                  | Low         | Pre‑1.0; document CHANGELOG; provide clear migration note (no replacement needed).           |
+| Losing ability to inject custom limiter post C5                                 | C5    | Medium (future need) | Medium      | Keep a private hook; if demand emerges add a stable `LimiterProvider` option later.          |
+| Aliasing vs redefining snapshot leads to accidental re-export of internal types | C5    | Low                  | Low         | Prefer redefining minimal snapshot struct over alias if uncertain; verify via API report.    |
+| Telemetry internalisation (events/tracing) touches many tests simultaneously    | C6    | Medium               | Medium/High | Stage: internalise packages one at a time (events → tracing → policy) with interim adapters. |
+| Config layering removal breaks undocumented internal tests                      | C7    | Low                  | Low         | Grep usages first; migrate tests to new config pattern before delete.                        |
+| Final allowlist tightening misses a straggler symbol                            | C8    | Low                  | Low         | Add temporary audit script diffing `go list -deps` exported sets vs API report.              |
+
+---
+
+## 15. (Archived) Original C5 Execution Plan
+
+Historical reference only – superseded by executed hard cut. Retained to document rationale and sequencing; no further action required.
+
+## 16. Go / No-Go Gate for C5
+
+All prerequisites satisfied (C1–C4 complete, plan updated, risks mapped). No blocking dependencies identified. Proceed with C5.
+
+---
 
 ### Branch / PR Workflow
 

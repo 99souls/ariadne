@@ -62,6 +62,12 @@ api-report:
 	$(GO) run ./tools/apireport -out API_REPORT.md
 	@echo "Done" >&2
 
+.PHONY: hooks
+hooks:
+	@command -v pre-commit >/dev/null 2>&1 || { echo "pre-commit not installed. Install with one of: pipx install pre-commit | pip install --user pre-commit | brew install pre-commit" >&2; exit 1; }
+	@pre-commit install --hook-type pre-commit --hook-type commit-msg
+	@echo "Installed git hooks (pre-commit + commit-msg)"
+
 # Assert zero occurrences of removed legacy path
 legacy-imports:
 	@echo "Verifying legacy path 'ariadne/packages/engine' is absent" >&2

@@ -15,6 +15,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -24,7 +26,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -35,7 +36,6 @@ var (
 		"github.com/99souls/ariadne/engine",
 		"github.com/99souls/ariadne/engine/config",
 		"github.com/99souls/ariadne/engine/models",
-		"github.com/99souls/ariadne/engine/ratelimit",
 	}
 )
 
@@ -50,9 +50,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "load packages: %v\n", err)
 		os.Exit(1)
 	}
-	var buf bytes.Buffer
-	buf.WriteString("# API Report\n\n")
-	buf.WriteString(fmt.Sprintf("Generated: %s\n\n", time.Now().Format(time.RFC3339)))
+	// Ensure deterministic ordering of packages to produce stable hash signature across environments.
+	sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].PkgPath < pkgs[j].PkgPath })
+	var body bytes.Buffer
+	// Build body (package sections) first so we can compute a stable signature.
 	for _, p := range pkgs {
 		if strings.Contains(p.PkgPath, "/internal/") { // safety
 			continue
@@ -65,9 +66,9 @@ func main() {
 			docPkg.Files[key] = f
 		}
 		d := doc.New(docPkg, p.PkgPath, 0)
-		buf.WriteString(fmt.Sprintf("## Package `%s`\n\n", trimModule(p.PkgPath)))
+		body.WriteString(fmt.Sprintf("## Package `%s`\n\n", trimModule(p.PkgPath)))
 		if d.Doc != "" {
-			buf.WriteString(strings.TrimSpace(d.Doc) + "\n\n")
+			body.WriteString(strings.TrimSpace(d.Doc) + "\n\n")
 		}
 		// Collect exported items
 		type entry struct{ name, kind, stability, summary string }
@@ -118,16 +119,23 @@ func main() {
 		}
 		sort.Slice(entries, func(i, j int) bool { return entries[i].name < entries[j].name })
 		if len(entries) == 0 {
-			buf.WriteString("(no exported symbols)\n\n")
+			body.WriteString("(no exported symbols)\n\n")
 			continue
 		}
-		buf.WriteString("Name | Kind | Stability | Summary\n")
-		buf.WriteString("-----|------|-----------|--------\n")
+		body.WriteString("Name | Kind | Stability | Summary\n")
+		body.WriteString("-----|------|-----------|--------\n")
 		for _, e := range entries {
-			buf.WriteString(fmt.Sprintf("%s | %s | %s | %s\n", e.name, e.kind, e.stability, escapePipes(e.summary)))
+			body.WriteString(fmt.Sprintf("%s | %s | %s | %s\n", e.name, e.kind, e.stability, escapePipes(e.summary)))
 		}
-		buf.WriteString("\n")
+		body.WriteString("\n")
 	}
+	hash := sha256.Sum256(body.Bytes())
+	var buf bytes.Buffer
+	buf.WriteString("# API Report\n\n")
+	buf.WriteString("Signature: ")
+	buf.WriteString(hex.EncodeToString(hash[:]))
+	buf.WriteString("\n\n")
+	buf.Write(body.Bytes())
 	if err := os.WriteFile(*outPath, buf.Bytes(), 0o644); err != nil {
 		fmt.Fprintf(os.Stderr, "write report: %v\n", err)
 		os.Exit(1)
