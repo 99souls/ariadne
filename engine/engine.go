@@ -36,14 +36,14 @@ type Snapshot struct {
 // Experimental: Field set may evolve (additive) pre-v1.0. Replaces direct access to
 // internal event bus over time (Phase C6).
 type TelemetryEvent struct {
-	Time     time.Time              `json:"time"`
-	Category string                 `json:"category"`
-	Type     string                 `json:"type"`
-	Severity string                 `json:"severity,omitempty"`
-	TraceID  string                 `json:"trace_id,omitempty"`
-	SpanID   string                 `json:"span_id,omitempty"`
-	Labels   map[string]string      `json:"labels,omitempty"`
-	Fields   map[string]any         `json:"fields,omitempty"`
+	Time     time.Time         `json:"time"`
+	Category string            `json:"category"`
+	Type     string            `json:"type"`
+	Severity string            `json:"severity,omitempty"`
+	TraceID  string            `json:"trace_id,omitempty"`
+	SpanID   string            `json:"span_id,omitempty"`
+	Labels   map[string]string `json:"labels,omitempty"`
+	Fields   map[string]any    `json:"fields,omitempty"`
 }
 
 // EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
@@ -54,11 +54,11 @@ type EventObserver func(ev TelemetryEvent)
 // (Prometheus vs OTEL, tracer sampling strategy, bus implementation) are internalized.
 // Experimental: Option set may change pre-v1.0; disabling all yields zero overhead paths.
 type TelemetryOptions struct {
-	EnableMetrics bool    `json:"enable_metrics"`
-	EnableTracing bool    `json:"enable_tracing"`
-	EnableEvents  bool    `json:"enable_events"`
-	EnableHealth  bool    `json:"enable_health"`
-	MetricsBackend string `json:"metrics_backend,omitempty"` // "prom" (default) | "otel" | "noop"
+	EnableMetrics   bool    `json:"enable_metrics"`
+	EnableTracing   bool    `json:"enable_tracing"`
+	EnableEvents    bool    `json:"enable_events"`
+	EnableHealth    bool    `json:"enable_health"`
+	MetricsBackend  string  `json:"metrics_backend,omitempty"`  // "prom" (default) | "otel" | "noop"
 	SamplingPercent float64 `json:"sampling_percent,omitempty"` // tracing root sample percentage if tracing enabled
 }
 
@@ -66,12 +66,12 @@ type TelemetryOptions struct {
 // Temporary helper; will be removed once Config is refactored to embed TelemetryOptions directly.
 func telemetryConfigFromLegacy(cfg Config) TelemetryOptions {
 	return TelemetryOptions{
-		EnableMetrics: cfg.MetricsEnabled,
-		EnableTracing: true,  // legacy behavior always created a tracer (adaptive) – keep until config evolves
-		EnableEvents:  true,  // legacy behavior always initialized bus
-		EnableHealth:  true,  // legacy behavior always initialized evaluator
-		MetricsBackend: cfg.MetricsBackend,
-		SamplingPercent: 5,   // mirrors previous default adaptive tracer percent (placeholder)
+		EnableMetrics:   cfg.MetricsEnabled,
+		EnableTracing:   true, // legacy behavior always created a tracer (adaptive) – keep until config evolves
+		EnableEvents:    true, // legacy behavior always initialized bus
+		EnableHealth:    true, // legacy behavior always initialized evaluator
+		MetricsBackend:  cfg.MetricsBackend,
+		SamplingPercent: 5, // mirrors previous default adaptive tracer percent (placeholder)
 	}
 }
 
@@ -297,35 +297,35 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 
 	// Phase 5E Iteration 2 / C6 start: initialize event bus only if events enabled
 	if telemOpts.EnableEvents {
-		 e.eventBus = telemEvents.NewBus(e.metricsProvider)
+		e.eventBus = telemEvents.NewBus(e.metricsProvider)
 	}
 
 	// Phase 5E Iteration 3 (C6 adaptation): tracer only if enabled
 	if telemOpts.EnableTracing {
-		 e.tracer = telemetrytracing.NewAdaptiveTracer(func() float64 {
-			 // If policy sampling set use it, else fallback to TelemetryOptions SamplingPercent
-			 pct := e.Policy().Tracing.SamplePercent
-			 if pct <= 0 {
-				 return telemOpts.SamplingPercent
-			 }
-			 return pct
-		 })
+		e.tracer = telemetrytracing.NewAdaptiveTracer(func() float64 {
+			// If policy sampling set use it, else fallback to TelemetryOptions SamplingPercent
+			pct := e.Policy().Tracing.SamplePercent
+			if pct <= 0 {
+				return telemOpts.SamplingPercent
+			}
+			return pct
+		})
 	}
 
 	// Phase 5E Iteration 4 (C6 adaptation): health only if enabled
 	initialPolicy := telempolicy.Default()
 	e.telemetryPolicy.Store(&initialPolicy)
 	if telemOpts.EnableHealth {
-		 limiterProbe, resourceProbe, pipelineProbe := e.healthProbes()
-		 e.healthEval = telemetryhealth.NewEvaluator(initialPolicy.Health.ProbeTTL, limiterProbe, resourceProbe, pipelineProbe)
-		 // Create health status gauge if metrics enabled
-		 if e.metricsProvider != nil {
-			 g := e.metricsProvider.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "health", Name: "status", Help: "Engine overall health status (1=healthy,0.5=degraded,0=unhealthy,-1=unknown)"}})
-			 if g != nil {
-				 e.healthStatusGauge = g
-				 g.Set(-1) // initialize unknown
-			 }
-		 }
+		limiterProbe, resourceProbe, pipelineProbe := e.healthProbes()
+		e.healthEval = telemetryhealth.NewEvaluator(initialPolicy.Health.ProbeTTL, limiterProbe, resourceProbe, pipelineProbe)
+		// Create health status gauge if metrics enabled
+		if e.metricsProvider != nil {
+			g := e.metricsProvider.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "health", Name: "status", Help: "Engine overall health status (1=healthy,0.5=degraded,0=unhealthy,-1=unknown)"}})
+			if g != nil {
+				e.healthStatusGauge = g
+				g.Set(-1) // initialize unknown
+			}
+		}
 	}
 
 	// Phase 5D Iteration 5: initialize asset strategy if enabled
