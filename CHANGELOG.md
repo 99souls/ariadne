@@ -47,6 +47,8 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Internalized public crawler, processor, and output concrete implementation packages (`engine/crawler`, `engine/processor`, `engine/output` including sinks, assembly, enhancement, html, markdown, stdout) under `engine/internal/` (C4 pruning). Removed their public tests; updated imports; regenerated API report. Facade unchanged (interfaces `Fetcher`, `Processor`, `OutputSink` remain). Pre-v1 breaking change acceptable; all tests green.
 - engine: Internalized adaptive rate limiter implementation (`engine/ratelimit`) under `engine/internal/ratelimit` (C5 pruning). Removed public `RateLimiter` interface & concrete types; facade now emits reduced diagnostic snapshot (`engine.LimiterSnapshot`) only. Pre-v1 breaking change acceptable.
 - telemetry: Removed public `engine/telemetry/policy` package (C6 step 2b); replaced by root re-exports and facade methods. Pre-v1 breaking change acceptable.
+  - governance: Dropped automated API report drift enforcement (pre-commit + CI) in favor of export allowlist guard tests; manual `make api-report` remains available for ad-hoc inspection.
+- config: Deleted experimental `engine/configx` layered/dynamic configuration subsystem (C7 pruning). Rationale: avoid premature complexity; only static `engine.Config` supported pre-1.0 (see md/configx-internalization-analysis.md). Git history preserves implementation for future reconsideration.
 
 ### Deprecated
 

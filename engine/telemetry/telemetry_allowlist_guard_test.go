@@ -78,10 +78,11 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 		sub := filepath.Base(pkgPath)
 		allowed, ok := allow[sub]
 		if !ok {
-			// Skip legacy policy directory regardless of contents (internalized in C6 step 2b); slated for physical removal.
-			if sub == "policy" { continue }
+			if sub == "policy" { // TEMP: directory pending physical deletion
+				continue
+			}
 			// Force explicit decision for new packages.
-															t.Fatalf("unexpected telemetry subpackage: %s (add to allowlist or internalize)", sub)
+			t.Fatalf("unexpected telemetry subpackage: %s (add to allowlist or internalize)", sub)
 		}
 		fset := token.NewFileSet()
 		pkgs, err := parser.ParseDir(fset, pkgPath, func(fi os.FileInfo) bool { return strings.HasSuffix(fi.Name(), ".go") }, 0)
