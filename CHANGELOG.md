@@ -49,17 +49,41 @@ All notable changes to this project will be documented in this file. The format 
 - telemetry: Removed public `engine/telemetry/policy` package (C6 step 2b); replaced by root re-exports and facade methods. Pre-v1 breaking change acceptable.
   - governance: Dropped automated API report drift enforcement (pre-commit + CI) in favor of export allowlist guard tests; manual `make api-report` remains available for ad-hoc inspection.
 - config: Deleted experimental `engine/configx` layered/dynamic configuration subsystem (C7 pruning). Rationale: avoid premature complexity; only static `engine.Config` supported pre-1.0 (see md/configx-internalization-analysis.md). Git history preserves implementation for future reconsideration.
+- telemetry: Internalized and removed public `engine/telemetry/events` package (C8/C9). External consumers now observe telemetry via `Engine.RegisterEventObserver` and `TelemetryEvent` facade only. Event bus implementation is fully internal.
+- telemetry: Completed removal of public tracing implementation (`engine/telemetry/tracing`) finalizing tracing internalization (C8).
 
-### Deprecated
+### BREAKING (Telemetry Consolidation)
 
-- telemetry/metrics: Deprecated `BusinessCollectorAdapter` and `NewBusinessCollectorAdapter`; transitional shim scheduled for removal or internalization in a future pruning wave (see `md/telemetry-boundary.md`).
+The public telemetry surface has been hard-cut and replaced by a narrow facade:
 
-### Changed
+Removed:
 
-- telemetryhttp: Handlers now accept `HealthHandlerOptions{Source: HealthSource}` instead of a concrete `*engine.Engine` field. The `HealthSource` interface requires only `HealthSnapshot(context.Context)`, enabling simpler test doubles and eliminating the need for a mutable public hook on `Engine`.
-- engine: Added stability annotations (Experimental / Stable) to `Config` fields, `Engine`, snapshots, telemetry methods, and asset subsystem exports (Wave 3).
-- engine: Introduced export allowlist guard test (`engine_allowlist_guard_test.go`) locking current curated root package surface (Wave 3).
-- strategies: Annotated entire package as Experimental and added export allowlist guard (`strategies_allowlist_test.go`).
+- `engine/telemetry/metrics` (all interfaces, constructors, option structs, adapters)
+- `engine/telemetry/events` (event bus types & constants)
+- `engine/telemetry/tracing` (direct tracer construction/export)
+- `engine/telemetry/policy` (replaced by root re-exported types + facade methods)
+
+Replacement Facade & Configuration:
+
+- Backend selection & enablement now via `engine.Config{ MetricsEnabled, MetricsBackend }` (values: prom|otel|noop; empty defaults to prom when enabled).
+- Metrics exposition via `Engine.MetricsHandler()` (non-nil only when metrics enabled and Prometheus backend selected; OTEL/noop backends return nil handler by design).
+- Event observation via `Engine.RegisterEventObserver(func(TelemetryEvent))` receiving bridged `TelemetryEvent` values (currently health change events; future categories may be added behind the same facade).
+- Runtime policy updates: `Engine.UpdateTelemetryPolicy()` (with `TelemetryPolicy` and nested `HealthPolicy`, `TracingPolicy`, `EventBusPolicy` re-exported for configuration snapshots & mutation).
+
+Migration Guide:
+
+- Replace direct provider construction (`metrics.NewPrometheusProvider()`, `metrics.NewOTelProvider()`, etc.) with `Config{ MetricsEnabled: true, MetricsBackend: "prom"|"otel" }`.
+- Remove any `EventBus()` / `Tracer()` usage; register observers instead and rely on future span helper APIs (to be added if needed pre v0.2.0).
+- Expose HTTP metrics endpoint only if `Engine.MetricsHandler()` returns non-nil; unchanged health endpoint wiring.
+
+Rationale: Enables internal evolution of metrics/event/tracing implementations and policy logic without further public churn; reduces accidental dependency surface and simplifies operator story.
+
+### Changed (Post Telemetry Consolidation)
+
+- telemetryhttp: Handlers now accept `HealthHandlerOptions{Source: HealthSource}` instead of concrete engine pointer; simplifies tests and decouples facade.
+- engine: Stability annotations applied to telemetry-related facade symbols (`TelemetryEvent`, `RegisterEventObserver`, `MetricsHandler`, policy re-exports).
+- engine: Export allowlist guard tests updated to enforce removal of public telemetry implementation packages.
+- strategies: Annotated entire package as Experimental with allowlist guard.
 - crawler: Added Experimental annotations to `FetchResult`, `FetchPolicy`, and `FetcherStats`.
 
 ### Added

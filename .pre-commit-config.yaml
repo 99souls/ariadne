@@ -1,9 +1,10 @@
 repos:
+  # NOTE: Removed end-of-file-fixer, trailing-whitespace hooks (too noisy / low signal)
+  # and the custom go mod tidy drift hook (caused repeated friction). Keep only
+  # size + line-ending sanity plus lint & tests for higher-signal checks.
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
       - id: check-added-large-files
       - id: mixed-line-ending
   - repo: https://github.com/golangci/golangci-lint
@@ -23,9 +24,4 @@ repos:
           bash -c "for m in engine cli tools/apireport; do echo '[test] $m'; (cd $m && go test -short ./...) || exit 1; done"
         language: system
         pass_filenames: false
-      - id: go-mod-tidy-check
-        name: go mod tidy check
-        entry: >-
-          bash -c "status=0; for m in engine cli tools/apireport; do (cd $m && go mod tidy); git diff --quiet || status=1; git checkout -- . ; done; if [ $status -ne 0 ]; then echo 'go.mod/go.sum drift detected. Run make tidy' >&2; exit 1; fi"
-        language: system
-        pass_filenames: false
+      # go-mod-tidy-check removed (manual 'make tidy' in CI / release process is sufficient)

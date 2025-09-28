@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/99souls/ariadne/engine"
-	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
 
 // simpleJSONConfig represents a minimal subset of engine.Config loadable from a JSON file.
@@ -151,34 +150,18 @@ func main() {
 		log.Fatalf("start engine: %v", err)
 	}
 
-	// Metrics endpoint adapter (Wave 4 W4-05): prefer provider-native handler when available.
+	// Metrics endpoint: rely on Engine.MetricsHandler() facade (Prometheus only currently).
 	if metricsAddr != "" && cfg.MetricsEnabled {
 		mux := http.NewServeMux()
-
-		// Local interface to detect handler-capable providers (e.g., PrometheusProvider).
-		type handlerProvider interface{ MetricsHandler() http.Handler }
-		if mp := eng.MetricsProvider(); mp != nil {
-			// Register a simple build info gauge to guarantee at least one exposed metric.
-			if g := mp.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "build", Name: "info", Help: "Build info metric (static value 1)"}}); g != nil {
-				g.Set(1)
-			}
-			if hp, ok := mp.(handlerProvider); ok && hp.MetricsHandler() != nil {
-				mux.Handle("/metrics", hp.MetricsHandler())
-			} else {
-				// Fallback minimal exposition so /metrics is never 404 when flag supplied.
-				mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
-					_, _ = w.Write([]byte("# HELP ariadne_metrics_placeholder Placeholder metrics because provider has no handler\n# TYPE ariadne_metrics_placeholder gauge\nariadne_metrics_placeholder 1\n"))
-				})
-			}
+		h := eng.MetricsHandler()
+		if h != nil {
+			mux.Handle("/metrics", h)
 		} else {
-			// Metrics explicitly enabled but provider nil (shouldn't happen) – still serve stub.
 			mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte("# HELP ariadne_metrics_disabled Metrics enabled flag but provider missing\n# TYPE ariadne_metrics_disabled gauge\nariadne_metrics_disabled 1\n"))
+				_, _ = w.Write([]byte("# HELP ariadne_metrics_placeholder Placeholder metrics (no handler exposed)\n# TYPE ariadne_metrics_placeholder gauge\nariadne_metrics_placeholder 1\n"))
 			})
 		}
-
 		go func() {
 			srv := &http.Server{Addr: metricsAddr, Handler: mux}
 			<-ctx.Done()
