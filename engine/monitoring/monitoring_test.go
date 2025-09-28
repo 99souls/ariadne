@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/99souls/ariadne/engine/business/policies"
-	"github.com/99souls/ariadne/engine/strategies"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -516,48 +514,12 @@ func TestMonitoringIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create sample business policies
-		businessPolicies := &policies.BusinessPolicies{
-			GlobalPolicy: &policies.GlobalBusinessPolicy{
-				MaxConcurrency: 10,
-				Timeout:        30 * time.Second,
-				RetryPolicy:    &policies.RetryPolicy{MaxRetries: 3, InitialDelay: 1000 * time.Millisecond, BackoffFactor: 2.0},
-				LoggingLevel:   "info",
-			},
-			CrawlingPolicy: &policies.CrawlingBusinessPolicy{
-				SiteRules: map[string]*policies.SitePolicy{
-					"news.com": {
-						AllowedDomains: []string{"news.com"},
-						MaxDepth:       3,
-						Delay:          100 * time.Millisecond,
-					},
-				},
-			},
-			ProcessingPolicy: &policies.ProcessingBusinessPolicy{
-				QualityThreshold: 0.8,
-				ProcessingSteps:  []string{"extract", "clean", "validate"},
-			},
-		}
-
-		// Create composed strategies
-		composer := strategies.NewStrategyComposer()
-		composedStrategies, err := composer.ComposeStrategies(businessPolicies)
-		require.NoError(t, err)
-
+		// Composed strategies removed; retain a basic invocation of the generic helper
 		ctx := context.Background()
-
-		// Monitor composed strategy execution
-		err = monitoring.MonitorComposedStrategyExecution(ctx, composedStrategies, func() (int, int, error) {
-			time.Sleep(25 * time.Millisecond)
-			return 50, 47, nil // 50 items, 47 successful
+		err = monitoring.MonitorComposedStrategyExecution(ctx, func() (int, int, error) {
+			return 10, 9, nil
 		})
 		assert.NoError(t, err)
-
-		// Verify metrics were collected
-		metrics := monitoring.GetAggregatedMetrics()
-		assert.NotNil(t, metrics)
-
-		// Should have strategy execution metrics
-		assert.NotEmpty(t, metrics.StrategyMetrics)
 	})
 }
 
