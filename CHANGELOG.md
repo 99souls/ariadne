@@ -8,16 +8,19 @@ All notable changes to this project will be documented in this file. The format 
 
 - engine: Introduced `strategies.go` consolidating `Fetcher`, `Processor`, `OutputSink`, and `AssetStrategy` interfaces with Experimental annotations (Wave 3).
 - config: Added comprehensive Experimental annotations across `engine/config` (unified + runtime config, hot reload, versioning, AB testing) plus export allowlist guard test locking curated surface (Wave 3).
+- engine: Added `engine_resources_snapshot_test.go` guard test ensuring `ResourceSnapshot` present only when resources subsystem configured (Wave 4 W4-04 follow-up).
 
 ### Changed
 
 - engine: Marked `OutputSink` and `AssetStrategy` explicitly Experimental in pruning list (consolidated in strategies.go) (Wave 3).
+- engine: Internalized former public resource manager implementation under `engine/internal/resources`; introduced public facade `ResourcesConfig` and preserved snapshot-only exposure (`ResourceSnapshot`) (Wave 4 W4-04).
 
 ### Removed
 
 - engine: Removed test-only method `(*Engine).HealthEvaluatorForTest` (Wave 3 API pruning). Tests should supply a `HealthSource` stub to HTTP health/readiness handlers instead.
 - engine: Removed exported functional option type `Option`; constructor now uses only `Config` (Wave 3 API pruning).
 - crawler: Removed deprecated alias `FetchedPage` in favor of `FetchResult` (Wave 3 pruning – breaking pre-v1 acceptable).
+- engine: Deprecated & stubbed former `engine/resources` package (now empty, enforced by allowlist guard) after internalization (Wave 4 W4-04).
 
 ### Changed
 

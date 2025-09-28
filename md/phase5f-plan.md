@@ -512,7 +512,7 @@ Planned Tasks (Wave 4 Draft List):
 | W4-01 | Create CLI module command scaffold (`ariadne crawl`) | CLI | Basic flags: --seeds, --config, --metrics, --health, --snapshot-interval |
 | W4-02 | Implement graceful shutdown & periodic snapshot emission | CLI | Use context + OS signal trap |
 | W4-03 | Introduce `internal/runtime` relocation for config runtime/A/B test system | API | Replace direct exports with facade accessors or remove if unused |
-| W4-04 | Evaluate internalization or slimming of `resources.Manager` | API | Possibly expose only snapshot via engine facade |
+| W4-04 | Internalize `resources.Manager` implementation (DONE) | API | Moved to `engine/internal/resources`, added `ResourcesConfig` facade + snapshot-only exposure, guard test added |
 | W4-05 | Telemetry adapter review & minimal stable interface definition | Telemetry | Mark only required provider accessor stable/experimental |
 | W4-06 | Add CLI integration test with in-memory HTTP fixture | Test | Ensures end-to-end path works |
 | W4-07 | Extend allowlist guards to telemetry packages (if kept public) | Governance | Prevent drift |
