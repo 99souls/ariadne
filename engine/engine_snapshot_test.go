@@ -11,7 +11,7 @@ func TestSnapshotLimiterPresence(t *testing.T) {
 	// Start engine (which constructs internal pipeline and limiter)
 	e, err := New(cfg)
 	if err != nil { t.Fatalf("new engine: %v", err) }
-	defer e.Stop()
+	defer func() { _ = e.Stop() }()
 
 	snap := e.Snapshot()
 	if snap.Limiter == nil { t.Fatalf("expected limiter snapshot present") }
@@ -23,7 +23,7 @@ func TestSnapshotUptimeMonotonic(t *testing.T) {
 	cfg := Config{}
 	e, err := New(cfg)
 	if err != nil { t.Fatalf("new engine: %v", err) }
-	defer e.Stop()
+	defer func() { _ = e.Stop() }()
 
 	s1 := e.Snapshot().Uptime
 	time.Sleep(10 * time.Millisecond)
