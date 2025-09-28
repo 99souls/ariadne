@@ -59,136 +59,126 @@ A structured, low-risk sequence to reduce the public API surface of the `engine`
 **Tasks**:
 
 - Generate `API_REPORT.md` (go/packages + AST walker).
-- Create `internal/api_allowlist.txt` (one symbol per line).
-- Add a `make api-check` target failing if new unexpected exports appear.
+# Engine Internalization Decision Record
 
-**Success Metrics**:
+Status: ACTIVE – decisive contraction of public surface (no deprecation staging; breaking changes acceptable pre‑1.0).
 
-- Report committed & green in CI.
-- Subsequent phases show net _reduction_ in exported symbol count.
+Audience: Core maintainers. Goal: Minimise exported API to what embedders must use. Everything else becomes internal implementation detail or is removed.
 
 ---
 
-## Phase 1 – Health & Events Encapsulation
+## 1. Objective (Single Sentence)
+Expose only a slim lifecycle + configuration + snapshot + extension point interface set; internalize or remove all implementation, orchestration, telemetry plumbing, advanced config, and business/monitoring layers.
 
-**Motivation**: Current `EventBus()` + `telemetryhealth.Snapshot` leak internal caching, categories, and per-subscriber buffering semantics.
+## 2. Non‑Goals
+* Backwards compatibility shims.
+* Transitional stubs for removed packages (`resources`, `runtime`, etc.).
+* External plugin story (can be introduced later on top of a smaller surface).
 
-**Public Additions**:
+## 3. Target Public Surface (Post-Prune)
+Top-level package `engine`:
+* Types: `Engine`, `Config`, `EngineSnapshot`, `LimiterSnapshot` (trimmed), strategy interfaces: `Fetcher`, `Processor`, `OutputSink`, `AssetStrategy` (OPTIONAL – remove if no near-term plugin need).  
+* Functions: `New(Config) (*Engine, error)`, `SelectMetricsProvider(...)` (may remain if genuinely useful), `Version()` (if present).  
+* Methods: `Start`, `Stop`, `Snapshot`, `HealthSnapshot` (or `Health`), `Policy` (if still required), minimal telemetry policy update if retained.  
+* Errors: only canonical sentinel errors actually used by callers (re-evaluate).  
 
-```go
-// engine/health.go (new)
-type Health struct {
-    Overall string
-    Generated time.Time
-    Probes []HealthProbe // optional, stable subset
-}
+Additional packages retained:
+* `engine/models`: Pure data structures (no behavioral factories beyond constructors).  
+* `engine/config`: Slim `Config` only; remove unified / business / layered constructs.  
 
-type HealthProbe struct { Name, Status, Detail string }
+Everything else: internal or removed.
 
-func (e *Engine) Health(ctx context.Context) Health
+## 4. Package Action Matrix
 
-// Events
-type Event struct { Time time.Time; Category, Type, Severity string; Fields map[string]any }
-func (e *Engine) SubscribeEvents(buffer int) (<-chan Event, func(), error)
+| Package / Path | Action | Rationale | Notes |
+|----------------|--------|-----------|-------|
+| `adapters/telemetryhttp` | Remove (moved logic to CLI) | HTTP exposure belongs outside core | Delete tests; CLI already hosts handlers. |
+| `resources/` (stub) | Delete | Dead namespace; snapshot exposure is via Engine | Remove allowlist guard tied to it. |
+| `monitoring/` | Delete OR internalize whole file | Monolithic mixed concerns; superseded by CLI adapter + snapshots | Prefer delete; reintroduce as external module if ever needed. |
+| `business/*` | Internalize or delete | Historical layering; not part of minimal embed surface | If unused in tests, drop entirely. |
+| `strategies/` dir | Delete (interfaces already in `strategies.go`) | Redundant; reduces cognitive load | Adjust tests to import root. |
+| `config/unified_config.go` | Remove | Bloated experimental config; keep only lean `Config` struct | Inline only fields actually consumed by `New`. |
+| `config/runtime.go` (stub) | Delete | Vestigial placeholder | Drop commentary; record decision here. |
+| `configx/` | Internalize OR extract to `x/configlayers` later | Advanced layering & simulation not core | Move to `internal/configlayers` for now. |
+| `crawler/` impl | Internalize | Implementation detail; expose `Fetcher` interface only | Provide default fetcher internally. |
+| `processor/` impl | Internalize | Same argument as crawler | Keep interface. |
+| `output/` concrete sinks | Internalize all but maybe `stdout` example | Trim surface; encourage custom implementations via interface | Option: internalize `stdout` too and show doc snippet instead. |
+| `ratelimit/` | Internalize | Allows algorithm redesign without API churn | Export only snapshot struct from root. |
+| `telemetry/*` (events, tracing, policy internals) | Internalize | Users shouldn't assemble telemetry primitives | Keep only provider selection or even internalize that and drive via Config enum. |
+| `engine/SelectMetricsProvider` | Keep or internalize | Keep only if real external extension; else move to internal and expose simple enum | Decision: KEEP (for now) – documented as provisional. |
+
+## 5. Rationale Highlights (Critical Lens)
+* Current breadth (monitoring, business, layered config) dilutes Engine’s mental model and increases accidental coupling risk.
+* Implementation packages (crawler, processor, output, ratelimit) leak design choices that we may want to rework (parallelism model, retry semantics, queues) – keeping them public ossifies them prematurely.
+* Unified / layered config encourages indirect configuration paths; a narrow `Config` struct keeps configuration explicit and reviewable.
+* Telemetry handler exposure inside core would force HTTP and Prometheus dependencies on embedders who may not need them – adapter pattern validated by moving logic to CLI.
+* Removing stubs eliminates “placeholder gravity” where future contributors might resurrect abandoned patterns.
+
+## 6. Execution Order (Small, Focused Commits)
+1. Remove: `adapters/telemetryhttp`, `resources/`, `strategies/` dir (redundant), delete `config/runtime.go` stub.  
+2. Internalize: `monitoring/` (or delete if zero references), `business/*`.  
+3. Slim config: Copy required fields from `UnifiedBusinessConfig` into `Config`; update `engine.New`; remove `unified_config.go` + tests relying on its internals.  
+4. Internalize implementations: move `crawler/`, `processor/`, `output/` (all concrete sinks) under `internal/`; adjust imports and tests.  
+5. Ratelimit move: `ratelimit/` → `internal/ratelimit`; re-export snapshot struct from root if still consumed.  
+6. Telemetry slimming: move events, tracing, policy, advanced metrics constructs internal; keep `SelectMetricsProvider` only (or replace with enum switch if simplified).  
+7. Internalize / relocate `configx/` → `internal/configlayers` (or delete if unused by `engine.New`).  
+8. Final pass: purge any now-unused snapshots / types; regenerate API report; tighten allowlist tests.  
+
+Each step: run engine + cli tests, regenerate API report, update CHANGELOG (Added: none / Removed: list), adjust allowlist guard.
+
+## 7. Immediate Next Commit (Scope Definition)
+Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
+* Delete `engine/adapters/telemetryhttp/`.
+* Delete `engine/resources/`.
+* Delete `engine/strategies/` directory (keep `strategies.go`).
+* Delete `engine/config/runtime.go`.
+* Update allowlist guard tests + API report.
+
+## 8. Risk Assessment (Post-Decision)
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Hidden test reliance on removed packages | Failing build | Move instead of delete first; grep for imports before hard delete. |
+| Over-pruning removes needed extension point | Slows future plugin story | Strategy interfaces retained (root) until explicit removal decision. |
+| Telemetry provider customization need emerges | Requires re-export | Document internal package structure to allow selective future exposure. |
+| Config slimming misses a field used indirectly | Behavior regression | Add focused test capturing all current `Config` usages before refactor. |
+
+## 9. Success Criteria
+* Exported symbol count reduced significantly (goal: >30% reduction vs current report).
+* Public packages <= 3 (`engine`, `engine/models`, `engine/config`).
+* No exported concrete implementations of internal behaviors (crawler, processor, sinks, ratelimit logic, monitoring aggregator).
+* All telemetry wiring outside engine except provider selection.
+* Tests green; API report diff matches intentional removal set.
+
+## 10. Divergences From Previous Draft Plan
+| Old Plan Element | New Decision |
+|------------------|--------------|
+| Staged deprecations | Immediate removal (pre‑1.0) |
+| Health/Events new façade types first | Retain existing `HealthSnapshot` short-term; rename later only if value proven |
+| Monitoring evolution | Drop entirely (not core) |
+| Business metrics layering | Removed; reintroduce externally if revived |
+
+## 11. Open Items (Explicitly Deferred)
+* Whether to drop `AssetStrategy` interface (decide after internalization wave 3; investigate real external demand).
+* Potential consolidation of snapshots into a single composite struct if it simplifies surface further.
+* Converting `SelectMetricsProvider` to an unexported helper plus a simple config enum mapping.
+
+---
+
+## 12. Quick Reference – Action Checklist
+```
+[] C1 Remove adapters/, resources/, strategies/ dir, runtime stub
+[] C2 Internalize or delete monitoring/ + business/
+[] C3 Replace UnifiedBusinessConfig with lean Config; delete unified_config.go
+[] C4 Internalize crawler/, processor/, output/ implementations
+[] C5 Internalize ratelimit/
+[] C6 Internalize telemetry internals (events, tracing, policy)
+[] C7 Internalize configx/ (or delete)
+[] C8 Final allowlist + API report shrink commit
 ```
 
-**Internal Moves**:
-
-- Move `telemetry/health` ⇒ `internal/telemetry/health` (keep evaluator logic).
-- Move `telemetry/events` ⇒ `internal/telemetry/events`.
-
-**Deprecations**:
-
-- `EventBus()` (comment: `// Deprecated: use SubscribeEvents`).
-- `HealthSnapshot()` (keep temporarily, wrap new internal evaluator, mark deprecated).
-
-**Tests**:
-
-- Update existing tests to use new methods; keep one legacy test verifying deprecated path returns same semantics.
-
-**Success Metrics**:
-
-- No external imports of `telemetry/health` or `telemetry/events` in repository root tests (grep).
-- Export diff: - (bus interfaces, evaluator types) + (small facade types) net negative symbol count.
-
 ---
 
-## Phase 2 – Telemetry Policy & Metrics Simplification
-
-**Motivation**: Avoid locking internal sampling knobs and provider interfaces.
-
-**Public Changes**:
-
-```go
-type TelemetryPolicy struct {
-    Health struct { ProbeTTL time.Duration; PipelineMinSamples int; DegradedRatio, UnhealthyRatio float64 }
-    Tracing struct { SamplePercent float64 }
-}
-func (e *Engine) UpdateTelemetryPolicy(p *TelemetryPolicy)
-```
-
-(Internally map to richer struct.)
-
-Add:
-
-```go
-func (e *Engine) MetricsHandler() http.Handler // returns noop if disabled
-```
-
-**Internalize** `telemetry/metrics` & `telemetry/tracing` packages; keep only opaque interfaces inside engine.
-
-**Deprecations**:
-
-- `MetricsProvider()` (comment: `// Deprecated: will be removed; use MetricsHandler`).
-- Direct imports of `telemetry/policy` (add alias type for one release):
-  ```go
-  // Deprecated: use engine.TelemetryPolicy
-  type TelemetryPolicy = policy.TelemetryPolicy
-  ```
-
-**Success Metrics**:
-
-- Public symbol count reduced; no external code needs metrics interfaces directly.
-
----
-
-## Phase 3 – Rate Limiter & Resource Manager Internalization
-
-**Motivation**: Allow redesign (e.g., sharded vs adaptive algorithms, new persistence layer) without breaking consumers.
-
-**Actions**:
-
-- Move `ratelimit` → `internal/ratelimit`; `resources` → `internal/resources`.
-- Introduce façade snapshots embedded in engine `Snapshot` (already largely present):
-  ```go
-  type LimiterSnapshot struct { TotalRequests, Throttled, Denied, OpenCircuits int64 }
-  ```
-  (Trim domain-level details or cap them.)
-- Remove direct construction from user: only via `Config.RateLimit`/`Config.Resources`.
-
-**Deprecations**:
-
-- Type aliases for one release; then remove packages.
-
-**Success Metrics**:
-
-- Grep for `"/ratelimit"` & `"/resources"` yields zero outside engine after final removal.
-- Snapshot stays backward compatible (additive fields only).
-
----
-
-## Phase 4 – Asset Strategy Surface Pruning
-
-**Decision Gate**: Do we foresee third-party custom asset strategies in the next 2 releases?
-
-| Path                           | Action                                                                                                                                   |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| No external plugins short-term | Make strategy + related types internal. Keep `AssetPolicy` + `AssetMetricsSnapshot()` only.                                              |
-| Yes (plugin story)             | Keep `AssetStrategy` but shrink: only interface + minimal discovery/execution structs; move implementation to internal; events internal. |
-
-**Default Plan (assume internalization)**:
-
-- Move all asset types except: `AssetPolicy`, `AssetMetricsSnapshot` to `internal/assets`.
+This document is authoritative until superseded; update it in the same PRs that materially change the sequence or scope.
 - Provide engine-level method: `EnableAssets(policy AssetPolicy)` (or stays config-based).
 - Translate asset events into summary counters only; events bus category stays (optional).
 
