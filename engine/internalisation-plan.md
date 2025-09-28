@@ -181,7 +181,7 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 ## 12. Quick Reference – Action Checklist
 
 ```
-[] C1 Remove adapters/, resources/, strategies/ dir, runtime stub
+[x] C1 Remove adapters/, resources/, strategies/ dir, runtime stub (branch: c1-prune-initial)
 [] C2 Internalize or delete monitoring/ + business/
 [] C3 Replace UnifiedBusinessConfig with lean Config; delete unified_config.go
 [] C4 Internalize crawler/, processor/, output/ implementations
@@ -190,6 +190,20 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 [] C7 Internalize configx/ (or delete)
 [] C8 Final allowlist + API report shrink commit
 ```
+
+### Branch / PR Workflow
+
+For each checklist item:
+
+1. Create branch off `main` named `c<N>-<short-description>`.
+2. Apply scoped changes (single concern; keep diff lean).
+3. Run module tests: `go test ./engine/... ./cli/...`.
+4. Regenerate API report (Makefile target) and include diff in PR description.
+5. Update this plan (mark item `[~]` while in progress, `[x]` when merged).
+6. Open PR with title: `prune(c<N>): <summary>`; label `api-surface`.
+7. After merge, follow with a CHANGELOG update PR if not part of the same patch.
+
+Reject combining unrelated internalizations in one PR—enables clean bisect and revert.
 
 ---
 
