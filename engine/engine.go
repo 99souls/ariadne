@@ -16,9 +16,9 @@ import (
 	telemEvents "github.com/99souls/ariadne/engine/internal/telemetry/events"
 	inttelempolicy "github.com/99souls/ariadne/engine/internal/telemetry/policy"
 	telemetrytracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
-	engmodels "github.com/99souls/ariadne/engine/models"
 	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
+	engmodels "github.com/99souls/ariadne/engine/models"
 )
 
 // Snapshot is a unified view of engine state.
@@ -36,31 +36,30 @@ type Snapshot struct {
 // Experimental: Field set may evolve (additive) pre-v1.0. Replaces direct access to
 // internal event bus over time (Phase C6).
 type TelemetryEvent struct {
-	Time     time.Time         `json:"time"`
-	Category string            `json:"category"`
-	Type     string            `json:"type"`
-	Severity string            `json:"severity,omitempty"`
-	TraceID  string            `json:"trace_id,omitempty"`
-	SpanID   string            `json:"span_id,omitempty"`
-	Labels   map[string]string `json:"labels,omitempty"`
-	Fields   map[string]any    `json:"fields,omitempty"`
+	Time     time.Time              `json:"time"`
+	Category string                 `json:"category"`
+	Type     string                 `json:"type"`
+	Severity string                 `json:"severity,omitempty"`
+	TraceID  string                 `json:"trace_id,omitempty"`
+	SpanID   string                 `json:"span_id,omitempty"`
+	Labels   map[string]string      `json:"labels,omitempty"`
+	Fields   map[string]interface{} `json:"fields,omitempty"`
 }
 
-// EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
-// should be deferred to goroutines. Registered observers are invoked synchronously.
-type EventObserver func(ev TelemetryEvent)
-
-// TelemetryOptions configures high-level telemetry behavior. Implementation choices
-// (Prometheus vs OTEL, tracer sampling strategy, bus implementation) are internalized.
-// Experimental: Option set may change pre-v1.0; disabling all yields zero overhead paths.
+// TelemetryOptions describes which telemetry subsystems are enabled plus tuning knobs.
+// Experimental: Shape may change (e.g., embedded policy structs) before v1.0.
 type TelemetryOptions struct {
-	EnableMetrics   bool    `json:"enable_metrics"`
-	EnableTracing   bool    `json:"enable_tracing"`
-	EnableEvents    bool    `json:"enable_events"`
-	EnableHealth    bool    `json:"enable_health"`
-	MetricsBackend  string  `json:"metrics_backend,omitempty"`  // "prom" (default) | "otel" | "noop"
-	SamplingPercent float64 `json:"sampling_percent,omitempty"` // tracing root sample percentage if tracing enabled
+	EnableMetrics   bool
+	EnableTracing   bool
+	EnableEvents    bool
+	EnableHealth    bool
+	MetricsBackend  string
+	SamplingPercent float64
 }
+
+// EventObserver receives TelemetryEvent notifications.
+// Experimental: May gain filtering or asynchronous delivery options.
+type EventObserver func(ev TelemetryEvent)
 
 // telemetryConfigFromLegacy maps legacy Config fields (pre-C6) onto TelemetryOptions.
 // Temporary helper; will be removed once Config is refactored to embed TelemetryOptions directly.
@@ -379,12 +378,11 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 // Experimental: Helper may relocate behind a telemetry facade or be internalized if
 // embedding approach changes prior to v1.0. Exposed to reduce duplication across
 // potential CLI / adapter wiring and to make backend selection auditable in one place.
+// SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
+// Experimental: Helper may relocate behind a telemetry facade in the future.
 func SelectMetricsProvider(cfg Config) telemetrymetrics.Provider {
-	if !cfg.MetricsEnabled {
-		return nil
-	}
-	backend := strings.ToLower(cfg.MetricsBackend)
-	switch backend {
+	if !cfg.MetricsEnabled { return nil }
+	switch strings.ToLower(cfg.MetricsBackend) {
 	case "", "prom", "prometheus":
 		return telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
 	case "otel", "opentelemetry":

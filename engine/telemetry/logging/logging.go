@@ -3,6 +3,7 @@ package logging
 import (
 	"context"
 	"log/slog"
+
 	internaltracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 )
 

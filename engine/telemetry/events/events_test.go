@@ -1,11 +1,12 @@
 package events
 
 import (
-	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
-	internaltracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 	"context"
 	"testing"
 	"time"
+
+	internaltracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
+	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
 
 func TestBusBasicPublishSubscribe(t *testing.T) {

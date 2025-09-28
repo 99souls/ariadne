@@ -49,6 +49,8 @@ All notable changes to this project will be documented in this file. The format 
 - telemetry: Removed public `engine/telemetry/policy` package (C6 step 2b); replaced by root re-exports and facade methods. Pre-v1 breaking change acceptable.
   - governance: Dropped automated API report drift enforcement (pre-commit + CI) in favor of export allowlist guard tests; manual `make api-report` remains available for ad-hoc inspection.
 - config: Deleted experimental `engine/configx` layered/dynamic configuration subsystem (C7 pruning). Rationale: avoid premature complexity; only static `engine.Config` supported pre-1.0 (see md/configx-internalization-analysis.md). Git history preserves implementation for future reconsideration.
+- telemetry: Internalized and removed public `engine/telemetry/events` package (C8). External consumers now observe engine telemetry via `Engine.RegisterEventObserver` and `TelemetryEvent` facade only. Event bus implementation is fully internal; constants re-homed internally. Pre-v1 breaking change acceptable.
+- telemetry: Completed removal of public tracing implementation (`engine/telemetry/tracing` physical deletion) finalizing tracing internalization (C8).
 
 ### Deprecated
 

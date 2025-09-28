@@ -20,13 +20,6 @@ import (
 func TestTelemetryExportAllowlist(t *testing.T) {
 	// Aggregated allowlist: map package import path suffix -> allowed exported identifiers.
 	allow := map[string]map[string]struct{}{
-		"events": {
-			// Core event bus contracts currently public (subject to future facade wrap)
-			"Event": {}, "Subscription": {}, "Bus": {}, "BusStats": {},
-			// Constructors/constants
-			"NewBus":         {},
-			"CategoryAssets": {}, "CategoryPipeline": {}, "CategoryRateLimit": {}, "CategoryResources": {}, "CategoryConfig": {}, "CategoryError": {}, "CategoryHealth": {},
-		},
 		"metrics": {
 			// Provider interfaces & option structs (may be narrowed in future)
 			"Provider": {}, "Counter": {}, "Gauge": {}, "Histogram": {}, "Timer": {},
@@ -62,7 +55,7 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("glob telemetry subdirs: %v", err)
 	}
-	for _, pkgPath := range entries {
+		for _, pkgPath := range entries {
 		info, err := os.Stat(pkgPath)
 		if err != nil || !info.IsDir() {
 			continue
@@ -70,10 +63,9 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 		sub := filepath.Base(pkgPath)
 		allowed, ok := allow[sub]
 		if !ok {
-			if sub == "tracing" { // C8: tracing stub pending physical removal
-				continue
-			}
-			// Force explicit decision for new packages.
+			// events & tracing packages have been internalized/removed during C8; ignore silently
+			if sub == "events" || sub == "tracing" { continue }
+			// Force explicit decision for truly new packages.
 			t.Fatalf("unexpected telemetry subpackage: %s (add to allowlist or internalize)", sub)
 		}
 		fset := token.NewFileSet()

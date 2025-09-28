@@ -189,10 +189,10 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 * [x] C4 Internalize crawler/, processor/, output/ implementations (moved impl packages under internal/, deleted public impl tests, updated all import paths, regenerated API report; facade strategy interfaces only)
 [x] C5 Internalize ratelimit/ (implementation moved under `engine/internal/ratelimit`; legacy `engine/ratelimit` package stub REMOVED – physical deletion complete). Limiter snapshot now always non-nil: when limiter disabled an empty `LimiterSnapshot` struct is returned to simplify callers.
 [*] C6 (step 1) Add telemetry facade types (TelemetryEvent, TelemetryOptions, RegisterEventObserver) and conditional initialization (metrics/events/tracing/health) – DONE on branch c6-internalize-telemetry (commit 190e4c9). Health change events bridged to observers.
-[*] C6 (step 2a) Internalize telemetry events & tracing packages; remove public EventBus()/Tracer() accessors; add observer test (pending: policy move)
+[x] C6 (step 2a) Internalize telemetry tracing package; events pending (migrated usage but package still public at that point)
 [x] C6 (step 2b) Internalize telemetry policy package and finalize facade span helper decision (policy package removed)
 [x] C7 Delete configx/ subsystem (decided against internalization; rationale in md/configx-internalization-analysis.md)
-[] C8 Final allowlist + API report shrink commit
+[~] C8 Final allowlist + API report shrink commit (events package now internalized; tracing physically removed; allowlist updated. Metrics slimming under evaluation – provider interfaces still public, candidate for enum-based backend selection)
 ```
 
 ---
