@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-28T14:01:36+01:00
+Generated: 2025-09-28T14:08:49+01:00
 
 ## Package `models`
 
@@ -105,19 +105,7 @@ move under internal/), or significantly reduced in scope. Consumers should
 treat all identifiers as Experimental unless/until explicitly promoted to
 Stable in documentation.
 
-Name | Kind | Stability | Summary
------|------|-----------|--------
-GlobalSettings | type | Experimental | Experimental: GlobalSettings houses cross-cutting knobs. Field names and
-UnifiedBusinessConfig | type | Experimental | Experimental: UnifiedBusinessConfig aggregates per-component policies and
-UnifiedBusinessConfig.ApplyDefaults | method | Experimental | Experimental: ApplyDefaults sets unset fields to opinionated defaults. The
-UnifiedBusinessConfig.ApplyFetchDefaults | method | Experimental | Experimental: ApplyFetchDefaults sets defaults for FetchPolicy. May become
-UnifiedBusinessConfig.ApplyGlobalDefaults | method | Experimental | Experimental: ApplyGlobalDefaults sets defaults for GlobalSettings. May
-UnifiedBusinessConfig.ApplyProcessDefaults | method | Experimental | Experimental: ApplyProcessDefaults sets defaults for ProcessPolicy. May
-UnifiedBusinessConfig.ApplySinkDefaults | method | Experimental | Experimental: ApplySinkDefaults sets defaults for SinkPolicy. May become
-UnifiedBusinessConfig.ExtractFetchPolicy | method | Experimental | Experimental: ExtractFetchPolicy returns a defensive copy of FetchPolicy.
-UnifiedBusinessConfig.ExtractProcessPolicy | method | Experimental | Experimental: ExtractProcessPolicy returns a defensive copy.
-UnifiedBusinessConfig.ExtractSinkPolicy | method | Experimental | Experimental: ExtractSinkPolicy returns a defensive copy.
-UnifiedBusinessConfig.Validate | method | Experimental | Experimental: Validate checks internal consistency. Error messages and
+(no exported symbols)
 
 ## Package `resources`
 

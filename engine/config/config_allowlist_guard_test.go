@@ -15,10 +15,7 @@ import (
 // Update this map intentionally when promoting/dropping symbols; avoid accidental drift.
 func TestConfigExportAllowlist(t *testing.T) {
 	allowed := map[string]struct{}{
-		// Core unified config types & constructors
-		"UnifiedBusinessConfig": {}, "GlobalSettings": {},
-		"NewUnifiedBusinessConfig": {}, "DefaultBusinessConfig": {}, "ComposeBusinessConfig": {}, "FromLegacyConfig": {}, "DefaultGlobalSettings": {},
-		// NOTE: Runtime / dynamic configuration system has been internalized (W4-03); removed from public allowlist intentionally.
+		// (Intentionally empty) – unified config removed in C3; config package expected to expose no types.
 	}
 
 	_, fname, _, _ := runtime.Caller(0)
