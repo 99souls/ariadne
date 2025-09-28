@@ -28,6 +28,8 @@ All notable changes to this project will be documented in this file. The format 
 - telemetry: Build info gauge intentionally emitted only via CLI metrics adapter to avoid expanding engine public surface (Wave 4 adapter scope decision).
 - engine: Internalized former public `engine/monitoring` package (now `engine/internal/monitoring`); legacy metrics adapter updated to reference internal path (C2 pruning).
   _- engine: Internalized `engine/business/_`packages under`engine/internal/business/\*` (crawler, processor, output, policies) consolidating business rule system behind internal boundary (C2 pruning). No public re-export provided; future facade will expose only minimal policy tuning hooks if justified.
+- engine: Snapshot now always includes a non-nil `Limiter` field; when rate limiting is disabled an empty `LimiterSnapshot` is returned (simplifies callers, part of C5 hard cut).
+- policy: Adopted hard-cut removal approach pre-1.0 (no deprecation shims); plan & docs updated to reflect immediate removals with CHANGELOG notice only (applies retroactively to C5 and forward).
 
 ### Removed
 
@@ -42,6 +44,7 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Removed public access to business implementation packages (`engine/business/*`) and monitoring metrics scaffolding (`engine/monitoring`) by internalization (C2 pruning – breaking pre-v1 acceptable).
 - config: Removed experimental unified configuration layer (`UnifiedBusinessConfig`, advanced runtime layering & AB testing helpers) and associated tests; public `config` package now intentionally exposes no symbols (C3 pruning – simplifies facade and prevents re-expansion of config surface).
 - engine: Internalized public crawler, processor, and output concrete implementation packages (`engine/crawler`, `engine/processor`, `engine/output` including sinks, assembly, enhancement, html, markdown, stdout) under `engine/internal/` (C4 pruning). Removed their public tests; updated imports; regenerated API report. Facade unchanged (interfaces `Fetcher`, `Processor`, `OutputSink` remain). Pre-v1 breaking change acceptable; all tests green.
+- engine: Internalized adaptive rate limiter implementation (`engine/ratelimit`) under `engine/internal/ratelimit` (C5 pruning). Removed public `RateLimiter` interface & concrete types; facade now emits reduced diagnostic snapshot (`engine.LimiterSnapshot`) only. Pre-v1 breaking change acceptable.
 
 ### Deprecated
 
