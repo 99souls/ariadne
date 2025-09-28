@@ -192,7 +192,8 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 [x] C6 (step 2a) Internalize telemetry tracing package; events pending (migrated usage but package still public at that point)
 [x] C6 (step 2b) Internalize telemetry policy package and finalize facade span helper decision (policy package removed)
 [x] C7 Delete configx/ subsystem (decided against internalization; rationale in md/configx-internalization-analysis.md)
-[~] C8 Final allowlist + API report shrink commit (events package now internalized; tracing physically removed; allowlist updated. Metrics slimming under evaluation – provider interfaces still public, candidate for enum-based backend selection)
+[~] C8 Initial telemetry contraction (engine now uses internal metrics + internal events/tracing; public telemetry/metrics & telemetry/events packages still present for removal) – groundwork laid (MetricsHandler facade in place, provider selection internalized).
+[~] C9 Final telemetry hard cut & governance alignment (public telemetry/metrics & telemetry/events removed; pending: regenerate API report, update allowlists/docs/changelog, add new facade tests, then mark complete)
 ```
 
 ---
@@ -266,6 +267,75 @@ Risks / Notes:
 - Ensure metrics provider selection remains stable; if `SelectMetricsProvider` is retained public, document as provisional until v0.2.0.
 - Tracer removal must not break any existing test relying on span creation; search tests for `Tracer()` usage before removal.
 - Event bus direct usage in tests must be migrated to observer assertions prior to deletion.
+
+---
+
+## C9 – Final Telemetry Hard Cut & Governance Alignment (NEW)
+
+Purpose: Complete the contraction promised in C8 by physically removing the now-orphaned public `telemetry/metrics` and `telemetry/events` packages, aligning governance artifacts (API report, allowlists, docs, changelog) to the true facade: `Engine.{MetricsHandler, RegisterEventObserver, UpdateTelemetryPolicy}` plus `telemetry/health` & `telemetry/logging`.
+
+### Scope
+
+1. Delete directories:
+   - `engine/telemetry/metrics/`
+   - `engine/telemetry/events/`
+2. Remove any residual references (imports, tests, benchmarks) to those paths.
+3. Regenerate `API_REPORT.md` (expect removal of: `Engine.MetricsProvider`, `SelectMetricsProvider`, all metrics interfaces & constructors, event bus symbols).
+4. Update allowlist guard tests so absence of those packages is enforced (fail if reintroduced).
+5. Normalize `CHANGELOG.md`: consolidate to one BREAKING entry describing removal & migration path (Config flags + `Engine.MetricsHandler()` + observer API).
+6. Update docs:
+   - `md/telemetry-architecture.md`
+   - `md/telemetry-boundary.md`
+   - Any benchmark docs referencing `telemetry/metrics` CLI commands.
+7. Add focused tests:
+   - Metrics handler nil vs non-nil (Prometheus enabled/disabled).
+   - Observer receives synthetic internal event (ensures bus bridging intact post-removal).
+8. Add a temporary CI audit script (optional) diffing exported symbol list vs committed API report to catch regressions.
+9. Update this plan (mark C9 complete) & move to Phase 5 enforcement tasks.
+
+### Exit Criteria
+
+| Criterion                                        | Validation                                                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Public metrics & events packages no longer exist | `grep -R "telemetry/metrics" engine/telemetry` returns only health/logging; commands exit 1 for removed dirs              |
+| API report signature changed                     | New signature hash differs; removed symbols absent                                                                        |
+| Engine exposes only intended telemetry facade    | API report lists `Engine.MetricsHandler`, not legacy provider selection                                                   |
+| Tests green                                      | `go test ./...` passes                                                                                                    |
+| Docs free of legacy references                   | Grep shows zero references to removed constructor names (`NewPrometheusProvider`, etc.) outside changelog historical note |
+| Allowlist guard enforces absence                 | Deliberate re-add triggers failure locally                                                                                |
+
+### Risks & Mitigations
+
+| Risk                                                                     | Impact                              | Likelihood | Mitigation                                                                       |
+| ------------------------------------------------------------------------ | ----------------------------------- | ---------- | -------------------------------------------------------------------------------- |
+| Accidental lingering benchmark/import keeps metrics pkg from deletion    | Incomplete removal causes confusion | Low        | Pre-delete grep + remove tests first                                             |
+| CLI silently breaks metrics endpoint if handler becomes nil unexpectedly | Operational observability loss      | Low        | Add explicit test for handler presence when enabled                              |
+| Missed CHANGELOG consolidation leaves conflicting guidance               | User confusion                      | Medium     | Single authoritative BREAKING section rewrite in C9 commit                       |
+| Asset refactoring later needs event bus semantics                        | Re-exposing churn                   | Low        | Observer API suffices; can add structured asset events later under stable facade |
+
+### Implementation Order
+
+1. Grep & list dependencies (`grep -R 'telemetry/metrics' ./engine ./cli`).
+2. Remove references in tests/benchmarks.
+3. Delete packages.
+4. Run tests.
+5. Regenerate API report & inspect diff.
+6. Patch allowlist guard tests.
+7. Add new small tests (handler & observer).
+8. Update docs & changelog.
+9. Final test run; commit.
+
+### Commit Message Template
+
+```
+prune(c9): remove public telemetry metrics/events packages; finalize telemetry facade & governance
+
+BREAKING: Removed engine/telemetry/metrics and engine/telemetry/events. Configure via engine.Config { MetricsEnabled, MetricsBackend } and expose Prometheus with Engine.MetricsHandler(); register observers with Engine.RegisterEventObserver().
+```
+
+### Post-C9 Next Step
+
+Enter Phase 5 (enforcement): freeze surface, add CI job verifying API report hash & deny reintroduction of removed directories.
 
 ---
 
@@ -352,24 +422,24 @@ If external customization for assets, rate limiters, or telemetry backends is re
 
 ## Cross-Phase Implementation Checklist
 
-| Task                                                 | Phase | Done? |
-| ---------------------------------------------------- | ----- | ----- |
-| Add API report tooling                               | 0     |       |
-| Introduce Health facade types                        | 1     |       |
-| Deprecate EventBus() & HealthSnapshot()              | 1     |       |
-| Migrate tests off direct health/events imports       | 1     |       |
-| Add TelemetryPolicy slim struct                      | 2     |       |
-| Add MetricsHandler()                                 | 2     |       |
-| Deprecate MetricsProvider()                          | 2     |       |
-| Internalize metrics/tracing packages                 | 2     |       |
-| Internalize ratelimit & resources                    | 3     |       |
-| Add limiter/resource snapshot trimming               | 3     |       |
-| Asset internalization decision recorded              | 4     |       |
-| Remove exported asset types or slim plugin interface | 4     |       |
-| Remove deprecated aliases (events/health/metrics)    | 5     |       |
-| Update README & stability policy                     | 5     |       |
-| Final API report regenerate                          | 5     |       |
-| Tag v0.2.0                                           | 5     |       |
+| Task                                                                     | Phase | Done? |
+| ------------------------------------------------------------------------ | ----- | ----- |
+| Add API report tooling                                                   | 0     |       |
+| Introduce Health facade types                                            | 1     |       |
+| Deprecate EventBus() & HealthSnapshot()                                  | 1     |       |
+| Migrate tests off direct health/events imports                           | 1     |       |
+| Add TelemetryPolicy slim struct                                          | 2     |       |
+| Add MetricsHandler()                                                     | 2     |       |
+| Deprecate MetricsProvider() (removed; replaced by MetricsHandler facade) | 2     | [x]   |
+| Internalize metrics/tracing packages (initial facade + internal copies)  | 2     | [~]   |
+| Internalize ratelimit & resources                                        | 3     |       |
+| Add limiter/resource snapshot trimming                                   | 3     |       |
+| Asset internalization decision recorded                                  | 4     |       |
+| Remove exported asset types or slim plugin interface                     | 4     |       |
+| Remove deprecated aliases (events/health/metrics)                        | 5     |       |
+| Update README & stability policy                                         | 5     |       |
+| Final API report regenerate (post C9)                                    | 5     |       |
+| Tag v0.2.0                                                               | 5     |       |
 
 ---
 

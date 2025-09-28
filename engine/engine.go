@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -14,11 +15,11 @@ import (
 	intrat "github.com/99souls/ariadne/engine/internal/ratelimit"
 	intresources "github.com/99souls/ariadne/engine/internal/resources"
 	telemEvents "github.com/99souls/ariadne/engine/internal/telemetry/events"
+	intmetrics "github.com/99souls/ariadne/engine/internal/telemetry/metrics"
 	inttelempolicy "github.com/99souls/ariadne/engine/internal/telemetry/policy"
 	telemetrytracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
-	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
-	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 	engmodels "github.com/99souls/ariadne/engine/models"
+	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 )
 
 // Snapshot is a unified view of engine state.
@@ -131,14 +132,14 @@ type Engine struct {
 	assetEventsMu sync.Mutex   // Iteration 7 part 2: protect slice under concurrency
 
 	// Phase 5E: metrics provider (initially optional; nil if disabled)
-	metricsProvider telemetrymetrics.Provider
+	metricsProvider intmetrics.Provider
 	// Internal telemetry implementations (C6 step2 will remove public accessors)
 	eventBus telemEvents.Bus
 	tracer   telemetrytracing.Tracer
 	// Phase 5E Iteration 4: health evaluator
 	healthEval *telemetryhealth.Evaluator
 	// health status instrumentation
-	healthStatusGauge telemetrymetrics.Gauge
+	healthStatusGauge intmetrics.Gauge
 	lastHealth        atomic.Value // stores telemetryhealth.Status as string
 
 	// Telemetry policy (atomic snapshot). Nil => use internal defaults from policy.Default().
@@ -168,9 +169,17 @@ func (e *Engine) Policy() TelemetryPolicy {
 	return def
 }
 
-// MetricsProvider returns the active metrics provider (may be nil if disabled).
-// Experimental: Accessor may relocate behind a telemetry facade.
-func (e *Engine) MetricsProvider() telemetrymetrics.Provider { return e.metricsProvider }
+// MetricsHandler returns the HTTP handler for metrics exposition (Prometheus backend only).
+// Returns nil if metrics disabled or backend does not provide an HTTP handler.
+func (e *Engine) MetricsHandler() http.Handler {
+	if e == nil || e.metricsProvider == nil {
+		return nil
+	}
+	if hp, ok := e.metricsProvider.(interface{ MetricsHandler() http.Handler }); ok {
+		return hp.MetricsHandler()
+	}
+	return nil
+}
 
 // UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 // Experimental: May relocate behind a dedicated telemetry subpackage pre-v1.0.
@@ -299,7 +308,7 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	e := &Engine{cfg: cfg, telemetry: telemOpts, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
 
 	// Initialize metrics provider (Wave 4 W4-05: delegated to helper for reuse & clarity)
-	e.metricsProvider = SelectMetricsProvider(cfg)
+	e.metricsProvider = selectMetricsProvider(cfg)
 	// NOTE: Exposing HTTP handler / endpoint binding remains caller responsibility (CLI or embedding app).
 
 	// Phase 5E Iteration 2 / C6 start: initialize event bus only if events enabled
@@ -327,7 +336,7 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 		e.healthEval = telemetryhealth.NewEvaluator(initialPolicy.Health.ProbeTTL, limiterProbe, resourceProbe, pipelineProbe)
 		// Create health status gauge if metrics enabled
 		if e.metricsProvider != nil {
-			g := e.metricsProvider.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "health", Name: "status", Help: "Engine overall health status (1=healthy,0.5=degraded,0=unhealthy,-1=unknown)"}})
+			g := e.metricsProvider.NewGauge(intmetrics.GaugeOpts{CommonOpts: intmetrics.CommonOpts{Namespace: "ariadne", Subsystem: "health", Name: "status", Help: "Engine overall health status (1=healthy,0.5=degraded,0=unhealthy,-1=unknown)"}})
 			if g != nil {
 				e.healthStatusGauge = g
 				g.Set(-1) // initialize unknown
@@ -380,17 +389,19 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 // potential CLI / adapter wiring and to make backend selection auditable in one place.
 // SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
 // Experimental: Helper may relocate behind a telemetry facade in the future.
-func SelectMetricsProvider(cfg Config) telemetrymetrics.Provider {
-	if !cfg.MetricsEnabled { return nil }
+func selectMetricsProvider(cfg Config) intmetrics.Provider {
+	if !cfg.MetricsEnabled {
+		return nil
+	}
 	switch strings.ToLower(cfg.MetricsBackend) {
 	case "", "prom", "prometheus":
-		return telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
+		return intmetrics.NewPrometheusProvider(intmetrics.PrometheusProviderOptions{})
 	case "otel", "opentelemetry":
-		return telemetrymetrics.NewOTelProvider(telemetrymetrics.OTelProviderOptions{})
+		return intmetrics.NewOTelProvider(intmetrics.OTelProviderOptions{})
 	case "noop":
-		return telemetrymetrics.NewNoopProvider()
+		return intmetrics.NewNoopProvider()
 	default:
-		return telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
+		return intmetrics.NewPrometheusProvider(intmetrics.PrometheusProviderOptions{})
 	}
 }
 

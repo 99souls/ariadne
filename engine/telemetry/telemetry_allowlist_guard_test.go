@@ -20,15 +20,6 @@ import (
 func TestTelemetryExportAllowlist(t *testing.T) {
 	// Aggregated allowlist: map package import path suffix -> allowed exported identifiers.
 	allow := map[string]map[string]struct{}{
-		"metrics": {
-			// Provider interfaces & option structs (may be narrowed in future)
-			"Provider": {}, "Counter": {}, "Gauge": {}, "Histogram": {}, "Timer": {},
-			"CommonOpts": {}, "CounterOpts": {}, "GaugeOpts": {}, "HistogramOpts": {}, "PrometheusProvider": {}, "OTelProvider": {},
-			// Legacy adapter types (subject to future internalization)
-			"BusinessCollectorAdapter": {}, "NewBusinessCollectorAdapter": {},
-			// Public constructors for built-in providers
-			"NewPrometheusProvider": {}, "PrometheusProviderOptions": {}, "NewOTelProvider": {}, "OTelProviderOptions": {}, "NewNoopProvider": {},
-		},
 		"health": {
 			// Health evaluator snapshot types (public for adapter consumption)
 			"Snapshot": {}, "ProbeResult": {}, "Status": {}, "Probe": {}, "ProbeFunc": {}, "Evaluator": {},
@@ -55,7 +46,7 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("glob telemetry subdirs: %v", err)
 	}
-		for _, pkgPath := range entries {
+	for _, pkgPath := range entries {
 		info, err := os.Stat(pkgPath)
 		if err != nil || !info.IsDir() {
 			continue
@@ -63,8 +54,12 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 		sub := filepath.Base(pkgPath)
 		allowed, ok := allow[sub]
 		if !ok {
-			// events & tracing packages have been internalized/removed during C8; ignore silently
-			if sub == "events" || sub == "tracing" { continue }
+			// events & tracing public packages fully removed; metrics removed in C9 –
+			// treat their reappearance as a failure to enforce contraction.
+			if sub == "events" || sub == "tracing" || sub == "metrics" {
+				// Hard fail to surface accidental reintroduction of removed packages.
+				t.Fatalf("unexpected resurrected telemetry package: %s (should remain internal/removed)", sub)
+			}
 			// Force explicit decision for truly new packages.
 			t.Fatalf("unexpected telemetry subpackage: %s (add to allowlist or internalize)", sub)
 		}

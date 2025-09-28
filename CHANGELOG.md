@@ -54,7 +54,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Deprecated
 
-- telemetry/metrics: Deprecated `BusinessCollectorAdapter` and `NewBusinessCollectorAdapter`; transitional shim scheduled for removal or internalization in a future pruning wave (see `md/telemetry-boundary.md`).
+- telemetry/metrics: Entire public metrics package internalized (C8). All provider interfaces and constructors (`Provider`, `Counter`, `Gauge`, `Histogram`, `Timer`, `NewPrometheusProvider`, `NewOTelProvider`, `NewNoopProvider`, option structs, and deprecated `BusinessCollectorAdapter`) removed from public API. Embedders now select backend exclusively via `engine.Config{ MetricsEnabled, MetricsBackend }` and obtain an exposition handler via `Engine.MetricsHandler()` (Prometheus only currently). OpenTelemetry backend remains selectable through the same config backend key.
 
 ### Changed
 

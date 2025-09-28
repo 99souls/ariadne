@@ -1,6 +1,6 @@
 # API Report
 
-Signature: cc72d2e6c2ee6df5bbae0bc2c4828da33af29306571d80592004eeab9e6f0aac
+Signature: 3d4adcfd79c93f4dd324e6ba2f73161abe2888f46e284e539e5e802bcd618247
 
 ## Package `engine`
 
@@ -27,7 +27,7 @@ Engine | type | Stable | Engine composes all subsystems behind a single facade.
 Engine.AssetEvents | method | Experimental | AssetEvents returns a snapshot copy of collected asset events.
 Engine.AssetMetricsSnapshot | method | Experimental | AssetMetricsSnapshot returns current aggregated counters (zero-value if strategy disabled).
 Engine.HealthSnapshot | method | Experimental | HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
-Engine.MetricsProvider | method | Experimental | MetricsProvider returns the active metrics provider (may be nil if disabled).
+Engine.MetricsHandler | method |  | MetricsHandler returns the HTTP handler for metrics exposition (Prometheus backend only).
 Engine.Policy | method |  | 
 Engine.RegisterEventObserver | method | Experimental | RegisterEventObserver adds an observer invoked synchronously for each internal telemetry
 Engine.Snapshot | method | Stable | Snapshot returns a unified state view.
@@ -36,7 +36,7 @@ Engine.Stop | method | Stable | Stop gracefully stops the engine and underlying 
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
 EventBusPolicy | type |  | 
-EventObserver | type |  | EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
+EventObserver | type | Experimental | EventObserver receives TelemetryEvent notifications.
 Fetcher | type | Experimental | Fetcher defines how pages are fetched.
 HealthPolicy | type |  | 
 LimiterDomainState | type | Experimental | LimiterDomainState summarizes recent domain-level adaptive state.
@@ -47,10 +47,9 @@ Processor | type | Experimental | Processor transforms a fetched page into enric
 ResourceSnapshot | type | Experimental | ResourceSnapshot summarizes resource manager internal counters.
 ResourcesConfig | type | Experimental | ResourcesConfig is the public facade configuration for resource management.
 ResumeSnapshot | type | Experimental | ResumeSnapshot contains resume filter statistics.
-SelectMetricsProvider | func | Experimental | SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
 Snapshot | type | Stable | Snapshot is a unified view of engine state.
 TelemetryEvent | type | Experimental | TelemetryEvent is a reduced, stable event representation for external observers.
-TelemetryOptions | type | Experimental | TelemetryOptions configures high-level telemetry behavior. Implementation choices
+TelemetryOptions | type | Experimental | TelemetryOptions describes which telemetry subsystems are enabled plus tuning knobs.
 TelemetryPolicy | type | Experimental | Policy returns the current telemetry policy snapshot.
 TracingPolicy | type |  | 
 

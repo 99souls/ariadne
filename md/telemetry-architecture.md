@@ -129,8 +129,16 @@ mux := http.NewServeMux()
 mux.Handle("/healthz", telemetryhttp.NewHealthHandler(telemetryhttp.HealthHandlerOptions{Engine: eng, IncludeProbes: true}))
 mux.Handle("/readyz", telemetryhttp.NewReadinessHandler(telemetryhttp.HealthHandlerOptions{Engine: eng}))
 if mp := eng.MetricsProvider(); mp != nil { // expose metrics only if enabled
-    mux.Handle("/metrics", telemetryhttp.NewMetricsHandler(mp))
-}
+// Metrics exposition now retrieved via eng.MetricsHandler() facade (Prometheus backend only).
+// The engine intentionally does not start HTTP servers. A minimal integration:
+```
+
+go
+eng, \_ := engine.New(engine.Defaults())
+// Optionally adjust telemetry policy at runtime
+pol := engine.TelemetryPolicy() // or build custom & eng.UpdateTelemetryPolicy(&custom)
+
+```
 http.ListenAndServe(":8080", mux)
 ```
 

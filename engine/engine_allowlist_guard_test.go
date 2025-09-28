@@ -34,8 +34,8 @@ func TestEngineExportAllowlist(t *testing.T) {
 		"AssetEvent": {}, "AssetEventPublisher": {}, "AssetMetrics": {}, "AssetMetricsSnapshot": {}, "DefaultAssetStrategy": {},
 		// Public enums / consts (asset modes)
 		"AssetModeDownload": {}, "AssetModeSkip": {}, "AssetModeInline": {}, "AssetModeRewrite": {},
-		// Config helpers
-		"Defaults": {}, "SelectMetricsProvider": {}, "RegisterEventObserver": {},
+		// Config helpers / telemetry facade
+		"Defaults": {}, "RegisterEventObserver": {}, "MetricsHandler": {},
 		// Constructor for default asset strategy (still public while subsystem experimental)
 		"NewDefaultAssetStrategy": {},
 	}

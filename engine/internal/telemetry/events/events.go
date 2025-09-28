@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	metrics "github.com/99souls/ariadne/engine/internal/telemetry/metrics"
 	tracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
-	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
 
 const (
