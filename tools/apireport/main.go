@@ -36,7 +36,6 @@ var (
 		"github.com/99souls/ariadne/engine/config",
 		"github.com/99souls/ariadne/engine/models",
 		"github.com/99souls/ariadne/engine/ratelimit",
-		"github.com/99souls/ariadne/engine/resources",
 	}
 )
 

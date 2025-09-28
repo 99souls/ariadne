@@ -118,6 +118,7 @@ been removed again and the authoritative implementation remains solely under
 `engine/internal/runtime/`.
 
 Action Items to prevent recurrence:
+
 - Add CI check (future) to detect resurrection of removed files by path.
 - Keep API report diffs reviewed in PRs touching `engine/config/*`.
 - Consider a sentinel test asserting absence of `runtime.go` in `engine/config`.

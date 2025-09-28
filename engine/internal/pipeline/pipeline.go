@@ -13,9 +13,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	intresources "github.com/99souls/ariadne/engine/internal/resources"
 	"github.com/99souls/ariadne/engine/models"
 	"github.com/99souls/ariadne/engine/ratelimit"
-	engresources "github.com/99souls/ariadne/engine/resources"
 )
 
 // (Verbatim copy begins)
@@ -31,7 +31,7 @@ type PipelineConfig struct {
 	RetryBaseDelay   time.Duration         `yaml:"retry_base_delay" json:"retry_base_delay"`
 	RetryMaxDelay    time.Duration         `yaml:"retry_max_delay" json:"retry_max_delay"`
 	RetryMaxAttempts int                   `yaml:"retry_max_attempts" json:"retry_max_attempts"`
-	ResourceManager  *engresources.Manager `yaml:"-" json:"-"`
+	ResourceManager  *intresources.Manager `yaml:"-" json:"-"`
 
 	// AssetProcessingHook allows the engine to inject page mutation logic after extraction
 	// but before result emission (e.g., asset strategy rewrite). Optional.
@@ -82,7 +82,7 @@ type Pipeline struct {
 	discoveryWG, extractionWG, processingWG, outputWG sync.WaitGroup
 	retryWG                                           sync.WaitGroup
 	limiter                                           ratelimit.RateLimiter
-	resourceManager                                   *engresources.Manager
+	resourceManager                                   *intresources.Manager
 	randMu                                            sync.Mutex
 	rand                                              *rand.Rand
 }

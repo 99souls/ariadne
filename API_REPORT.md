@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-27T23:59:39+01:00
+Generated: 2025-09-28T11:47:55+01:00
 
 ## Package `models`
 
@@ -50,21 +50,6 @@ LimiterSnapshot | type | Experimental | LimiterSnapshot aggregates limiter-level
 Permit | type |  | Permit represents an acquired capacity token.
 RateLimiter | type | Experimental | RateLimiter is the adaptive per-domain limiter interface.
 
-## Package `resources`
-
-Name | Kind | Stability | Summary
------|------|-----------|--------
-Config | type | Experimental | Config controls resource management features such as caching, spillover, and checkpoints.
-Manager | type | Experimental | Manager coordinates resource usage across the pipeline.
-Manager.Acquire | method |  | Acquire reserves an in-flight slot; blocks when capacity reached.
-Manager.Checkpoint | method |  | Checkpoint records completion.
-Manager.Close | method |  | Close flushes and stops background goroutines.
-Manager.GetPage | method |  | GetPage retrieves from cache or spill.
-Manager.Release | method |  | Release frees an in-flight slot.
-Manager.Stats | method |  | 
-Manager.StorePage | method |  | StorePage caches a page, evicting oldest to spill if needed.
-Stats | type | Experimental | Stats provides lightweight insight into current resource manager state.
-
 ## Package `engine`
 
 Name | Kind | Stability | Summary
@@ -104,6 +89,7 @@ MaterializedAsset | type |  | MaterializedAsset represents an asset after execut
 OutputSink | type | Experimental | OutputSink consumes processed pages.
 Processor | type | Experimental | Processor transforms a fetched page into enriched content.
 ResourceSnapshot | type | Experimental | ResourceSnapshot summarizes resource manager internal counters.
+ResourcesConfig | type | Experimental | ResourcesConfig is the public facade configuration for resource management.
 ResumeSnapshot | type | Experimental | ResumeSnapshot contains resume filter statistics.
 Snapshot | type | Stable | Snapshot is a unified view of engine state.
 

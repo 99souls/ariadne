@@ -11,9 +11,9 @@ import (
 	"time"
 
 	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
+	intresources "github.com/99souls/ariadne/engine/internal/resources"
 	engmodels "github.com/99souls/ariadne/engine/models"
 	engratelimit "github.com/99souls/ariadne/engine/ratelimit"
-	engresources "github.com/99souls/ariadne/engine/resources"
 	telemEvents "github.com/99souls/ariadne/engine/telemetry/events"
 	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
@@ -56,7 +56,7 @@ type Engine struct {
 	cfg           Config
 	pl            *engpipeline.Pipeline
 	limiter       engratelimit.RateLimiter
-	rm            *engresources.Manager
+	rm            *intresources.Manager
 	started       atomic.Bool
 	startedAt     time.Time
 	resumeMetrics resumeState
@@ -196,9 +196,9 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	}
 
 	// Build resource manager if configured
-	var rm *engresources.Manager
+	var rm *intresources.Manager
 	if cfg.Resources.CacheCapacity > 0 || cfg.Resources.MaxInFlight > 0 || cfg.Resources.CheckpointPath != "" {
-		manager, err := engresources.NewManager(cfg.Resources)
+		manager, err := intresources.NewManager(cfg.Resources.toInternal())
 		if err != nil {
 			return nil, err
 		}

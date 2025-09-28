@@ -20,7 +20,7 @@ import (
 func TestEngineExportAllowlist(t *testing.T) {
 	allowed := map[string]struct{}{
 		// Core types
-		"Engine": {}, "Config": {}, "Snapshot": {}, "ResourceSnapshot": {}, "ResumeSnapshot": {},
+		"Engine": {}, "Config": {}, "ResourcesConfig": {}, "Snapshot": {}, "ResourceSnapshot": {}, "ResumeSnapshot": {},
 		// Construction & strategies placeholder
 		"New": {}, "NewWithStrategies": {}, "EngineStrategies": {},
 		// Consolidated strategy interfaces

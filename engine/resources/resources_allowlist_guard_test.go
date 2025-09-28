@@ -13,9 +13,8 @@ import (
 
 // TestResourcesExportAllowlist guards the curated exported surface of resources.
 func TestResourcesExportAllowlist(t *testing.T) {
-	allowed := map[string]struct{}{
-		"Config": {}, "Manager": {}, "Stats": {}, "NewManager": {},
-	}
+	// After W4-04 internalization this package must expose NO exported symbols.
+	allowed := map[string]struct{}{}
 	_, fname, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(fname)
 	fset := token.NewFileSet()
@@ -32,23 +31,17 @@ func TestResourcesExportAllowlist(t *testing.T) {
 				switch x := n.(type) {
 				case *ast.TypeSpec:
 					if x.Name.IsExported() {
-						if _, ok := allowed[x.Name.Name]; !ok {
-							t.Fatalf("unexpected exported type: %s", x.Name.Name)
-						}
+						if _, ok := allowed[x.Name.Name]; !ok { t.Fatalf("unexpected exported type: %s", x.Name.Name) }
 					}
 				case *ast.ValueSpec:
 					for _, id := range x.Names {
 						if id.IsExported() {
-							if _, ok := allowed[id.Name]; !ok {
-								t.Fatalf("unexpected exported value: %s", id.Name)
-							}
+							if _, ok := allowed[id.Name]; !ok { t.Fatalf("unexpected exported value: %s", id.Name) }
 						}
 					}
 				case *ast.FuncDecl:
 					if x.Recv == nil && x.Name.IsExported() {
-						if _, ok := allowed[x.Name.Name]; !ok {
-							t.Fatalf("unexpected exported function: %s", x.Name.Name)
-						}
+						if _, ok := allowed[x.Name.Name]; !ok { t.Fatalf("unexpected exported function: %s", x.Name.Name) }
 					}
 				}
 				return true

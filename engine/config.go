@@ -4,9 +4,30 @@ import (
 	"time"
 
 	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
+	intresources "github.com/99souls/ariadne/engine/internal/resources"
 	"github.com/99souls/ariadne/engine/models"
-	engresources "github.com/99souls/ariadne/engine/resources"
 )
+
+// ResourcesConfig is the public facade configuration for resource management.
+// Experimental: Shape and semantics may change before v1.0.
+// Mirrors internal/resources.Config but kept separate to permit future reduction.
+type ResourcesConfig struct {
+	CacheCapacity      int
+	MaxInFlight        int
+	SpillDirectory     string
+	CheckpointPath     string
+	CheckpointInterval time.Duration
+}
+
+func (rc ResourcesConfig) toInternal() intresources.Config {
+	return intresources.Config{
+		CacheCapacity:      rc.CacheCapacity,
+		MaxInFlight:        rc.MaxInFlight,
+		SpillDirectory:     rc.SpillDirectory,
+		CheckpointPath:     rc.CheckpointPath,
+		CheckpointInterval: rc.CheckpointInterval,
+	}
+}
 
 // Config is the public configuration surface for the Engine facade.
 // Experimental: Field set, names, and semantics may change before v1.0.
@@ -44,8 +65,8 @@ type Config struct {
 	RateLimit models.RateLimitConfig
 
 	// Resources configures in-memory caches and spill / checkpoint behavior.
-	// Experimental: Higher level policy abstraction may replace raw struct exposure.
-	Resources engresources.Config
+	// Experimental: Will be narrowed to higher-level policy before v1.0; implementation hidden.
+	Resources ResourcesConfig
 
 	// Resume enables filtering of already-processed seeds based on a checkpoint file.
 	// Experimental: Mechanism & file format may change.
@@ -73,7 +94,7 @@ type Config struct {
 // engineOptions are internal construction options resolved by New().
 type engineOptions struct {
 	limiter         interface{} // ratelimit.RateLimiter (avoid import cycle comments here)
-	resourceManager *engresources.Manager
+	resourceManager *intresources.Manager
 }
 
 func (c Config) toPipelineConfig(opts engineOptions) *engpipeline.PipelineConfig {
@@ -133,7 +154,7 @@ func Defaults() Config {
 			DomainStateTTL:           2 * time.Minute,
 			Shards:                   16,
 		},
-		Resources: engresources.Config{
+		Resources: ResourcesConfig{
 			CacheCapacity:      64,
 			MaxInFlight:        16,
 			CheckpointInterval: 50 * time.Millisecond,

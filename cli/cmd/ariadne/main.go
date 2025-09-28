@@ -7,9 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
-	"net/http"
 	"strings"
 	"time"
 
