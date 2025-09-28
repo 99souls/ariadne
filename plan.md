@@ -9,6 +9,7 @@ _Central execution plan synchronized with GitHub issues (authoritative backlog).
 We have successfully implemented a comprehensive live test site (`tools/test-site`) that provides a realistic HTTP origin for crawler testing. This represents significant progress toward production-ready integration testing capabilities.
 
 ### Key Accomplishments This Session
+
 - **Complete Test Site Implementation**: Full Bun + React application with TypeScript transpilation
 - **Rich Wiki-Style Content**: 7+ routes with comprehensive content patterns (typography, code, admonitions, tables, metadata)
 - **Professional UI**: shadcn/ui component integration with responsive Tailwind CSS design
@@ -17,6 +18,7 @@ We have successfully implemented a comprehensive live test site (`tools/test-sit
 - **Performance**: Sub-200ms startup time with deterministic content generation
 
 ### Next Priority (Phase 6.2)
+
 **Go Test Harness Integration** - Implement `WithLiveTestSite()` helper and migrate integration tests to use the live site instead of synthetic mocks.
 
 ---
@@ -226,6 +228,7 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 - [x] Startup banner: `TESTSITE: listening on http://127.0.0.1:5173, Robots mode: allow` ✅
 
 **Additional Achievements Beyond Original Scope:**
+
 - [x] **Rich Content**: Comprehensive wiki-style content with typography, code fences, admonitions, tables, math placeholders
 - [x] **shadcn/ui Integration**: Professional UI components (Card, Button, Alert) throughout site
 - [x] **TypeScript Transpilation**: Bun.build() pipeline with ESM format for browser compatibility
@@ -314,14 +317,14 @@ Phase 7 (CLI Polish) work may begin only after Phase 6 success criteria met and 
 
 ## Critical Gap Analysis (Added Q4)
 
-| Gap                                 | Current State                    | Impact if Unaddressed                           | Planned Mitigation                                                 |
-| ----------------------------------- | -------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
-| Lack of realistic crawling surface  | ✅ Phase 6.1 COMPLETE           | ✅ RESOLVED: Live test site implemented         | Phase 6.2: Go test harness + integration tests                     |
-| Determinism enforcement             | Ad hoc                           | Flaky CI undermines confidence                  | Add flake detector script + golden snapshots                       |
-| API surface governance in root plan | Implicit via internalisation doc | Risk of accidental re-export                    | Introduce Phase 7 CI check: exported symbol diff vs allowlist      |
-| Performance regression visibility   | Manual benchmarking              | Slow unnoticed creep                            | Add periodic benchmark run + budget enforcement (Phase 6 add hook) |
-| Output a11y quality                 | Not evaluated                    | Harder future adoption & accessibility debt     | Phase 7 a11y lint pass + alt tag enforcement                       |
-| Config sprawl risk                  | Expansion in upcoming phases     | Harder onboarding & docs drift                  | Config schema + validation (#31/#32) before adding new flags       |
+| Gap                                 | Current State                    | Impact if Unaddressed                       | Planned Mitigation                                                 |
+| ----------------------------------- | -------------------------------- | ------------------------------------------- | ------------------------------------------------------------------ |
+| Lack of realistic crawling surface  | ✅ Phase 6.1 COMPLETE            | ✅ RESOLVED: Live test site implemented     | Phase 6.2: Go test harness + integration tests                     |
+| Determinism enforcement             | Ad hoc                           | Flaky CI undermines confidence              | Add flake detector script + golden snapshots                       |
+| API surface governance in root plan | Implicit via internalisation doc | Risk of accidental re-export                | Introduce Phase 7 CI check: exported symbol diff vs allowlist      |
+| Performance regression visibility   | Manual benchmarking              | Slow unnoticed creep                        | Add periodic benchmark run + budget enforcement (Phase 6 add hook) |
+| Output a11y quality                 | Not evaluated                    | Harder future adoption & accessibility debt | Phase 7 a11y lint pass + alt tag enforcement                       |
+| Config sprawl risk                  | Expansion in upcoming phases     | Harder onboarding & docs drift              | Config schema + validation (#31/#32) before adding new flags       |
 
 Additional gaps to re-evaluate after Phase 6: plugin architecture clarity, multi-language content support, structured data (JSON-LD) extraction fidelity.
 

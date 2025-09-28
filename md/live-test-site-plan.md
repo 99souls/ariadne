@@ -9,6 +9,7 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 **Implementation Date: 2025-09-29**
 
 ### Core Infrastructure ✅
+
 - **Package Structure**: `tools/test-site` with proper `@ariadne/testsite` package name
 - **Bun + React Setup**: Complete with TypeScript, Tailwind CSS, shadcn/ui components
 - **Dev Server**: Custom Bun server with TypeScript transpilation via Bun.build()
@@ -16,6 +17,7 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 - **Static Assets**: CSS, JavaScript, SVG images, intentionally missing assets for 404 testing
 
 ### Routes Implemented ✅
+
 - `/` - HomePage with comprehensive wiki-style content
 - `/about` - AboutPage with feature cards, metadata, architecture diagrams
 - `/blog` - Blog index with post listings
@@ -25,14 +27,16 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 - `/tags` - Tag index page
 
 ### API Endpoints ✅
+
 - `/api/ping` - Health check endpoint
 - `/api/posts` - Static JSON post data
 - `/api/slow` - Latency injection endpoint (400-600ms delay)
 
 ### Content Features ✅
+
 - **Rich Typography**: Semantic headings (h1-h6), paragraphs, blockquotes, horizontal rules
 - **Code Examples**: TypeScript and bash code fences with syntax highlighting
-- **Admonitions**: Warning/note callouts using shadcn Alert components  
+- **Admonitions**: Warning/note callouts using shadcn Alert components
 - **Tables**: Feature comparison and metadata tables
 - **Mathematical Notation**: Inline and block math placeholders
 - **Diagrams**: ASCII art architecture diagrams in `<pre data-type="diagram">`
@@ -41,6 +45,7 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 - **Responsive Design**: Mobile-friendly layout with Tailwind utilities
 
 ### Technical Implementation ✅
+
 - **TypeScript Transpilation**: Bun.build() with ESM format, browser target
 - **Static File Serving**: Proper Content-Type headers for all asset types
 - **Robots.txt**: Dynamic robots.txt based on TESTSITE_ROBOTS env variable
@@ -50,6 +55,7 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 - **Error Handling**: Proper 404s for missing assets, JSON error responses
 
 ### Quality Assurance ✅
+
 - **Import Resolution**: All TypeScript imports working correctly in browser
 - **Content Rendering**: React components mounting and rendering properly
 - **Asset Loading**: CSS styles applied, images loading, broken links generating expected 404s
@@ -98,7 +104,7 @@ Augment baseline goals so the site exercises a broad spectrum of elements common
 ```
 tools/test-site/           # ✅ Bun React module root (IMPLEMENTED)
   package.json             # ✅ @ariadne/testsite package
-  bunfig.toml              # ✅ Bun configuration  
+  bunfig.toml              # ✅ Bun configuration
   tsconfig.json            # ✅ TypeScript config
   README.md                # ✅ Documentation
   src/
@@ -117,7 +123,7 @@ tools/test-site/           # ✅ Bun React module root (IMPLEMENTED)
     components/            # ✅ Shared UI components
       ui/                  # ✅ shadcn/ui components (Card, Button, Alert)
         card.tsx           # ✅ Card component
-        button.tsx         # ✅ Button component  
+        button.tsx         # ✅ Button component
         alert.tsx          # ✅ Alert/admonition component
       Navigation.tsx       # ✅ Site navigation component
   public/                  # ✅ Static assets
@@ -128,7 +134,7 @@ tools/test-site/           # ✅ Bun React module root (IMPLEMENTED)
       script.js            # ✅ Client-side JavaScript
       img/                 # ✅ Images directory
         sample1.svg        # ✅ Working image asset
-        sample2.svg        # ✅ Working image asset  
+        sample2.svg        # ✅ Working image asset
         missing.png        # ⚠️  Intentionally missing (404 test)
         deep-missing.png   # ⚠️  Intentionally missing (404 test)
   styles/                  # ✅ Tailwind CSS configuration
@@ -136,6 +142,7 @@ tools/test-site/           # ✅ Bun React module root (IMPLEMENTED)
 ```
 
 **Status Legend:**
+
 - ✅ Fully implemented and working
 - ⚠️ Intentionally missing/broken for testing purposes
 - 📋 Planned for future phases
@@ -296,25 +303,29 @@ Implementation notes:
 ## 📋 PENDING WORK (Phase 2)
 
 ### Go Test Harness Integration (Next Priority)
+
 - [ ] **Helper Function**: Implement `WithLiveTestSite(t *testing.T, fn func(baseURL string))` in `engine/internal/testutil/testsite`
 - [ ] **Process Management**: Spawn/reuse Bun process with TESTSITE_REUSE=1 support
 - [ ] **Port Handling**: Dynamic port selection for CI parallel runs
 - [ ] **Readiness Detection**: Parse "TESTSITE: listening on..." banner with 5s timeout
 - [ ] **Graceful Cleanup**: Process termination and resource cleanup
 
-### Integration Test Implementation  
+### Integration Test Implementation
+
 - [ ] **Replace Mock Tests**: Migrate ≥1 existing mock-based discovery test to use live site
 - [ ] **Core Assertions**: Test link discovery, asset counting, broken image tracking
 - [ ] **Crawler Features**: Validate depth limiting, robots.txt respect, timeout handling
 - [ ] **Golden Snapshots**: Implement normalized HTML snapshots for regression detection
 
 ### Enhanced Content Features
+
 - [ ] **Dark Mode**: Toggle via query param `?theme=dark`, test attribute-based scanning
 - [ ] **Search Index**: `/api/search.json` endpoint for testing API endpoint ignoring
 - [ ] **Enhanced Metadata**: More comprehensive OpenGraph tags, structured data
 - [ ] **Performance Assets**: Large image (>150KB) for streaming/memory tests
 
 ### Makefile Integration
+
 - [ ] **Targets**: Add `testsite-dev`, `integ-live`, `testsite-check` make targets
 - [ ] **CI Integration**: Bun installation step, test site reuse across integration suite
 - [ ] **Documentation**: Update root README with "Live Test Site Usage" section
@@ -323,9 +334,9 @@ Implementation notes:
 
 **All Phase 1 objectives achieved (2025-09-29):**
 
-1. ✅ **Created** `tools/test-site` with complete package structure  
+1. ✅ **Created** `tools/test-site` with complete package structure
 2. ✅ **Implemented** Bun dev server with TypeScript transpilation via Bun.build()
-3. ✅ **Added** comprehensive React routes with wiki-style content  
+3. ✅ **Added** comprehensive React routes with wiki-style content
 4. ✅ **Integrated** shadcn/ui components (Button, Card, Alert) throughout site
 5. ✅ **Configured** Tailwind CSS with proper component styling
 6. ✅ **Established** API endpoints (/api/ping, /api/posts, /api/slow)
