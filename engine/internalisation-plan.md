@@ -59,6 +59,7 @@ A structured, low-risk sequence to reduce the public API surface of the `engine`
 **Tasks**:
 
 - Generate `API_REPORT.md` (go/packages + AST walker).
+
 # Engine Internalization Decision Record
 
 Status: ACTIVE – decisive contraction of public surface (no deprecation staging; breaking changes acceptable pre‑1.0).
@@ -68,103 +69,117 @@ Audience: Core maintainers. Goal: Minimise exported API to what embedders must u
 ---
 
 ## 1. Objective (Single Sentence)
+
 Expose only a slim lifecycle + configuration + snapshot + extension point interface set; internalize or remove all implementation, orchestration, telemetry plumbing, advanced config, and business/monitoring layers.
 
 ## 2. Non‑Goals
-* Backwards compatibility shims.
-* Transitional stubs for removed packages (`resources`, `runtime`, etc.).
-* External plugin story (can be introduced later on top of a smaller surface).
+
+- Backwards compatibility shims.
+- Transitional stubs for removed packages (`resources`, `runtime`, etc.).
+- External plugin story (can be introduced later on top of a smaller surface).
 
 ## 3. Target Public Surface (Post-Prune)
+
 Top-level package `engine`:
-* Types: `Engine`, `Config`, `EngineSnapshot`, `LimiterSnapshot` (trimmed), strategy interfaces: `Fetcher`, `Processor`, `OutputSink`, `AssetStrategy` (OPTIONAL – remove if no near-term plugin need).  
-* Functions: `New(Config) (*Engine, error)`, `SelectMetricsProvider(...)` (may remain if genuinely useful), `Version()` (if present).  
-* Methods: `Start`, `Stop`, `Snapshot`, `HealthSnapshot` (or `Health`), `Policy` (if still required), minimal telemetry policy update if retained.  
-* Errors: only canonical sentinel errors actually used by callers (re-evaluate).  
+
+- Types: `Engine`, `Config`, `EngineSnapshot`, `LimiterSnapshot` (trimmed), strategy interfaces: `Fetcher`, `Processor`, `OutputSink`, `AssetStrategy` (OPTIONAL – remove if no near-term plugin need).
+- Functions: `New(Config) (*Engine, error)`, `SelectMetricsProvider(...)` (may remain if genuinely useful), `Version()` (if present).
+- Methods: `Start`, `Stop`, `Snapshot`, `HealthSnapshot` (or `Health`), `Policy` (if still required), minimal telemetry policy update if retained.
+- Errors: only canonical sentinel errors actually used by callers (re-evaluate).
 
 Additional packages retained:
-* `engine/models`: Pure data structures (no behavioral factories beyond constructors).  
-* `engine/config`: Slim `Config` only; remove unified / business / layered constructs.  
+
+- `engine/models`: Pure data structures (no behavioral factories beyond constructors).
+- `engine/config`: Slim `Config` only; remove unified / business / layered constructs.
 
 Everything else: internal or removed.
 
 ## 4. Package Action Matrix
 
-| Package / Path | Action | Rationale | Notes |
-|----------------|--------|-----------|-------|
-| `adapters/telemetryhttp` | Remove (moved logic to CLI) | HTTP exposure belongs outside core | Delete tests; CLI already hosts handlers. |
-| `resources/` (stub) | Delete | Dead namespace; snapshot exposure is via Engine | Remove allowlist guard tied to it. |
-| `monitoring/` | Delete OR internalize whole file | Monolithic mixed concerns; superseded by CLI adapter + snapshots | Prefer delete; reintroduce as external module if ever needed. |
-| `business/*` | Internalize or delete | Historical layering; not part of minimal embed surface | If unused in tests, drop entirely. |
-| `strategies/` dir | Delete (interfaces already in `strategies.go`) | Redundant; reduces cognitive load | Adjust tests to import root. |
-| `config/unified_config.go` | Remove | Bloated experimental config; keep only lean `Config` struct | Inline only fields actually consumed by `New`. |
-| `config/runtime.go` (stub) | Delete | Vestigial placeholder | Drop commentary; record decision here. |
-| `configx/` | Internalize OR extract to `x/configlayers` later | Advanced layering & simulation not core | Move to `internal/configlayers` for now. |
-| `crawler/` impl | Internalize | Implementation detail; expose `Fetcher` interface only | Provide default fetcher internally. |
-| `processor/` impl | Internalize | Same argument as crawler | Keep interface. |
-| `output/` concrete sinks | Internalize all but maybe `stdout` example | Trim surface; encourage custom implementations via interface | Option: internalize `stdout` too and show doc snippet instead. |
-| `ratelimit/` | Internalize | Allows algorithm redesign without API churn | Export only snapshot struct from root. |
-| `telemetry/*` (events, tracing, policy internals) | Internalize | Users shouldn't assemble telemetry primitives | Keep only provider selection or even internalize that and drive via Config enum. |
-| `engine/SelectMetricsProvider` | Keep or internalize | Keep only if real external extension; else move to internal and expose simple enum | Decision: KEEP (for now) – documented as provisional. |
+| Package / Path                                    | Action                                           | Rationale                                                                          | Notes                                                                            |
+| ------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `adapters/telemetryhttp`                          | Remove (moved logic to CLI)                      | HTTP exposure belongs outside core                                                 | Delete tests; CLI already hosts handlers.                                        |
+| `resources/` (stub)                               | Delete                                           | Dead namespace; snapshot exposure is via Engine                                    | Remove allowlist guard tied to it.                                               |
+| `monitoring/`                                     | Delete OR internalize whole file                 | Monolithic mixed concerns; superseded by CLI adapter + snapshots                   | Prefer delete; reintroduce as external module if ever needed.                    |
+| `business/*`                                      | Internalize or delete                            | Historical layering; not part of minimal embed surface                             | If unused in tests, drop entirely.                                               |
+| `strategies/` dir                                 | Delete (interfaces already in `strategies.go`)   | Redundant; reduces cognitive load                                                  | Adjust tests to import root.                                                     |
+| `config/unified_config.go`                        | Remove                                           | Bloated experimental config; keep only lean `Config` struct                        | Inline only fields actually consumed by `New`.                                   |
+| `config/runtime.go` (stub)                        | Delete                                           | Vestigial placeholder                                                              | Drop commentary; record decision here.                                           |
+| `configx/`                                        | Internalize OR extract to `x/configlayers` later | Advanced layering & simulation not core                                            | Move to `internal/configlayers` for now.                                         |
+| `crawler/` impl                                   | Internalize                                      | Implementation detail; expose `Fetcher` interface only                             | Provide default fetcher internally.                                              |
+| `processor/` impl                                 | Internalize                                      | Same argument as crawler                                                           | Keep interface.                                                                  |
+| `output/` concrete sinks                          | Internalize all but maybe `stdout` example       | Trim surface; encourage custom implementations via interface                       | Option: internalize `stdout` too and show doc snippet instead.                   |
+| `ratelimit/`                                      | Internalize                                      | Allows algorithm redesign without API churn                                        | Export only snapshot struct from root.                                           |
+| `telemetry/*` (events, tracing, policy internals) | Internalize                                      | Users shouldn't assemble telemetry primitives                                      | Keep only provider selection or even internalize that and drive via Config enum. |
+| `engine/SelectMetricsProvider`                    | Keep or internalize                              | Keep only if real external extension; else move to internal and expose simple enum | Decision: KEEP (for now) – documented as provisional.                            |
 
 ## 5. Rationale Highlights (Critical Lens)
-* Current breadth (monitoring, business, layered config) dilutes Engine’s mental model and increases accidental coupling risk.
-* Implementation packages (crawler, processor, output, ratelimit) leak design choices that we may want to rework (parallelism model, retry semantics, queues) – keeping them public ossifies them prematurely.
-* Unified / layered config encourages indirect configuration paths; a narrow `Config` struct keeps configuration explicit and reviewable.
-* Telemetry handler exposure inside core would force HTTP and Prometheus dependencies on embedders who may not need them – adapter pattern validated by moving logic to CLI.
-* Removing stubs eliminates “placeholder gravity” where future contributors might resurrect abandoned patterns.
+
+- Current breadth (monitoring, business, layered config) dilutes Engine’s mental model and increases accidental coupling risk.
+- Implementation packages (crawler, processor, output, ratelimit) leak design choices that we may want to rework (parallelism model, retry semantics, queues) – keeping them public ossifies them prematurely.
+- Unified / layered config encourages indirect configuration paths; a narrow `Config` struct keeps configuration explicit and reviewable.
+- Telemetry handler exposure inside core would force HTTP and Prometheus dependencies on embedders who may not need them – adapter pattern validated by moving logic to CLI.
+- Removing stubs eliminates “placeholder gravity” where future contributors might resurrect abandoned patterns.
 
 ## 6. Execution Order (Small, Focused Commits)
-1. Remove: `adapters/telemetryhttp`, `resources/`, `strategies/` dir (redundant), delete `config/runtime.go` stub.  
-2. Internalize: `monitoring/` (or delete if zero references), `business/*`.  
-3. Slim config: Copy required fields from `UnifiedBusinessConfig` into `Config`; update `engine.New`; remove `unified_config.go` + tests relying on its internals.  
-4. Internalize implementations: move `crawler/`, `processor/`, `output/` (all concrete sinks) under `internal/`; adjust imports and tests.  
-5. Ratelimit move: `ratelimit/` → `internal/ratelimit`; re-export snapshot struct from root if still consumed.  
-6. Telemetry slimming: move events, tracing, policy, advanced metrics constructs internal; keep `SelectMetricsProvider` only (or replace with enum switch if simplified).  
-7. Internalize / relocate `configx/` → `internal/configlayers` (or delete if unused by `engine.New`).  
-8. Final pass: purge any now-unused snapshots / types; regenerate API report; tighten allowlist tests.  
+
+1. Remove: `adapters/telemetryhttp`, `resources/`, `strategies/` dir (redundant), delete `config/runtime.go` stub.
+2. Internalize: `monitoring/` (or delete if zero references), `business/*`.
+3. Slim config: Copy required fields from `UnifiedBusinessConfig` into `Config`; update `engine.New`; remove `unified_config.go` + tests relying on its internals.
+4. Internalize implementations: move `crawler/`, `processor/`, `output/` (all concrete sinks) under `internal/`; adjust imports and tests.
+5. Ratelimit move: `ratelimit/` → `internal/ratelimit`; re-export snapshot struct from root if still consumed.
+6. Telemetry slimming: move events, tracing, policy, advanced metrics constructs internal; keep `SelectMetricsProvider` only (or replace with enum switch if simplified).
+7. Internalize / relocate `configx/` → `internal/configlayers` (or delete if unused by `engine.New`).
+8. Final pass: purge any now-unused snapshots / types; regenerate API report; tighten allowlist tests.
 
 Each step: run engine + cli tests, regenerate API report, update CHANGELOG (Added: none / Removed: list), adjust allowlist guard.
 
 ## 7. Immediate Next Commit (Scope Definition)
+
 Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
-* Delete `engine/adapters/telemetryhttp/`.
-* Delete `engine/resources/`.
-* Delete `engine/strategies/` directory (keep `strategies.go`).
-* Delete `engine/config/runtime.go`.
-* Update allowlist guard tests + API report.
+
+- Delete `engine/adapters/telemetryhttp/`.
+- Delete `engine/resources/`.
+- Delete `engine/strategies/` directory (keep `strategies.go`).
+- Delete `engine/config/runtime.go`.
+- Update allowlist guard tests + API report.
 
 ## 8. Risk Assessment (Post-Decision)
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Hidden test reliance on removed packages | Failing build | Move instead of delete first; grep for imports before hard delete. |
-| Over-pruning removes needed extension point | Slows future plugin story | Strategy interfaces retained (root) until explicit removal decision. |
-| Telemetry provider customization need emerges | Requires re-export | Document internal package structure to allow selective future exposure. |
-| Config slimming misses a field used indirectly | Behavior regression | Add focused test capturing all current `Config` usages before refactor. |
+
+| Risk                                           | Impact                    | Mitigation                                                              |
+| ---------------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| Hidden test reliance on removed packages       | Failing build             | Move instead of delete first; grep for imports before hard delete.      |
+| Over-pruning removes needed extension point    | Slows future plugin story | Strategy interfaces retained (root) until explicit removal decision.    |
+| Telemetry provider customization need emerges  | Requires re-export        | Document internal package structure to allow selective future exposure. |
+| Config slimming misses a field used indirectly | Behavior regression       | Add focused test capturing all current `Config` usages before refactor. |
 
 ## 9. Success Criteria
-* Exported symbol count reduced significantly (goal: >30% reduction vs current report).
-* Public packages <= 3 (`engine`, `engine/models`, `engine/config`).
-* No exported concrete implementations of internal behaviors (crawler, processor, sinks, ratelimit logic, monitoring aggregator).
-* All telemetry wiring outside engine except provider selection.
-* Tests green; API report diff matches intentional removal set.
+
+- Exported symbol count reduced significantly (goal: >30% reduction vs current report).
+- Public packages <= 3 (`engine`, `engine/models`, `engine/config`).
+- No exported concrete implementations of internal behaviors (crawler, processor, sinks, ratelimit logic, monitoring aggregator).
+- All telemetry wiring outside engine except provider selection.
+- Tests green; API report diff matches intentional removal set.
 
 ## 10. Divergences From Previous Draft Plan
-| Old Plan Element | New Decision |
-|------------------|--------------|
-| Staged deprecations | Immediate removal (pre‑1.0) |
+
+| Old Plan Element                     | New Decision                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| Staged deprecations                  | Immediate removal (pre‑1.0)                                                    |
 | Health/Events new façade types first | Retain existing `HealthSnapshot` short-term; rename later only if value proven |
-| Monitoring evolution | Drop entirely (not core) |
-| Business metrics layering | Removed; reintroduce externally if revived |
+| Monitoring evolution                 | Drop entirely (not core)                                                       |
+| Business metrics layering            | Removed; reintroduce externally if revived                                     |
 
 ## 11. Open Items (Explicitly Deferred)
-* Whether to drop `AssetStrategy` interface (decide after internalization wave 3; investigate real external demand).
-* Potential consolidation of snapshots into a single composite struct if it simplifies surface further.
-* Converting `SelectMetricsProvider` to an unexported helper plus a simple config enum mapping.
+
+- Whether to drop `AssetStrategy` interface (decide after internalization wave 3; investigate real external demand).
+- Potential consolidation of snapshots into a single composite struct if it simplifies surface further.
+- Converting `SelectMetricsProvider` to an unexported helper plus a simple config enum mapping.
 
 ---
 
 ## 12. Quick Reference – Action Checklist
+
 ```
 [] C1 Remove adapters/, resources/, strategies/ dir, runtime stub
 [] C2 Internalize or delete monitoring/ + business/
@@ -179,6 +194,7 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 ---
 
 This document is authoritative until superseded; update it in the same PRs that materially change the sequence or scope.
+
 - Provide engine-level method: `EnableAssets(policy AssetPolicy)` (or stays config-based).
 - Translate asset events into summary counters only; events bus category stays (optional).
 
