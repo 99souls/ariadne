@@ -33,6 +33,10 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Removed exported functional option type `Option`; constructor now uses only `Config` (Wave 3 API pruning).
 - crawler: Removed deprecated alias `FetchedPage` in favor of `FetchResult` (Wave 3 pruning – breaking pre-v1 acceptable).
 - engine: Deprecated & stubbed former `engine/resources` package (now empty, enforced by allowlist guard) after internalization (Wave 4 W4-04).
+- engine: Removed `engine/adapters/telemetryhttp` (HTTP handlers now owned by CLI; shrink core surface) (C1 pruning).
+- engine: Removed previously stubbed `engine/resources` package entirely (snapshot-only exposure via Engine remains) (C1 pruning).
+- engine: Removed experimental `engine/strategies/` package (redundant; interfaces consolidated in root `strategies.go`) (C1 pruning).
+- config: Removed vestigial `engine/config/runtime.go` stub (runtime system internalized; guard no longer required) (C1 pruning).
 
 ### Deprecated
 

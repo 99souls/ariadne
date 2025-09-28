@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/99souls/ariadne/engine/strategies"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
@@ -863,8 +861,10 @@ func (ims *IntegratedMonitoringSystem) MonitorConfigurationChange(changeType, ol
 }
 
 // MonitorComposedStrategyExecution monitors composed strategy execution
-func (ims *IntegratedMonitoringSystem) MonitorComposedStrategyExecution(ctx context.Context, composedStrategies *strategies.ComposedStrategies, execFunc func() (int, int, error)) error {
-	// Monitor as a combined strategy execution
+// MonitorComposedStrategyExecution previously accepted *strategies.ComposedStrategies.
+// That experimental package was removed in pruning wave C1; we retain a generic
+// helper for any future composed execution concept without re‑introducing the dependency.
+func (ims *IntegratedMonitoringSystem) MonitorComposedStrategyExecution(ctx context.Context, execFunc func() (int, int, error)) error {
 	return ims.MonitorStrategyExecution(ctx, "composed_strategy", execFunc)
 }
 
