@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   resolve-modules:
     name: Resolve Modules

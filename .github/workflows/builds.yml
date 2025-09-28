@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Ensure all multi-line run: scripts use bash (needed for Windows runners where default is PowerShell)
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-matrix:
     runs-on: ${{ matrix.os }}
