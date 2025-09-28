@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	crawlerPolicies "github.com/99souls/ariadne/engine/business/crawler"
-	outputPolicies "github.com/99souls/ariadne/engine/business/output"
-	processorPolicies "github.com/99souls/ariadne/engine/business/processor"
+	crawlerPolicies "github.com/99souls/ariadne/engine/internal/business/crawler"
+	outputPolicies "github.com/99souls/ariadne/engine/internal/business/output"
+	processorPolicies "github.com/99souls/ariadne/engine/internal/business/processor"
 )
 
 // BusinessPolicies represents the complete set of business policies for the engine

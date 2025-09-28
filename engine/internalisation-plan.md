@@ -182,7 +182,9 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 
 ```
 [x] C1 Remove adapters/, resources/, strategies/ dir, runtime stub (branch: c1-prune-initial)
-[] C2 Internalize or delete monitoring/ + business/
+* [ ] C2: Internalize monitoring/ and business/* packages (move under internal/, adjust imports, update allowlists, changelog)
+* [x] C2: Internalized monitoring/ and business/* packages (moved to internal/, updated imports, allowlists unaffected except runtime import path, changelog pending entry) – reduced public surface; legacy adapter in telemetry now references internal monitoring
+[] C3 Replace UnifiedBusinessConfig with lean Config; delete unified_config.go
 [] C3 Replace UnifiedBusinessConfig with lean Config; delete unified_config.go
 [] C4 Internalize crawler/, processor/, output/ implementations
 [] C5 Internalize ratelimit/

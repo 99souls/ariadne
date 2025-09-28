@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	legacy "github.com/99souls/ariadne/engine/monitoring"
+	legacy "github.com/99souls/ariadne/engine/internal/monitoring"
 	"net/http/httptest"
 	"testing"
 )

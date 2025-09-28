@@ -26,6 +26,8 @@ All notable changes to this project will be documented in this file. The format 
 - cli: Metrics endpoint transitioned from placeholder to provider-backed handler leveraging `engine.SelectMetricsProvider`; simplified verification strategy (log assertion) for deterministic tests (Wave 4 W4-05 / W4-06).
 - config: Internalized former runtime configuration & A/B testing implementation (moved under `engine/internal/runtime`); left guarded stub `runtime.go` to prevent re-expansion (Wave 4 W4-03 partial completion).
 - telemetry: Build info gauge intentionally emitted only via CLI metrics adapter to avoid expanding engine public surface (Wave 4 adapter scope decision).
+- engine: Internalized former public `engine/monitoring` package (now `engine/internal/monitoring`); legacy metrics adapter updated to reference internal path (C2 pruning).
+*- engine: Internalized `engine/business/*` packages under `engine/internal/business/*` (crawler, processor, output, policies) consolidating business rule system behind internal boundary (C2 pruning). No public re-export provided; future facade will expose only minimal policy tuning hooks if justified.
 
 ### Removed
 
@@ -37,6 +39,7 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Removed previously stubbed `engine/resources` package entirely (snapshot-only exposure via Engine remains) (C1 pruning).
 - engine: Removed experimental `engine/strategies/` package (redundant; interfaces consolidated in root `strategies.go`) (C1 pruning).
 - config: Removed vestigial `engine/config/runtime.go` stub (runtime system internalized; guard no longer required) (C1 pruning).
+- engine: Removed public access to business implementation packages (`engine/business/*`) and monitoring metrics scaffolding (`engine/monitoring`) by internalization (C2 pruning – breaking pre-v1 acceptable).
 
 ### Deprecated
 
