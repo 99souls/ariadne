@@ -10,11 +10,15 @@ All notable changes to this project will be documented in this file. The format 
 - config: Added comprehensive Experimental annotations across `engine/config` (unified + runtime config, hot reload, versioning, AB testing) plus export allowlist guard test locking curated surface (Wave 3).
 - engine: Added `engine_resources_snapshot_test.go` guard test ensuring `ResourceSnapshot` present only when resources subsystem configured (Wave 4 W4-04 follow-up).
 - telemetry: Added export allowlist guard test across telemetry subpackages (events, metrics, tracing, policy, health, logging) locking current public surface (Wave 4 W4-07 governance).
+- telemetry: Authored `md/telemetry-boundary.md` documenting current public telemetry surface, pruning candidates, and stability annotations (Wave 4 W4-05 partial).
+- engine: Added helper `SelectMetricsProvider` centralizing backend selection (Prometheus, OTEL, noop) for potential reuse by adapters / future CLI telemetry wiring (Wave 4 W4-05).
 
 ### Changed
 
 - engine: Marked `OutputSink` and `AssetStrategy` explicitly Experimental in pruning list (consolidated in strategies.go) (Wave 3).
 - engine: Internalized former public resource manager implementation under `engine/internal/resources`; introduced public facade `ResourcesConfig` and preserved snapshot-only exposure (`ResourceSnapshot`) (Wave 4 W4-04).
+- telemetry/metrics: Annotated all metrics interfaces (`Counter`, `Gauge`, `Histogram`, `Timer`, `Provider`) as Experimental and documented planned consolidation (Wave 4 W4-05).
+- engine: `New` now delegates metrics backend initialization to `SelectMetricsProvider` reducing duplication and clarifying intended extension hook (Wave 4 W4-05).
 
 ### Removed
 
@@ -22,6 +26,10 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Removed exported functional option type `Option`; constructor now uses only `Config` (Wave 3 API pruning).
 - crawler: Removed deprecated alias `FetchedPage` in favor of `FetchResult` (Wave 3 pruning – breaking pre-v1 acceptable).
 - engine: Deprecated & stubbed former `engine/resources` package (now empty, enforced by allowlist guard) after internalization (Wave 4 W4-04).
+
+### Deprecated
+
+- telemetry/metrics: Deprecated `BusinessCollectorAdapter` and `NewBusinessCollectorAdapter`; transitional shim scheduled for removal or internalization in a future pruning wave (see `md/telemetry-boundary.md`).
 
 ### Changed
 

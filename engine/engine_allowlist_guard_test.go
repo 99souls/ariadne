@@ -31,7 +31,7 @@ func TestEngineExportAllowlist(t *testing.T) {
 		// Public enums / consts (asset modes)
 		"AssetModeDownload": {}, "AssetModeSkip": {}, "AssetModeInline": {}, "AssetModeRewrite": {},
 		// Config helpers
-		"Defaults": {},
+		"Defaults": {}, "SelectMetricsProvider": {},
 		// Constructor for default asset strategy (still public while subsystem experimental)
 		"NewDefaultAssetStrategy": {},
 	}

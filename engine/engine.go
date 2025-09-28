@@ -221,25 +221,9 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 
 	e := &Engine{cfg: cfg, pl: pl, limiter: limiter, rm: rm, startedAt: time.Now()}
 
-	// Phase 5E Iteration 1 & 6: initialize metrics provider if enabled with backend selection.
-	if cfg.MetricsEnabled {
-		backend := strings.ToLower(cfg.MetricsBackend)
-		switch backend {
-		case "", "prom", "prometheus":
-			p := telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
-			e.metricsProvider = p
-		case "otel", "opentelemetry":
-			p := telemetrymetrics.NewOTelProvider(telemetrymetrics.OTelProviderOptions{})
-			e.metricsProvider = p
-		case "noop":
-			// explicit noop even if enabled
-			e.metricsProvider = telemetrymetrics.NewNoopProvider()
-		default:
-			p := telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
-			e.metricsProvider = p
-		}
-		// NOTE: Exposing HTTP handler remains caller responsibility.
-	}
+	// Initialize metrics provider (Wave 4 W4-05: delegated to helper for reuse & clarity)
+	e.metricsProvider = SelectMetricsProvider(cfg)
+	// NOTE: Exposing HTTP handler / endpoint binding remains caller responsibility (CLI or embedding app).
 
 	// Phase 5E Iteration 2: initialize event bus (metrics provider may be nil; bus tolerates nil -> noop metrics)
 	e.eventBus = telemEvents.NewBus(e.metricsProvider)
@@ -300,6 +284,27 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	}
 	e.started.Store(true)
 	return e, nil
+}
+
+// SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
+// Experimental: Helper may relocate behind a telemetry facade or be internalized if
+// embedding approach changes prior to v1.0. Exposed to reduce duplication across
+// potential CLI / adapter wiring and to make backend selection auditable in one place.
+func SelectMetricsProvider(cfg Config) telemetrymetrics.Provider {
+	if !cfg.MetricsEnabled {
+		return nil
+	}
+	backend := strings.ToLower(cfg.MetricsBackend)
+	switch backend {
+	case "", "prom", "prometheus":
+		return telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
+	case "otel", "opentelemetry":
+		return telemetrymetrics.NewOTelProvider(telemetrymetrics.OTelProviderOptions{})
+	case "noop":
+		return telemetrymetrics.NewNoopProvider()
+	default:
+		return telemetrymetrics.NewPrometheusProvider(telemetrymetrics.PrometheusProviderOptions{})
+	}
 }
 
 // AssetMetricsSnapshot returns current aggregated counters (zero-value if strategy disabled).
