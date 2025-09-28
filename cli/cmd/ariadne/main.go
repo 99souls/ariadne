@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/99souls/ariadne/engine"
+	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
 
 // simpleJSONConfig represents a minimal subset of engine.Config loadable from a JSON file.
@@ -108,9 +109,13 @@ func main() {
 	// Merge simple config file if provided
 	if configPath != "" {
 		f, err := os.Open(configPath)
-		if err != nil { log.Fatalf("open config: %v", err) }
+		if err != nil {
+			log.Fatalf("open config: %v", err)
+		}
 		var sc simpleJSONConfig
-		if err := json.NewDecoder(f).Decode(&sc); err != nil { log.Fatalf("decode config: %v", err) }
+		if err := json.NewDecoder(f).Decode(&sc); err != nil {
+			log.Fatalf("decode config: %v", err)
+		}
 		_ = f.Close()
 		cfg = applySimpleConfig(cfg, &sc)
 	}
@@ -146,14 +151,34 @@ func main() {
 		log.Fatalf("start engine: %v", err)
 	}
 
-	// Metrics endpoint (basic stub until adapter wiring); only if enabled & address provided.
+	// Metrics endpoint adapter (Wave 4 W4-05): prefer provider-native handler when available.
 	if metricsAddr != "" && cfg.MetricsEnabled {
 		mux := http.NewServeMux()
-		mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			// Minimal placeholder exposition; real impl will integrate provider registry.
-			_, _ = w.Write([]byte("# HELP ariadne_build_info Build info metric placeholder\n# TYPE ariadne_build_info gauge\nariadne_build_info 1\n"))
-		})
+
+		// Local interface to detect handler-capable providers (e.g., PrometheusProvider).
+		type handlerProvider interface{ MetricsHandler() http.Handler }
+		if mp := eng.MetricsProvider(); mp != nil {
+			// Register a simple build info gauge to guarantee at least one exposed metric.
+			if g := mp.NewGauge(telemetrymetrics.GaugeOpts{CommonOpts: telemetrymetrics.CommonOpts{Namespace: "ariadne", Subsystem: "build", Name: "info", Help: "Build info metric (static value 1)"}}); g != nil {
+				g.Set(1)
+			}
+			if hp, ok := mp.(handlerProvider); ok && hp.MetricsHandler() != nil {
+				mux.Handle("/metrics", hp.MetricsHandler())
+			} else {
+				// Fallback minimal exposition so /metrics is never 404 when flag supplied.
+				mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte("# HELP ariadne_metrics_placeholder Placeholder metrics because provider has no handler\n# TYPE ariadne_metrics_placeholder gauge\nariadne_metrics_placeholder 1\n"))
+				})
+			}
+		} else {
+			// Metrics explicitly enabled but provider nil (shouldn't happen) – still serve stub.
+			mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("# HELP ariadne_metrics_disabled Metrics enabled flag but provider missing\n# TYPE ariadne_metrics_disabled gauge\nariadne_metrics_disabled 1\n"))
+			})
+		}
+
 		go func() {
 			srv := &http.Server{Addr: metricsAddr, Handler: mux}
 			<-ctx.Done()
@@ -161,7 +186,9 @@ func main() {
 		}()
 		go func() {
 			log.Printf("metrics listening on %s (backend=%s)", metricsAddr, cfg.MetricsBackend)
-			_ = http.ListenAndServe(metricsAddr, mux)
+			if err := http.ListenAndServe(metricsAddr, mux); err != nil && ctx.Err() == nil {
+				log.Printf("metrics server error: %v", err)
+			}
 		}()
 	}
 
