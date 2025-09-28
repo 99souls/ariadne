@@ -227,22 +227,22 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 
 ### Success Criteria (Phase 6 Gate)
 
-| Criterion | Target |
-| --------- | ------ |
-| Site cold start | < 200ms Bun process ready on M2 Mac / CI small instance |
-| Test harness reuse | Achieved (second test run reuses process) |
-| Flakiness | 0 flakes in 20 consecutive CI runs |
-| Integration replacement | ≥1 legacy mock test removed / refactored |
-| Deterministic content | No timestamp/random diffs across runs |
+| Criterion               | Target                                                  |
+| ----------------------- | ------------------------------------------------------- |
+| Site cold start         | < 200ms Bun process ready on M2 Mac / CI small instance |
+| Test harness reuse      | Achieved (second test run reuses process)               |
+| Flakiness               | 0 flakes in 20 consecutive CI runs                      |
+| Integration replacement | ≥1 legacy mock test removed / refactored                |
+| Deterministic content   | No timestamp/random diffs across runs                   |
 
 ### Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-| ---- | ------ | ---------- |
-| Port collisions | Test flakes | Dynamic port selection with retry |
-| Bun install variability | CI failures | Pin version in `bunfig.toml`; cache install layer |
-| Latency variance | Flaky slow endpoint test | Constrain delay with fixed seed RNG or deterministic cycle |
-| Content drift | Assertion churn | Golden snapshots + PR review checklist for test-site changes |
+| Risk                    | Impact                   | Mitigation                                                   |
+| ----------------------- | ------------------------ | ------------------------------------------------------------ |
+| Port collisions         | Test flakes              | Dynamic port selection with retry                            |
+| Bun install variability | CI failures              | Pin version in `bunfig.toml`; cache install layer            |
+| Latency variance        | Flaky slow endpoint test | Constrain delay with fixed seed RNG or deterministic cycle   |
+| Content drift           | Assertion churn          | Golden snapshots + PR review checklist for test-site changes |
 
 ### Outputs
 
@@ -287,16 +287,72 @@ Phase 7 (CLI Polish) work may begin only after Phase 6 success criteria met and 
 
 ## Critical Gap Analysis (Added Q4)
 
-| Gap | Current State | Impact if Unaddressed | Planned Mitigation |
-| ---- | ------------- | --------------------- | ------------------ |
-| Lack of realistic crawling surface | Synthetic mocks only | Under-tested edge cases (broken assets, robots) | Phase 6 live test site (P1 + P2) |
-| Determinism enforcement | Ad hoc | Flaky CI undermines confidence | Add flake detector script + golden snapshots |
-| API surface governance in root plan | Implicit via internalisation doc | Risk of accidental re-export | Introduce Phase 7 CI check: exported symbol diff vs allowlist |
-| Performance regression visibility | Manual benchmarking | Slow unnoticed creep | Add periodic benchmark run + budget enforcement (Phase 6 add hook) |
-| Output a11y quality | Not evaluated | Harder future adoption & accessibility debt | Phase 7 a11y lint pass + alt tag enforcement |
-| Config sprawl risk | Expansion in upcoming phases | Harder onboarding & docs drift | Config schema + validation (#31/#32) before adding new flags |
+| Gap                                 | Current State                    | Impact if Unaddressed                           | Planned Mitigation                                                 |
+| ----------------------------------- | -------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| Lack of realistic crawling surface  | Synthetic mocks only             | Under-tested edge cases (broken assets, robots) | Phase 6 live test site (P1 + P2)                                   |
+| Determinism enforcement             | Ad hoc                           | Flaky CI undermines confidence                  | Add flake detector script + golden snapshots                       |
+| API surface governance in root plan | Implicit via internalisation doc | Risk of accidental re-export                    | Introduce Phase 7 CI check: exported symbol diff vs allowlist      |
+| Performance regression visibility   | Manual benchmarking              | Slow unnoticed creep                            | Add periodic benchmark run + budget enforcement (Phase 6 add hook) |
+| Output a11y quality                 | Not evaluated                    | Harder future adoption & accessibility debt     | Phase 7 a11y lint pass + alt tag enforcement                       |
+| Config sprawl risk                  | Expansion in upcoming phases     | Harder onboarding & docs drift                  | Config schema + validation (#31/#32) before adding new flags       |
 
 Additional gaps to re-evaluate after Phase 6: plugin architecture clarity, multi-language content support, structured data (JSON-LD) extraction fidelity.
+
+---
+
+## Test Coverage Strategy (New)
+
+Current Baseline (engine module quick scan):
+
+| Area / Package (sample) | Approx Coverage | Notes |
+| ----------------------- | --------------- | ----- |
+| engine (facade/core)    | 83%             | Healthy, integration + unit blend |
+| internal/business/*     | 74–95%          | High; keep above 80% floor |
+| internal/pipeline       | ~70%            | Complex concurrency paths missing edge cases |
+| internal/output (root)  | 37%             | Needs targeted tests for error paths & large doc assembly |
+| internal/assets         | 22%             | Lowest – add discovery failure & rewrite tests |
+| internal/processor      | 48%             | Missing branch/edge handling (malformed HTML, encoding) |
+| telemetry/health        | 71%             | Improve degraded/recovery transitions coverage |
+| telemetry/logging       | 55%             | Exercise error pathways & context cancellation |
+| misc internal packages  | 0%              | Stubs / simple structs (resources, ratelimit impl tests live elsewhere) |
+
+Global module total (raw tool output) reported ~58% because many intentional no‑logic packages count as 0%; focus on critical-runtime weighted coverage instead.
+
+### Targets (Phased)
+
+| Phase Gate | Target (Critical Runtime Weighted) | Hard Failing CI Threshold | Notes |
+| ---------- | ---------------------------------- | -------------------------- | ----- |
+| Post Phase 5 | ≥70% | Warn below 65% | Add coverage reporting (no gate yet) |
+| Phase 6 Exit | ≥75% | Fail below 70% | Add live test site induced branches |
+| Phase 7 Start | ≥80% | Fail below 75% | Enforce with `make coverage-check` |
+| Pre v0.2.0 tag | ≥85% | Fail below 80% | Stretch: raise engine core ≥90% |
+
+Weighted coverage = (sum covered statements in designated critical packages) / (total statements in those packages). Critical set: engine/, internal/pipeline, internal/business/*, internal/output, internal/processor, internal/assets, telemetry/health.
+
+### Action Backlog
+
+- [ ] Add `make coverage` (profile) and `make coverage-check` (enforce thresholds via Go tool + awk script).
+- [ ] Write asset negative path tests (missing image, rewrite failure fallback) to elevate internal/assets to ≥60%.
+- [ ] Add pipeline cancellation & timeout tests (raise internal/pipeline to ≥80%).
+- [ ] Add processor malformed HTML & encoding tests (target ≥70%).
+- [ ] Add telemetry health state transition regression test (unknown → degraded → healthy → degraded). Raise to ≥85%.
+- [ ] Add logging error/ctx tests (target ≥80%).
+- [ ] Exclude pure data-only packages from weighted metric (document rationale).
+  
+### CI Integration Plan
+
+1. Phase 5: Introduce coverage job (uploads HTML report artifact) – no gating.
+2. Phase 6: Start gating on threshold (soft fail turns to hard fail once target met in two consecutive runs).
+3. Phase 7: Threshold bump + badge generation (README coverage badge via simple script).
+4. Pre-release: Review uncovered lines >200 LOC; create follow-up issues or explicitly annotate as acceptable (rare defensive code).
+
+### Principles
+
+- Favor scenario coverage (integration + live site) rather than brittle line-by-line micro tests.
+- When skipping coverage (conditional OS, defensive panic guards), add `// coverage:ignore` style comment (custom lint later).
+- Every new exported function MUST have accompanying test or explicit issue.
+
+---
 
 ---
 
