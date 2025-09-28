@@ -50,6 +50,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "load packages: %v\n", err)
 		os.Exit(1)
 	}
+	// Ensure deterministic ordering of packages to produce stable hash signature across environments.
+	sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].PkgPath < pkgs[j].PkgPath })
 	var body bytes.Buffer
 	// Build body (package sections) first so we can compute a stable signature.
 	for _, p := range pkgs {
