@@ -23,6 +23,8 @@ func TestEngineExportAllowlist(t *testing.T) {
 		"Engine": {}, "Config": {}, "ResourcesConfig": {}, "Snapshot": {}, "ResourceSnapshot": {}, "ResumeSnapshot": {},
 		// Rate limiter reduced public snapshot (Phase C5)
 		"LimiterSnapshot": {}, "LimiterDomainState": {},
+		// Telemetry facade additions (Phase C6 begin)
+		"TelemetryEvent": {}, "TelemetryOptions": {}, "EventObserver": {}, "TelemetryPolicy": {}, "HealthPolicy": {}, "TracingPolicy": {}, "EventBusPolicy": {}, "DefaultTelemetryPolicy": {},
 		// Construction & strategies placeholder
 		"New": {}, "NewWithStrategies": {}, "EngineStrategies": {},
 		// Consolidated strategy interfaces
@@ -33,7 +35,7 @@ func TestEngineExportAllowlist(t *testing.T) {
 		// Public enums / consts (asset modes)
 		"AssetModeDownload": {}, "AssetModeSkip": {}, "AssetModeInline": {}, "AssetModeRewrite": {},
 		// Config helpers
-		"Defaults": {}, "SelectMetricsProvider": {},
+		"Defaults": {}, "SelectMetricsProvider": {}, "RegisterEventObserver": {},
 		// Constructor for default asset strategy (still public while subsystem experimental)
 		"NewDefaultAssetStrategy": {},
 	}

@@ -1,6 +1,8 @@
-# Config Operations Guide
+> ARCHIVED: The dynamic configuration subsystem (ConfigX) was removed. Operational runbook retained for historical context. See ADR `md/decisions/2025-09-configx-removal.md`.
 
-Operational runbook for using ConfigX programmatically (until CLI in Phase 7).
+# (Archived) Config Operations Guide
+
+Historical runbook for using ConfigX programmatically (CLI was never shipped before removal).
 
 ## 1. Typical Lifecycle
 

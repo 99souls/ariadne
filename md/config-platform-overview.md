@@ -1,6 +1,8 @@
-# Configuration Platform Overview (ConfigX)
+> ARCHIVED: The dynamic configuration subsystem (ConfigX) was removed. Historical reference only. See `md/archive/configx-README-legacy.md` and ADR `md/decisions/2025-09-configx-removal.md`.
 
-This document explains the architecture, lifecycle, and design principles of the Phase 5C configuration & policy management subsystem (ConfigX).
+# (Archived) Configuration Platform Overview (ConfigX)
+
+This document (historical) explained the architecture, lifecycle, and design principles of the removed Phase 5C configuration & policy management subsystem (ConfigX).
 
 ## Goals
 

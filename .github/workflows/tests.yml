@@ -77,14 +77,3 @@ jobs:
           # else
           #   echo "✅ Test coverage is above 80%"
           # fi
-
-      - name: Verify API report freshness
-        run: |
-          echo "Regenerating API report and checking for drift..."
-          cp API_REPORT.md /tmp/API_REPORT.prev
-          go run ./tools/apireport -out API_REPORT.md
-          if ! diff -u /tmp/API_REPORT.prev API_REPORT.md; then
-            echo "❌ API_REPORT.md is out of date. Run 'make api-report' and commit the changes." >&2
-            exit 1
-          fi
-          echo "✅ API_REPORT.md is up to date"

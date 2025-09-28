@@ -1,6 +1,6 @@
 # API Report
 
-Signature: 35c8493f267ee054a24bad074b6108e3a09a0c86df26638e6d20097ee2b94062
+Signature: cc72d2e6c2ee6df5bbae0bc2c4828da33af29306571d80592004eeab9e6f0aac
 
 ## Package `engine`
 
@@ -26,17 +26,19 @@ DefaultAssetStrategy.Rewrite | method |  |
 Engine | type | Stable | Engine composes all subsystems behind a single facade.
 Engine.AssetEvents | method | Experimental | AssetEvents returns a snapshot copy of collected asset events.
 Engine.AssetMetricsSnapshot | method | Experimental | AssetMetricsSnapshot returns current aggregated counters (zero-value if strategy disabled).
-Engine.EventBus | method | Experimental | EventBus exposes the telemetry event bus (non-nil).
 Engine.HealthSnapshot | method | Experimental | HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
 Engine.MetricsProvider | method | Experimental | MetricsProvider returns the active metrics provider (may be nil if disabled).
-Engine.Policy | method | Experimental | Policy returns the current telemetry policy snapshot.
+Engine.Policy | method |  | 
+Engine.RegisterEventObserver | method | Experimental | RegisterEventObserver adds an observer invoked synchronously for each internal telemetry
 Engine.Snapshot | method | Stable | Snapshot returns a unified state view.
 Engine.Start | method | Stable | Start begins processing of the provided seed URLs and returns a read-only results channel.
 Engine.Stop | method | Stable | Stop gracefully stops the engine and underlying components.
-Engine.Tracer | method | Experimental | Tracer returns the engine's tracer implementation.
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
+EventBusPolicy | type |  | 
+EventObserver | type |  | EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
 Fetcher | type | Experimental | Fetcher defines how pages are fetched.
+HealthPolicy | type |  | 
 LimiterDomainState | type | Experimental | LimiterDomainState summarizes recent domain-level adaptive state.
 LimiterSnapshot | type | Experimental | LimiterSnapshot is a public, reduced view of the internal adaptive rate limiter state.
 MaterializedAsset | type |  | MaterializedAsset represents an asset after execution (download / inline / optimization).
@@ -47,6 +49,10 @@ ResourcesConfig | type | Experimental | ResourcesConfig is the public facade con
 ResumeSnapshot | type | Experimental | ResumeSnapshot contains resume filter statistics.
 SelectMetricsProvider | func | Experimental | SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
 Snapshot | type | Stable | Snapshot is a unified view of engine state.
+TelemetryEvent | type | Experimental | TelemetryEvent is a reduced, stable event representation for external observers.
+TelemetryOptions | type | Experimental | TelemetryOptions configures high-level telemetry behavior. Implementation choices
+TelemetryPolicy | type | Experimental | Policy returns the current telemetry policy snapshot.
+TracingPolicy | type |  | 
 
 ## Package `config`
 

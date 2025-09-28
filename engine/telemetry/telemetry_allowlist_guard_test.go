@@ -44,11 +44,6 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 			// Context helpers
 			"SpanFromContext": {}, "ExtractIDs": {},
 		},
-		"policy": {
-			// Telemetry policy surface (may be slimmed later behind engine facade)
-			"TelemetryPolicy": {}, "HealthPolicy": {}, "TracingPolicy": {}, "EventBusPolicy": {},
-			"Default": {},
-		},
 		"health": {
 			// Health evaluator snapshot types (public for adapter consumption)
 			"Snapshot": {}, "ProbeResult": {}, "Status": {}, "Probe": {}, "ProbeFunc": {}, "Evaluator": {},
@@ -83,7 +78,7 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 		sub := filepath.Base(pkgPath)
 		allowed, ok := allow[sub]
 		if !ok {
-			// If a new telemetry subpackage appears, force explicit decision.
+			// Force explicit decision for new packages.
 			t.Fatalf("unexpected telemetry subpackage: %s (add to allowlist or internalize)", sub)
 		}
 		fset := token.NewFileSet()

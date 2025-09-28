@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file. The format 
   _- engine: Internalized `engine/business/_`packages under`engine/internal/business/\*` (crawler, processor, output, policies) consolidating business rule system behind internal boundary (C2 pruning). No public re-export provided; future facade will expose only minimal policy tuning hooks if justified.
 - engine: Snapshot now always includes a non-nil `Limiter` field; when rate limiting is disabled an empty `LimiterSnapshot` is returned (simplifies callers, part of C5 hard cut).
 - policy: Adopted hard-cut removal approach pre-1.0 (no deprecation shims); plan & docs updated to reflect immediate removals with CHANGELOG notice only (applies retroactively to C5 and forward).
+- engine: Telemetry policy package internalized (`engine/telemetry/policy` -> `engine/internal/telemetry/policy`); public access now via facade methods `Engine.Policy()`, `Engine.UpdateTelemetryPolicy()` and re-exported root types (`TelemetryPolicy`, `HealthPolicy`, `TracingPolicy`, `EventBusPolicy`) plus `DefaultTelemetryPolicy()` helper (C6 step 2b).
 
 ### Removed
 
@@ -45,6 +46,9 @@ All notable changes to this project will be documented in this file. The format 
 - config: Removed experimental unified configuration layer (`UnifiedBusinessConfig`, advanced runtime layering & AB testing helpers) and associated tests; public `config` package now intentionally exposes no symbols (C3 pruning – simplifies facade and prevents re-expansion of config surface).
 - engine: Internalized public crawler, processor, and output concrete implementation packages (`engine/crawler`, `engine/processor`, `engine/output` including sinks, assembly, enhancement, html, markdown, stdout) under `engine/internal/` (C4 pruning). Removed their public tests; updated imports; regenerated API report. Facade unchanged (interfaces `Fetcher`, `Processor`, `OutputSink` remain). Pre-v1 breaking change acceptable; all tests green.
 - engine: Internalized adaptive rate limiter implementation (`engine/ratelimit`) under `engine/internal/ratelimit` (C5 pruning). Removed public `RateLimiter` interface & concrete types; facade now emits reduced diagnostic snapshot (`engine.LimiterSnapshot`) only. Pre-v1 breaking change acceptable.
+- telemetry: Removed public `engine/telemetry/policy` package (C6 step 2b); replaced by root re-exports and facade methods. Pre-v1 breaking change acceptable.
+  - governance: Dropped automated API report drift enforcement (pre-commit + CI) in favor of export allowlist guard tests; manual `make api-report` remains available for ad-hoc inspection.
+- config: Deleted experimental `engine/configx` layered/dynamic configuration subsystem (C7 pruning). Rationale: avoid premature complexity; only static `engine.Config` supported pre-1.0 (see md/configx-internalization-analysis.md). Git history preserves implementation for future reconsideration.
 
 ### Deprecated
 
