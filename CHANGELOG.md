@@ -57,21 +57,24 @@ All notable changes to this project will be documented in this file. The format 
 The public telemetry surface has been hard-cut and replaced by a narrow facade:
 
 Removed:
-  - `engine/telemetry/metrics` (all interfaces, constructors, option structs, adapters)
-  - `engine/telemetry/events` (event bus types & constants)
-  - `engine/telemetry/tracing` (direct tracer construction/export)
-  - `engine/telemetry/policy` (replaced by root re-exported types + facade methods)
+
+- `engine/telemetry/metrics` (all interfaces, constructors, option structs, adapters)
+- `engine/telemetry/events` (event bus types & constants)
+- `engine/telemetry/tracing` (direct tracer construction/export)
+- `engine/telemetry/policy` (replaced by root re-exported types + facade methods)
 
 Replacement Facade & Configuration:
-  - Backend selection & enablement now via `engine.Config{ MetricsEnabled, MetricsBackend }` (values: prom|otel|noop; empty defaults to prom when enabled).
-  - Metrics exposition via `Engine.MetricsHandler()` (non-nil only when metrics enabled and Prometheus backend selected; OTEL/noop backends return nil handler by design).
-  - Event observation via `Engine.RegisterEventObserver(func(TelemetryEvent))` receiving bridged `TelemetryEvent` values (currently health change events; future categories may be added behind the same facade).
-  - Runtime policy updates: `Engine.UpdateTelemetryPolicy()` (with `TelemetryPolicy` and nested `HealthPolicy`, `TracingPolicy`, `EventBusPolicy` re-exported for configuration snapshots & mutation).
+
+- Backend selection & enablement now via `engine.Config{ MetricsEnabled, MetricsBackend }` (values: prom|otel|noop; empty defaults to prom when enabled).
+- Metrics exposition via `Engine.MetricsHandler()` (non-nil only when metrics enabled and Prometheus backend selected; OTEL/noop backends return nil handler by design).
+- Event observation via `Engine.RegisterEventObserver(func(TelemetryEvent))` receiving bridged `TelemetryEvent` values (currently health change events; future categories may be added behind the same facade).
+- Runtime policy updates: `Engine.UpdateTelemetryPolicy()` (with `TelemetryPolicy` and nested `HealthPolicy`, `TracingPolicy`, `EventBusPolicy` re-exported for configuration snapshots & mutation).
 
 Migration Guide:
-  - Replace direct provider construction (`metrics.NewPrometheusProvider()`, `metrics.NewOTelProvider()`, etc.) with `Config{ MetricsEnabled: true, MetricsBackend: "prom"|"otel" }`.
-  - Remove any `EventBus()` / `Tracer()` usage; register observers instead and rely on future span helper APIs (to be added if needed pre v0.2.0).
-  - Expose HTTP metrics endpoint only if `Engine.MetricsHandler()` returns non-nil; unchanged health endpoint wiring.
+
+- Replace direct provider construction (`metrics.NewPrometheusProvider()`, `metrics.NewOTelProvider()`, etc.) with `Config{ MetricsEnabled: true, MetricsBackend: "prom"|"otel" }`.
+- Remove any `EventBus()` / `Tracer()` usage; register observers instead and rely on future span helper APIs (to be added if needed pre v0.2.0).
+- Expose HTTP metrics endpoint only if `Engine.MetricsHandler()` returns non-nil; unchanged health endpoint wiring.
 
 Rationale: Enables internal evolution of metrics/event/tracing implementations and policy logic without further public churn; reduces accidental dependency surface and simplifies operator story.
 

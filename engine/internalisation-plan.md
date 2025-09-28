@@ -83,7 +83,8 @@ Expose only a slim lifecycle + configuration + snapshot + extension point interf
 Top-level package `engine`:
 
 - Types: `Engine`, `Config`, `EngineSnapshot`, `LimiterSnapshot` (trimmed), strategy interfaces: `Fetcher`, `Processor`, `OutputSink`, `AssetStrategy` (OPTIONAL – remove if no near-term plugin need).
-- Functions: `New(Config) (*Engine, error)`, `SelectMetricsProvider(...)` (may remain if genuinely useful), `Version()` (if present).
+- Functions: `New(Config) (*Engine, error)`, (optional) `Version()` if retained.
+	*NOTE*: A previously contemplated public `SelectMetricsProvider` helper was **not** exported. Backend selection is now an internal detail (`selectMetricsProvider`) since C9; configuration is driven solely by `Config{ MetricsEnabled, MetricsBackend }`.
 - Methods: `Start`, `Stop`, `Snapshot`, `HealthSnapshot` (or `Health`), `Policy` (if still required), minimal telemetry policy update if retained.
 - Errors: only canonical sentinel errors actually used by callers (re-evaluate).
 
@@ -113,7 +114,7 @@ Everything else: internal or removed.
 | `output/` concrete sinks                          | Internalize all but maybe `stdout` example       | Trim surface; encourage custom implementations via interface                       | Option: internalize `stdout` too and show doc snippet instead.                   |
 | `ratelimit/`                                      | Internalize                                      | Allows algorithm redesign without API churn                                        | Export only snapshot struct from root.                                           |
 | `telemetry/*` (events, tracing, policy internals) | Internalize                                      | Users shouldn't assemble telemetry primitives                                      | Keep only provider selection or even internalize that and drive via Config enum. |
-| `engine/SelectMetricsProvider`                    | Keep or internalize                              | Keep only if real external extension; else move to internal and expose simple enum | Decision: KEEP (for now) – documented as provisional.                            |
+| `engine/SelectMetricsProvider`                    | (Dropped – internal helper only)                 | Avoid premature extension point; config flags sufficient                           | Decision: INTERNALIZED in C9; no exported selection function remains.            |
 
 ## 5. Rationale Highlights (Critical Lens)
 
@@ -130,7 +131,7 @@ Everything else: internal or removed.
 3. Slim config: Copy required fields from `UnifiedBusinessConfig` into `Config`; update `engine.New`; remove `unified_config.go` + tests relying on its internals.
 4. Internalize implementations: move `crawler/`, `processor/`, `output/` (all concrete sinks) under `internal/`; adjust imports and tests.
 5. Ratelimit move: `ratelimit/` → `internal/ratelimit`; re-export snapshot struct from root if still consumed.
-6. Telemetry slimming: move events, tracing, policy, advanced metrics constructs internal; keep `SelectMetricsProvider` only (or replace with enum switch if simplified).
+6. Telemetry slimming: move events, tracing, policy, advanced metrics constructs internal; internalize metrics provider selection logic (no exported selection function).
 7. Internalize / relocate `configx/` → `internal/configlayers` (or delete if unused by `engine.New`).
 8. Final pass: purge any now-unused snapshots / types; regenerate API report; tighten allowlist tests.
 
@@ -176,7 +177,7 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 
 - Whether to drop `AssetStrategy` interface (decide after internalization wave 3; investigate real external demand).
 - Potential consolidation of snapshots into a single composite struct if it simplifies surface further.
-- Converting `SelectMetricsProvider` to an unexported helper plus a simple config enum mapping.
+- (Completed) Converted contemplated `SelectMetricsProvider` to an unexported helper (`selectMetricsProvider`) – config flags now the only public knobs.
 
 ---
 
@@ -264,7 +265,7 @@ Upcoming (Step 2):
 
 Risks / Notes:
 
-- Ensure metrics provider selection remains stable; if `SelectMetricsProvider` is retained public, document as provisional until v0.2.0.
+- Ensure metrics provider selection remains stable; selection logic remains internal (no exported helper) – document config-only workflow.
 - Tracer removal must not break any existing test relying on span creation; search tests for `Tracer()` usage before removal.
 - Event bus direct usage in tests must be migrated to observer assertions prior to deletion.
 
@@ -421,7 +422,7 @@ If external customization for assets, rate limiters, or telemetry backends is re
 | Add TelemetryPolicy slim struct                                          | 2     |       |
 | Add MetricsHandler()                                                     | 2     | [x]   |
 | Deprecate MetricsProvider() (removed; replaced by MetricsHandler facade) | 2     | [x]   |
-| Internalize metrics/tracing packages (initial facade + internal copies)  | 2     | [~]   |
+| Internalize metrics/tracing packages (initial facade + internal copies)  | 2     | [x]   |
 | Internalize ratelimit & resources                                        | 3     |       |
 | Add limiter/resource snapshot trimming                                   | 3     |       |
 | Asset internalization decision recorded                                  | 4     |       |
