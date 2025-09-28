@@ -191,6 +191,113 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 [] C8 Final allowlist + API report shrink commit
 ```
 
+---
+
+## 13. Progress Summary (Post-C4) & Positioning
+
+### Achievements So Far
+
+- C1: Removed legacy adapter & scaffolding (telemetry HTTP handlers, resources stub, strategies/ dir, runtime stub) – immediate surface shrink.
+- C2: Internalised monitoring & business implementation packages under `internal/`, eliminating broad implementation leakage while keeping tests green.
+- C3: Deleted unified config layer – simplified configuration story; `engine/config` now intentionally empty (guarded) preventing re-expansion.
+- C4: Internalised crawler, processor, output (all sinks & enhancement pipelines) implementations. Public surface now offers only interfaces (`Fetcher`, `Processor`, `OutputSink`, `AssetStrategy`) + facade types. API report updated; symbol count reduced (implementation packages disappeared).
+
+### Current Public Surface Snapshot (Delta Focus)
+
+Remaining larger implementation exposure: `engine/ratelimit` (interface + concrete adaptive limiter + internal state types). Telemetry packages also still public (events, metrics, tracing, policy) pending C6. Config layering (`configx/`) still public (C7). Asset subsystem exports intentionally retained pending decision (deprecation plan not yet executed).
+
+### Readiness for C5 (Ratelimit Internalisation)
+
+Coupling review:
+- Engine facade depends on: `RateLimiter` interface, `LimiterSnapshot`, `AdaptiveRateLimiter` constructor (indirectly in `engine.New`).
+- Internal pipeline depends on interface + `ErrCircuitOpen`, `Permit`, `Feedback` types.
+- Tests rely on concrete `AdaptiveRateLimiter` (unit tests in `ratelimit/` package) and on `NewAdaptiveRateLimiter` inside integration tests.
+
+Design intent post-internalisation: external users require only snapshot visibility & *optional* configuration fields (already in `models.RateLimitConfig`). They do not require direct construction or subtype awareness of the adaptive limiter.
+
+### Proposed Minimal Public Set After C5
+
+Keep (possibly relocated to root `engine` package OR a tiny shim subpackage):
+- Interface: `RateLimiter` (question: do we need to expose this? Only if embedders may plug a custom limiter soon. If not, we can hide and replace with unexported field; snapshot suffices.)
+- Error: `ErrCircuitOpen` (exposed only if callers should distinguish circuit state during Start/stream operations; otherwise convert to generic transient classification internally).
+- Snapshot: `LimiterSnapshot`, `DomainSummary` (read-only data needed for observability).
+- Opaque handle types: `Permit`, `Feedback` (can be internal if callers never emit feedback; currently only internal pipeline calls feedback). => Make internal.
+
+Decision recommendation: Expose ONLY `LimiterSnapshot` via `Engine.Snapshot()` and remove public `RateLimiter` + `AdaptiveRateLimiter` entirely (leanest future-proof path). If extension story needed later, reintroduce a narrow `rate` interface in a versioned path.
+
+### Migration Mechanics
+1. Move entire `engine/ratelimit` directory to `engine/internal/ratelimit`.
+2. Introduce (in `engine/snapshot.go` or existing snapshot file) any type aliases required if we preserve exported `LimiterSnapshot` / `DomainSummary` (e.g., `type LimiterSnapshot = internalratelimit.LimiterSnapshot`). Alternatively redefine a trimmed struct filled by an adapter function.
+3. Remove imports of `engine/ratelimit` from public files; replace construction in `engine.New` with internal factory `internal/ratelimit.NewAdaptiveLimiter(cfg)`.
+4. Update pipeline & tests to new internal path.
+5. Delete / migrate ratelimit unit tests under `internal/ratelimit` (preserve coverage). Public allowlist guard for ratelimit package becomes obsolete and is removed.
+6. Run API report; ensure ratelimit package disappears and only chosen aliases remain (or none if we eliminate all types but snapshot via root embedding).
+
+Fallback / rollback: Single directory move revertible; alias strategy allows phased removal if unexpected external need arises before release tag.
+
+### Critical Positioning Assessment
+
+Strengths:
+- High test coverage around rate limiter logic (unit + integration) reduces regression risk during move.
+- Prior moves validated import path update process & API report governance.
+
+Weak Spots / Risks:
+- Public removal of `RateLimiter` interface may break any hypothetical downstream mocks (low probability pre‑1.0, but note). Mitigation: keep interface temporarily in root if uncertain.
+- Snapshot struct shape may still evolve; internalising now keeps agility but we should freeze field naming pre v0.2.0.
+- Telemetry still broad; delaying its internalisation until after ratelimit is fine, but large surface remains temporarily (accept risk for sequencing simplicity).
+
+Decision: Proceed with C5 adopting leanest approach (no public ratelimit package, possibly alias snapshot types) – improves future algorithm experimentation (different adaptation algorithms) with zero API churn.
+
+---
+
+## 14. Updated Risk Assessment (Incremental Delta for C5–C8)
+
+| Risk | Phase | Likelihood | Impact | Mitigation |
+|------|-------|------------|--------|------------|
+| Hidden external reliance on `engine/ratelimit` concrete types | C5 | Low | Low | Pre‑1.0; document CHANGELOG; provide clear migration note (no replacement needed). |
+| Losing ability to inject custom limiter post C5 | C5 | Medium (future need) | Medium | Keep a private hook; if demand emerges add a stable `LimiterProvider` option later. |
+| Aliasing vs redefining snapshot leads to accidental re-export of internal types | C5 | Low | Low | Prefer redefining minimal snapshot struct over alias if uncertain; verify via API report. |
+| Telemetry internalisation (events/tracing) touches many tests simultaneously | C6 | Medium | Medium/High | Stage: internalise packages one at a time (events → tracing → policy) with interim adapters. |
+| Config layering removal breaks undocumented internal tests | C7 | Low | Low | Grep usages first; migrate tests to new config pattern before delete. |
+| Final allowlist tightening misses a straggler symbol | C8 | Low | Low | Add temporary audit script diffing `go list -deps` exported sets vs API report. |
+
+---
+
+## 15. C5 Execution Plan (Ready to Start)
+
+Step-by-step (PR scope ≤ ~300 LOC net diff expected):
+
+1. Branch: `c5-internalize-ratelimit`.
+2. Move directory: `git mv engine/ratelimit engine/internal/ratelimit`.
+3. Create new file `engine/ratelimit_facade.go` (if we retain snapshot structs) OR enhance existing engine snapshot file to embed limiter metrics.
+4. Define (if retained):
+	- `type LimiterSnapshot = internalratelimit.LimiterSnapshot` (or trimmed copy if we want to prune fields).
+	- Optionally drop `DomainSummary` if not required externally (verify usage outside tests).
+5. Update `engine/engine.go` constructor to import `engine/internal/ratelimit` instead of public path.
+6. Update internal pipeline imports.
+7. Remove obsolete allowlist guard test `engine/ratelimit/ratelimit_allowlist_guard_test.go` (will be moved with package; delete since package no longer public).
+8. Move ratelimit unit tests alongside new internal path (they become `package ratelimit` inside internal); adjust any import paths referencing `engmodels` unaffected.
+9. Run `go test ./engine/...` ensuring coverage preserved.
+10. Regenerate API report; confirm removal of `ratelimit` package section (only snapshot alias remains if defined).
+11. Update CHANGELOG (Removed: public ratelimit package; Changed: snapshot still available via Engine snapshot alias if applicable).
+12. Update plan (mark C5 `[x]`).
+
+Open decision before coding: alias vs redefine snapshot. Default: ALIAS (fast, zero struct copy) unless we intend to prune fields immediately.
+
+Success Criteria (C5):
+- API report no longer lists `Package \`ratelimit\``.
+- All tests green; no public compile errors.
+- Snapshot access unchanged for external caller code referencing `engine.Snapshot().Limiter`.
+- Commit message: `prune(c5): internalize ratelimit implementation`.
+
+---
+
+## 16. Go / No-Go Gate for C5
+
+All prerequisites satisfied (C1–C4 complete, plan updated, risks mapped). No blocking dependencies identified. Proceed with C5.
+
+---
+
 ### Branch / PR Workflow
 
 For each checklist item:
