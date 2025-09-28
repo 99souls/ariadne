@@ -5,6 +5,7 @@ The subsystem was deleted in September 2025 (see `md/decisions/2025-09-configx-r
 They are preserved only for historical reference and will not be updated.
 
 Archived files:
+
 - config-api.md
 - config-platform-overview.md
 - config-operations-guide.md
