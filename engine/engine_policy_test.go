@@ -6,7 +6,6 @@ import (
 	"time"
 
 	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
-	telempolicy "github.com/99souls/ariadne/engine/telemetry/policy"
 )
 
 // TestPolicyUpdateAffectsPipelineProbe ensures updating TelemetryPolicy changes health classification thresholds.
@@ -25,7 +24,7 @@ func TestPolicyUpdateAffectsPipelineProbe(t *testing.T) {
 		t.Fatalf("expected healthy with default policy, got %s", snap.Overall)
 	}
 	// Update policy lowering degraded threshold to 0.20 so ratio now exceeds degraded but not unhealthy (keep unhealthy at 0.8)
-	p := telempolicy.Default()
+	p := DefaultTelemetryPolicy()
 	p.Health.PipelineDegradedRatio = 0.20
 	p.Health.PipelineUnhealthyRatio = 0.60
 	p.Health.ProbeTTL = 1 * time.Millisecond // force fast expiry

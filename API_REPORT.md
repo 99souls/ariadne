@@ -1,6 +1,6 @@
 # API Report
 
-Signature: d17c7dc5459d8f05bbb467b2d532a094d9e866b98326cf4c294162a42646a58a
+Signature: cc72d2e6c2ee6df5bbae0bc2c4828da33af29306571d80592004eeab9e6f0aac
 
 ## Package `engine`
 
@@ -28,15 +28,17 @@ Engine.AssetEvents | method | Experimental | AssetEvents returns a snapshot copy
 Engine.AssetMetricsSnapshot | method | Experimental | AssetMetricsSnapshot returns current aggregated counters (zero-value if strategy disabled).
 Engine.HealthSnapshot | method | Experimental | HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
 Engine.MetricsProvider | method | Experimental | MetricsProvider returns the active metrics provider (may be nil if disabled).
-Engine.Policy | method | Experimental | Policy returns the current telemetry policy snapshot.
+Engine.Policy | method |  | 
 Engine.RegisterEventObserver | method | Experimental | RegisterEventObserver adds an observer invoked synchronously for each internal telemetry
 Engine.Snapshot | method | Stable | Snapshot returns a unified state view.
 Engine.Start | method | Stable | Start begins processing of the provided seed URLs and returns a read-only results channel.
 Engine.Stop | method | Stable | Stop gracefully stops the engine and underlying components.
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
+EventBusPolicy | type |  | 
 EventObserver | type |  | EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
 Fetcher | type | Experimental | Fetcher defines how pages are fetched.
+HealthPolicy | type |  | 
 LimiterDomainState | type | Experimental | LimiterDomainState summarizes recent domain-level adaptive state.
 LimiterSnapshot | type | Experimental | LimiterSnapshot is a public, reduced view of the internal adaptive rate limiter state.
 MaterializedAsset | type |  | MaterializedAsset represents an asset after execution (download / inline / optimization).
@@ -49,6 +51,8 @@ SelectMetricsProvider | func | Experimental | SelectMetricsProvider returns a me
 Snapshot | type | Stable | Snapshot is a unified view of engine state.
 TelemetryEvent | type | Experimental | TelemetryEvent is a reduced, stable event representation for external observers.
 TelemetryOptions | type | Experimental | TelemetryOptions configures high-level telemetry behavior. Implementation choices
+TelemetryPolicy | type | Experimental | Policy returns the current telemetry policy snapshot.
+TracingPolicy | type |  | 
 
 ## Package `config`
 

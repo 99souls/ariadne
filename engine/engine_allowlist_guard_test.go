@@ -24,7 +24,7 @@ func TestEngineExportAllowlist(t *testing.T) {
 		// Rate limiter reduced public snapshot (Phase C5)
 		"LimiterSnapshot": {}, "LimiterDomainState": {},
 		// Telemetry facade additions (Phase C6 begin)
-		"TelemetryEvent": {}, "TelemetryOptions": {}, "EventObserver": {},
+		"TelemetryEvent": {}, "TelemetryOptions": {}, "EventObserver": {}, "TelemetryPolicy": {}, "HealthPolicy": {}, "TracingPolicy": {}, "EventBusPolicy": {}, "DefaultTelemetryPolicy": {},
 		// Construction & strategies placeholder
 		"New": {}, "NewWithStrategies": {}, "EngineStrategies": {},
 		// Consolidated strategy interfaces

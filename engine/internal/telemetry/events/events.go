@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 	tracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
+	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 )
 
 const (
@@ -90,15 +90,23 @@ func (b *eventBus) Publish(ev Event) error {
 	}
 	b.mu.RLock()
 	subs := make([]*subscriber, 0, len(b.subs))
-	for _, s := range b.subs { subs = append(subs, s) }
+	for _, s := range b.subs {
+		subs = append(subs, s)
+	}
 	b.mu.RUnlock()
 	b.published.Add(1)
-	if b.mPublished != nil { b.mPublished.Inc(1) }
+	if b.mPublished != nil {
+		b.mPublished.Inc(1)
+	}
 	for _, s := range subs {
 		select {
 		case s.ch <- ev:
 		default:
-			s.dropped.Add(1); b.dropped.Add(1); if b.mDropped != nil { b.mDropped.Inc(1, s.idLabel) }
+			s.dropped.Add(1)
+			b.dropped.Add(1)
+			if b.mDropped != nil {
+				b.mDropped.Inc(1, s.idLabel)
+			}
 		}
 	}
 	return nil
@@ -107,33 +115,48 @@ func (b *eventBus) Publish(ev Event) error {
 func (b *eventBus) PublishCtx(ctx context.Context, ev Event) error {
 	if ev.TraceID == "" && ev.SpanID == "" {
 		if traceID, spanID := tracing.ExtractIDs(ctx); traceID != "" || spanID != "" {
-			ev.TraceID = traceID; ev.SpanID = spanID
+			ev.TraceID = traceID
+			ev.SpanID = spanID
 		}
 	}
 	return b.Publish(ev)
 }
 
 func (b *eventBus) Subscribe(buffer int) (Subscription, error) {
-	if buffer <= 0 { buffer = 64 }
+	if buffer <= 0 {
+		buffer = 64
+	}
 	ch := make(chan Event, buffer)
 	id := atomic.AddInt64(&b.nextID, 1)
 	sub := &subscriber{id: id, ch: ch, bus: b, idLabel: formatSubscriberID(id)}
-	b.mu.Lock(); b.subs[id] = sub; b.mu.Unlock()
+	b.mu.Lock()
+	b.subs[id] = sub
+	b.mu.Unlock()
 	return sub, nil
 }
 
 func (b *eventBus) Unsubscribe(sub Subscription) error {
-	if sub == nil { return nil }
+	if sub == nil {
+		return nil
+	}
 	id := sub.ID()
-	b.mu.Lock(); s := b.subs[id]; delete(b.subs, id); b.mu.Unlock()
-	if s != nil { close(s.ch) }
+	b.mu.Lock()
+	s := b.subs[id]
+	delete(b.subs, id)
+	b.mu.Unlock()
+	if s != nil {
+		close(s.ch)
+	}
 	return nil
 }
 
 func (b *eventBus) Stats() BusStats {
-	b.mu.RLock(); defer b.mu.RUnlock()
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	stats := BusStats{Subscribers: int64(len(b.subs)), Published: b.published.Load(), Dropped: b.dropped.Load(), PerSubscriberDrops: make(map[int64]uint64)}
-	for id, s := range b.subs { stats.PerSubscriberDrops[id] = s.dropped.Load() }
+	for id, s := range b.subs {
+		stats.PerSubscriberDrops[id] = s.dropped.Load()
+	}
 	return stats
 }
 
@@ -150,9 +173,15 @@ func (s *subscriber) ID() int64       { return s.id }
 func (s *subscriber) Close() error    { return s.bus.Unsubscribe(s) }
 
 func formatSubscriberID(id int64) string {
-	if id == 0 { return "0" }
+	if id == 0 {
+		return "0"
+	}
 	var digits [20]byte
 	i := len(digits)
-	for id > 0 { i--; digits[i] = byte('0' + (id % 10)); id /= 10 }
+	for id > 0 {
+		i--
+		digits[i] = byte('0' + (id % 10))
+		id /= 10
+	}
 	return string(digits[i:])
 }

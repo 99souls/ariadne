@@ -13,12 +13,12 @@ import (
 	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
 	intrat "github.com/99souls/ariadne/engine/internal/ratelimit"
 	intresources "github.com/99souls/ariadne/engine/internal/resources"
-	engmodels "github.com/99souls/ariadne/engine/models"
 	telemEvents "github.com/99souls/ariadne/engine/internal/telemetry/events"
+	telemetrytracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
+	inttelempolicy "github.com/99souls/ariadne/engine/internal/telemetry/policy"
+	engmodels "github.com/99souls/ariadne/engine/models"
 	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
-	telempolicy "github.com/99souls/ariadne/engine/telemetry/policy"
-	telemetrytracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 )
 
 // Snapshot is a unified view of engine state.
@@ -143,7 +143,7 @@ type Engine struct {
 	lastHealth        atomic.Value // stores telemetryhealth.Status as string
 
 	// Telemetry policy (atomic snapshot). Nil => use internal defaults from policy.Default().
-	telemetryPolicy atomic.Pointer[telempolicy.TelemetryPolicy]
+	telemetryPolicy atomic.Pointer[inttelempolicy.TelemetryPolicy]
 
 	// Phase C6: externally registered event observers (facade) fed from internal bus.
 	eventObserversMu sync.RWMutex
@@ -152,11 +152,20 @@ type Engine struct {
 
 // Policy returns the current telemetry policy snapshot.
 // Experimental: Policy struct shape & semantics may evolve pre-v1.0. Never returns nil.
-func (e *Engine) Policy() telempolicy.TelemetryPolicy {
+// Re-export telemetry policy types (C6 step 2b): stable facade surface while implementation internal.
+type TelemetryPolicy = inttelempolicy.TelemetryPolicy
+type HealthPolicy = inttelempolicy.HealthPolicy
+type TracingPolicy = inttelempolicy.TracingPolicy
+type EventBusPolicy = inttelempolicy.EventBusPolicy
+
+// DefaultTelemetryPolicy returns the default normalized telemetry policy (wrapper around internal).
+func DefaultTelemetryPolicy() TelemetryPolicy { return inttelempolicy.Default() }
+
+func (e *Engine) Policy() TelemetryPolicy {
 	if p := e.telemetryPolicy.Load(); p != nil {
 		return *p
 	}
-	def := telempolicy.Default()
+	def := inttelempolicy.Default()
 	return def
 }
 
@@ -167,13 +176,13 @@ func (e *Engine) MetricsProvider() telemetrymetrics.Provider { return e.metricsP
 // UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 // Experimental: May relocate behind a dedicated telemetry subpackage pre-v1.0.
 // Safe for concurrent use; probes pick up new thresholds on next evaluation cycle.
-func (e *Engine) UpdateTelemetryPolicy(p *telempolicy.TelemetryPolicy) {
+func (e *Engine) UpdateTelemetryPolicy(p *TelemetryPolicy) {
 	if e == nil {
 		return
 	}
-	var snap telempolicy.TelemetryPolicy
+	var snap inttelempolicy.TelemetryPolicy
 	if p == nil {
-		snap = telempolicy.Default()
+		snap = inttelempolicy.Default()
 	} else {
 		snap = p.Normalize()
 	}
@@ -312,7 +321,7 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	}
 
 	// Phase 5E Iteration 4 (C6 adaptation): health only if enabled
-	initialPolicy := telempolicy.Default()
+	initialPolicy := inttelempolicy.Default()
 	e.telemetryPolicy.Store(&initialPolicy)
 	if telemOpts.EnableHealth {
 		limiterProbe, resourceProbe, pipelineProbe := e.healthProbes()

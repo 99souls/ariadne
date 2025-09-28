@@ -89,6 +89,7 @@ Top-level package `engine`:
 
 Additional packages retained:
 
+[*] C6 (step 2b) Internalize telemetry policy package and finalize facade span helper decision (policy moved, span helper still deferred)
 - `engine/models`: Pure data structures (no behavioral factories beyond constructors).
 - `engine/config`: Slim `Config` only; remove unified / business / layered constructs.
 

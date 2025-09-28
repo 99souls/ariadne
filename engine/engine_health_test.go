@@ -17,9 +17,12 @@ func TestHealthChangeEvent(t *testing.T) {
 		t.Fatalf("engine construction failed: %v", err)
 	}
 	ch := make(chan TelemetryEvent, 4)
-	e.RegisterEventObserver(func(ev TelemetryEvent){
+	e.RegisterEventObserver(func(ev TelemetryEvent) {
 		if ev.Category == "health" && ev.Type == "health_change" {
-			select { case ch <- ev: default: }
+			select {
+			case ch <- ev:
+			default:
+			}
 		}
 	})
 	current := telemetryhealth.StatusHealthy
@@ -52,10 +55,10 @@ func TestHealthChangeEvent(t *testing.T) {
 	select {
 	case ev := <-ch:
 		if ev.Category != "health" || ev.Type != "health_change" {
-			 t.Fatalf("unexpected event: %+v", ev)
+			t.Fatalf("unexpected event: %+v", ev)
 		}
 		if ev.Fields["previous"] != string(telemetryhealth.StatusHealthy) || ev.Fields["current"] != string(telemetryhealth.StatusDegraded) {
-			 t.Fatalf("unexpected field transition: %+v", ev.Fields)
+			t.Fatalf("unexpected field transition: %+v", ev.Fields)
 		}
 	case <-time.After(500 * time.Millisecond):
 		t.Fatalf("expected health_change event not received")
