@@ -20,7 +20,7 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 Augment baseline goals so the site exercises a broad spectrum of elements commonly found in modern personal knowledge bases / docs sites:
 
 - Rich typography set: semantic headings (h1–h6), paragraphs, blockquotes, horizontal rules.
-- Code fences with language classes (```tsx, ```bash) + inline code.
+- Code fences with language classes (`tsx, `bash) + inline code.
 - Admonitions / callouts (e.g. NOTE, WARNING, TIP) styled via shadcn components.
 - Tables (alignment variations) + definition lists.
 - Footnotes / reference style links + internal anchor (#section) navigation.
@@ -188,28 +188,28 @@ Implementation notes:
 
 ## 8. Phased Delivery
 
-| Phase | Scope                                         | Deliverables                                                                                                    |
-| ----- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| P1    | Minimal site + routes + basic styles + helper | Skeleton, Tailwind config, shadcn base (Button/Card), home/about/blog pages, helper & first integration test     |
-| P2    | Depth + robots + latency + content richness   | Deep chain, `/api/slow`, robots modes, admonitions, code fences, footnotes, tags, dark mode, snapshot tooling    |
-| P3    | Structured data & metadata & export           | `sitemap.xml`, search index JSON, meta/OG tags, build step (static export), compiled CSS stability               |
-| P4    | Edge cases & performance                      | Large asset (>150KB), 404, concurrency stress, diagram/math placeholders, backlink graph validation              |
-| P5    | Quality & Accessibility                       | a11y lint, color contrast check, ARIA roles on components, snapshot diff harness hardening                      |
+| Phase | Scope                                         | Deliverables                                                                                                  |
+| ----- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| P1    | Minimal site + routes + basic styles + helper | Skeleton, Tailwind config, shadcn base (Button/Card), home/about/blog pages, helper & first integration test  |
+| P2    | Depth + robots + latency + content richness   | Deep chain, `/api/slow`, robots modes, admonitions, code fences, footnotes, tags, dark mode, snapshot tooling |
+| P3    | Structured data & metadata & export           | `sitemap.xml`, search index JSON, meta/OG tags, build step (static export), compiled CSS stability            |
+| P4    | Edge cases & performance                      | Large asset (>150KB), 404, concurrency stress, diagram/math placeholders, backlink graph validation           |
+| P5    | Quality & Accessibility                       | a11y lint, color contrast check, ARIA roles on components, snapshot diff harness hardening                    |
 
 ---
 
 ## 9. Risk & Mitigation
 
-| Risk                              | Impact          | Mitigation                                               |
-| --------------------------------- | --------------- | -------------------------------------------------------- |
-| Bun install flakiness in CI       | Red pipeline    | Cache bun install; pin version via `bunfig.toml`         |
-| Port conflicts                    | Test flakiness  | Detect/choose random free port when default busy         |
-| Increasing test duration          | Slower feedback | Keep site tiny; gate heavy scenarios behind tagged tests |
-| Content drift breaking assertions | Flaky tests     | Snapshot golden files; assert normalized HTML subsets    |
+| Risk                              | Impact                  | Mitigation                                                  |
+| --------------------------------- | ----------------------- | ----------------------------------------------------------- |
+| Bun install flakiness in CI       | Red pipeline            | Cache bun install; pin version via `bunfig.toml`            |
+| Port conflicts                    | Test flakiness          | Detect/choose random free port when default busy            |
+| Increasing test duration          | Slower feedback         | Keep site tiny; gate heavy scenarios behind tagged tests    |
+| Content drift breaking assertions | Flaky tests             | Snapshot golden files; assert normalized HTML subsets       |
 | Tailwind stylesheet churn         | Spurious snapshot diffs | Pin Tailwind version + export compiled CSS hash, diff check |
-| Dark mode state leakage           | Duplicate content set | Normalize theme attribute; treat as single logical page |
-| Large image fetch slowdown        | Throughput regression | Parallel fetch cap + integration perf assertion |
-| Increased bundle size             | Slower startup    | Keep dependency set tiny; avoid full shadcn tree imports |
+| Dark mode state leakage           | Duplicate content set   | Normalize theme attribute; treat as single logical page     |
+| Large image fetch slowdown        | Throughput regression   | Parallel fetch cap + integration perf assertion             |
+| Increased bundle size             | Slower startup          | Keep dependency set tiny; avoid full shadcn tree imports    |
 
 ---
 

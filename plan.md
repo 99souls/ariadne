@@ -304,30 +304,30 @@ Additional gaps to re-evaluate after Phase 6: plugin architecture clarity, multi
 
 Current Baseline (engine module quick scan):
 
-| Area / Package (sample) | Approx Coverage | Notes |
-| ----------------------- | --------------- | ----- |
-| engine (facade/core)    | 83%             | Healthy, integration + unit blend |
-| internal/business/*     | 74–95%          | High; keep above 80% floor |
-| internal/pipeline       | ~70%            | Complex concurrency paths missing edge cases |
-| internal/output (root)  | 37%             | Needs targeted tests for error paths & large doc assembly |
-| internal/assets         | 22%             | Lowest – add discovery failure & rewrite tests |
-| internal/processor      | 48%             | Missing branch/edge handling (malformed HTML, encoding) |
-| telemetry/health        | 71%             | Improve degraded/recovery transitions coverage |
-| telemetry/logging       | 55%             | Exercise error pathways & context cancellation |
+| Area / Package (sample) | Approx Coverage | Notes                                                                   |
+| ----------------------- | --------------- | ----------------------------------------------------------------------- |
+| engine (facade/core)    | 83%             | Healthy, integration + unit blend                                       |
+| internal/business/\*    | 74–95%          | High; keep above 80% floor                                              |
+| internal/pipeline       | ~70%            | Complex concurrency paths missing edge cases                            |
+| internal/output (root)  | 37%             | Needs targeted tests for error paths & large doc assembly               |
+| internal/assets         | 22%             | Lowest – add discovery failure & rewrite tests                          |
+| internal/processor      | 48%             | Missing branch/edge handling (malformed HTML, encoding)                 |
+| telemetry/health        | 71%             | Improve degraded/recovery transitions coverage                          |
+| telemetry/logging       | 55%             | Exercise error pathways & context cancellation                          |
 | misc internal packages  | 0%              | Stubs / simple structs (resources, ratelimit impl tests live elsewhere) |
 
 Global module total (raw tool output) reported ~58% because many intentional no‑logic packages count as 0%; focus on critical-runtime weighted coverage instead.
 
 ### Targets (Phased)
 
-| Phase Gate | Target (Critical Runtime Weighted) | Hard Failing CI Threshold | Notes |
-| ---------- | ---------------------------------- | -------------------------- | ----- |
-| Post Phase 5 | ≥70% | Warn below 65% | Add coverage reporting (no gate yet) |
-| Phase 6 Exit | ≥75% | Fail below 70% | Add live test site induced branches |
-| Phase 7 Start | ≥80% | Fail below 75% | Enforce with `make coverage-check` |
-| Pre v0.2.0 tag | ≥85% | Fail below 80% | Stretch: raise engine core ≥90% |
+| Phase Gate     | Target (Critical Runtime Weighted) | Hard Failing CI Threshold | Notes                                |
+| -------------- | ---------------------------------- | ------------------------- | ------------------------------------ |
+| Post Phase 5   | ≥70%                               | Warn below 65%            | Add coverage reporting (no gate yet) |
+| Phase 6 Exit   | ≥75%                               | Fail below 70%            | Add live test site induced branches  |
+| Phase 7 Start  | ≥80%                               | Fail below 75%            | Enforce with `make coverage-check`   |
+| Pre v0.2.0 tag | ≥85%                               | Fail below 80%            | Stretch: raise engine core ≥90%      |
 
-Weighted coverage = (sum covered statements in designated critical packages) / (total statements in those packages). Critical set: engine/, internal/pipeline, internal/business/*, internal/output, internal/processor, internal/assets, telemetry/health.
+Weighted coverage = (sum covered statements in designated critical packages) / (total statements in those packages). Critical set: engine/, internal/pipeline, internal/business/\*, internal/output, internal/processor, internal/assets, telemetry/health.
 
 ### Action Backlog
 
@@ -338,7 +338,7 @@ Weighted coverage = (sum covered statements in designated critical packages) / (
 - [ ] Add telemetry health state transition regression test (unknown → degraded → healthy → degraded). Raise to ≥85%.
 - [ ] Add logging error/ctx tests (target ≥80%).
 - [ ] Exclude pure data-only packages from weighted metric (document rationale).
-  
+
 ### CI Integration Plan
 
 1. Phase 5: Introduce coverage job (uploads HTML report artifact) – no gating.
