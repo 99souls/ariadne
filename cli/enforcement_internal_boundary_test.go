@@ -1,30 +1,35 @@
 package cli_test
 
 import (
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// TestNoInternalImports ensures the CLI does not import engine internal packages.
-// Relocated from root during root module elimination.
+// TestNoInternalImports ensures no CLI package imports engine internal packages.
 func TestNoInternalImports(t *testing.T) {
-	path := "cli/cmd/ariadne/main.go"
-	data, err := os.ReadFile("../../" + path)
-	if err != nil {
-		// Fallback: attempt relative from workspace root (when go test launched at module root)
-		data, err = os.ReadFile("../" + path)
-		if err != nil {
-			// Last attempt: direct path
-			data, err = os.ReadFile(path)
-			if err != nil {
-				// Do not fail hard if path layout changes; treat as skipped.
-				t.Skipf("could not read %s: %v", path, err)
-			}
+	// Walk from module root (this test runs inside cli/ module)
+	err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil { return err }
+		if d.IsDir() {
+			// Skip vendor if ever present
+			if d.Name() == "vendor" { return filepath.SkipDir }
+			return nil
 		}
-	}
-	content := string(data)
-	if strings.Contains(content, "\t\"github.com/99souls/ariadne/engine/internal/") || strings.Contains(content, "\t\"ariadne/internal/") {
-		t.Fatalf("%s imports internal/* packages; CLI must only use public engine API", path)
+		if !strings.HasSuffix(path, ".go") { return nil }
+		// Skip this guard test file itself; it necessarily references internal pattern strings.
+		if strings.HasSuffix(path, "enforcement_internal_boundary_test.go") { return nil }
+		b, err := os.ReadFile(path)
+		if err != nil { return err }
+		content := string(b)
+		if strings.Contains(content, "github.com/99souls/ariadne/engine/internal/") {
+			t.Fatalf("file %s imports engine/internal – CLI must depend only on public engine API", path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk cli module: %v", err)
 	}
 }

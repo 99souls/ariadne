@@ -2,7 +2,10 @@ package cli
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -11,9 +14,16 @@ import (
 // TestCLIBasicRun ensures the binary runs a short crawl with minimal flags.
 // Uses `go run` to avoid separate build step; intentionally lightweight.
 func TestCLIBasicRun(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	// Local test server eliminates external network dependency.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><head><title>t</title></head><body><a href="/next">n</a></body></html>`))
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/ariadne", "-seeds", "https://example.com", "-snapshot-interval", "0")
+	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/ariadne", "-seeds", srv.URL, "-snapshot-interval", "0")
 	out, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Fatalf("cli run timed out output=%s", string(out))
@@ -21,7 +31,14 @@ func TestCLIBasicRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cli run error: %v output=%s", err, string(out))
 	}
-	if !strings.Contains(string(out), "FINAL SNAPSHOT") {
-		t.Fatalf("expected final snapshot marker in output; got: %s", string(out))
+	output := string(out)
+	if !strings.Contains(output, "FINAL SNAPSHOT") {
+		t.Fatalf("expected final snapshot marker in output; got: %s", output)
+	}
+	// Heuristic: at least one JSON object line (result) should appear (starts with '{').
+	re := regexp.MustCompile(`(?m)^{.*}$`)
+	matches := re.FindAllString(output, -1)
+	if len(matches) == 0 {
+		t.Fatalf("expected at least one JSON result line in output; got: %s", output)
 	}
 }

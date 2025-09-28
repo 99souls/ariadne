@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Introduced `strategies.go` consolidating `Fetcher`, `Processor`, `OutputSink`, and `AssetStrategy` interfaces with Experimental annotations (Wave 3).
 - config: Added comprehensive Experimental annotations across `engine/config` (unified + runtime config, hot reload, versioning, AB testing) plus export allowlist guard test locking curated surface (Wave 3).
 - engine: Added `engine_resources_snapshot_test.go` guard test ensuring `ResourceSnapshot` present only when resources subsystem configured (Wave 4 W4-04 follow-up).
+- telemetry: Added export allowlist guard test across telemetry subpackages (events, metrics, tracing, policy, health, logging) locking current public surface (Wave 4 W4-07 governance).
 
 ### Changed
 

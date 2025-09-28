@@ -31,17 +31,23 @@ func TestResourcesExportAllowlist(t *testing.T) {
 				switch x := n.(type) {
 				case *ast.TypeSpec:
 					if x.Name.IsExported() {
-						if _, ok := allowed[x.Name.Name]; !ok { t.Fatalf("unexpected exported type: %s", x.Name.Name) }
+						if _, ok := allowed[x.Name.Name]; !ok {
+							t.Fatalf("unexpected exported type: %s", x.Name.Name)
+						}
 					}
 				case *ast.ValueSpec:
 					for _, id := range x.Names {
 						if id.IsExported() {
-							if _, ok := allowed[id.Name]; !ok { t.Fatalf("unexpected exported value: %s", id.Name) }
+							if _, ok := allowed[id.Name]; !ok {
+								t.Fatalf("unexpected exported value: %s", id.Name)
+							}
 						}
 					}
 				case *ast.FuncDecl:
 					if x.Recv == nil && x.Name.IsExported() {
-						if _, ok := allowed[x.Name.Name]; !ok { t.Fatalf("unexpected exported function: %s", x.Name.Name) }
+						if _, ok := allowed[x.Name.Name]; !ok {
+							t.Fatalf("unexpected exported function: %s", x.Name.Name)
+						}
 					}
 				}
 				return true

@@ -312,7 +312,7 @@ Tasks:
 
 Exit Criteria: Root tree = docs + workspace files only (no active code, no legacy commands).
 
-### Wave 4 – CLI Module Bootstrapping
+### Wave 4 – CLI Module Bootstrapping (IN PROGRESS)
 
 Tasks:
 
@@ -513,9 +513,9 @@ Planned Tasks (Wave 4 Draft List):
 | W4-02 | Implement graceful shutdown & periodic snapshot emission | CLI | Use context + OS signal trap |
 | W4-03 | Introduce `internal/runtime` relocation for config runtime/A/B test system | API | Replace direct exports with facade accessors or remove if unused |
 | W4-04 | Internalize `resources.Manager` implementation (DONE) | API | Moved to `engine/internal/resources`, added `ResourcesConfig` facade + snapshot-only exposure, guard test added |
-| W4-05 | Telemetry adapter review & minimal stable interface definition | Telemetry | Mark only required provider accessor stable/experimental |
-| W4-06 | Add CLI integration test with in-memory HTTP fixture | Test | Ensures end-to-end path works |
-| W4-07 | Extend allowlist guards to telemetry packages (if kept public) | Governance | Prevent drift |
+| W4-05 | Telemetry adapter review & minimal stable interface definition | Telemetry | PARTIAL: export allowlist guard in place; adapter boundary & annotations pending |
+| W4-06 | Add CLI integration test with in-memory HTTP fixture | Test | IN PROGRESS (local httptest server variant implemented) |
+| W4-07 | Extend allowlist guards to telemetry packages (if kept public) | Governance | DONE – guard test added locking surface |
 | W4-08 | Update docs (README embedding example + CLI usage) | Docs | Add quickstart snippet |
 | W4-09 | Add CI job for CLI smoke run | CI | Simple run with sample seeds |
 | W4-10 | Prepare pruning list v2 for Wave 5 (leftovers) | Planning | Input to version tagging |
