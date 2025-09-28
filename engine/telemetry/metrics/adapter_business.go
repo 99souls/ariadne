@@ -10,6 +10,12 @@ import (
 // BusinessCollectorAdapter exposes legacy BusinessMetricsCollector data via the new
 // metrics Provider without re-registering the legacy PrometheusExporter metrics.
 // It performs a periodic snapshot and updates counters/gauges accordingly.
+//
+// Deprecated: This adapter is a transitional shim around legacy monitoring. It will
+// be removed (or moved into an internal telemetry adapter package) in a future
+// pruning wave (see md/telemetry-boundary.md). Avoid taking an external dependency
+// on it; prefer native metrics provider instrumentation or future Engine-level
+// provider wiring helpers.
 type BusinessCollectorAdapter struct {
     legacy *legacy.BusinessMetricsCollector
     prov   Provider
@@ -22,6 +28,8 @@ type BusinessCollectorAdapter struct {
 }
 
 // NewBusinessCollectorAdapter constructs the adapter; if provider is nil returns nil.
+//
+// Deprecated: See BusinessCollectorAdapter for deprecation context.
 func NewBusinessCollectorAdapter(legacy *legacy.BusinessMetricsCollector, p Provider) *BusinessCollectorAdapter {
     if legacy == nil || p == nil { return nil }
     adapter := &BusinessCollectorAdapter{legacy: legacy, prov: p}
