@@ -40,6 +40,7 @@ All notable changes to this project will be documented in this file. The format 
 - engine: Removed experimental `engine/strategies/` package (redundant; interfaces consolidated in root `strategies.go`) (C1 pruning).
 - config: Removed vestigial `engine/config/runtime.go` stub (runtime system internalized; guard no longer required) (C1 pruning).
 - engine: Removed public access to business implementation packages (`engine/business/*`) and monitoring metrics scaffolding (`engine/monitoring`) by internalization (C2 pruning – breaking pre-v1 acceptable).
+- config: Removed experimental unified configuration layer (`UnifiedBusinessConfig`, advanced runtime layering & AB testing helpers) and associated tests; public `config` package now intentionally exposes no symbols (C3 pruning – simplifies facade and prevents re-expansion of config surface).
 
 ### Deprecated
 
