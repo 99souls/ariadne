@@ -208,7 +208,7 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 
 ### Current Public Surface Snapshot (Delta Focus)
 
-Remaining larger implementation exposure (post C5 / C6 step 1): telemetry packages (events, metrics, tracing, policy) still public (C6 step 2); config layering (`configx/`) still public (C7). Asset subsystem exports intentionally retained pending decision (hard-cut approach will remove directly if pruned). New facade types now present so we can safely begin internalizing telemetry implementations.
+Remaining larger implementation exposure (post C7): telemetry packages (events, metrics, tracing) still public (final narrowing in C8). Asset subsystem exports intentionally retained pending decision (hard-cut approach will remove directly if pruned). New facade types now present so we can safely finalize telemetry internalization.
 
 ### C5 (Ratelimit Internalisation) – Completed
 

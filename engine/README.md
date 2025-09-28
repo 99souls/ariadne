@@ -7,7 +7,7 @@ The `engine` package is the public, façade-oriented entry point for embedding A
 Public (importable) surface:
 
 - `engine` (facade: construction, lifecycle, snapshotting, telemetry policy, health evaluation, asset strategy enablement)
-- `engine/config` (configuration structs & normalization helpers)
+- `engine/config` (static configuration structs & normalization helpers). Dynamic / layered configuration (former experimental `configx`) was removed (see ADR `md/decisions/2025-09-configx-removal.md`). Any future dynamic reload capability will arrive via a new proposal & facade method, not by re‑exposing internal layering primitives.
 - `engine/models` (data structures: Page, CrawlResult, errors)
 - `engine/resources` (resource manager configuration & high-level stats)
 

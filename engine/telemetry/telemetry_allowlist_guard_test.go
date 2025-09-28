@@ -78,9 +78,6 @@ func TestTelemetryExportAllowlist(t *testing.T) {
 		sub := filepath.Base(pkgPath)
 		allowed, ok := allow[sub]
 		if !ok {
-			if sub == "policy" { // TEMP: directory pending physical deletion
-				continue
-			}
 			// Force explicit decision for new packages.
 			t.Fatalf("unexpected telemetry subpackage: %s (add to allowlist or internalize)", sub)
 		}
