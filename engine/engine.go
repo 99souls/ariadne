@@ -11,9 +11,9 @@ import (
 	"time"
 
 	engpipeline "github.com/99souls/ariadne/engine/internal/pipeline"
+	intrat "github.com/99souls/ariadne/engine/internal/ratelimit"
 	intresources "github.com/99souls/ariadne/engine/internal/resources"
 	engmodels "github.com/99souls/ariadne/engine/models"
-	engratelimit "github.com/99souls/ariadne/engine/ratelimit"
 	telemEvents "github.com/99souls/ariadne/engine/telemetry/events"
 	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
@@ -24,12 +24,33 @@ import (
 // Snapshot is a unified view of engine state.
 // Stable: Field additions are allowed; existing fields retain semantics.
 type Snapshot struct {
-	StartedAt time.Time                     `json:"started_at"`
-	Uptime    time.Duration                 `json:"uptime"`
-	Pipeline  *engpipeline.PipelineMetrics  `json:"pipeline,omitempty"`
-	Limiter   *engratelimit.LimiterSnapshot `json:"limiter,omitempty"`
-	Resources *ResourceSnapshot             `json:"resources,omitempty"`
-	Resume    *ResumeSnapshot               `json:"resume,omitempty"`
+	StartedAt time.Time                    `json:"started_at"`
+	Uptime    time.Duration                `json:"uptime"`
+	Pipeline  *engpipeline.PipelineMetrics `json:"pipeline,omitempty"`
+	Limiter   *LimiterSnapshot             `json:"limiter,omitempty"`
+	Resources *ResourceSnapshot            `json:"resources,omitempty"`
+	Resume    *ResumeSnapshot              `json:"resume,omitempty"`
+}
+
+// LimiterSnapshot is a public, reduced view of the internal adaptive rate limiter state.
+// Experimental: Field set may shrink prior to v1.0; external consumers should treat as
+// best-effort diagnostics (subject to consolidation under a future telemetry facade).
+type LimiterSnapshot struct {
+	TotalRequests    int64                `json:"total_requests"`
+	Throttled        int64                `json:"throttled"`
+	Denied           int64                `json:"denied"`
+	OpenCircuits     int64                `json:"open_circuits"`
+	HalfOpenCircuits int64                `json:"half_open_circuits"`
+	Domains          []LimiterDomainState `json:"domains,omitempty"`
+}
+
+// LimiterDomainState summarizes recent domain-level adaptive state.
+// Experimental: May be removed or replaced with aggregated counters only.
+type LimiterDomainState struct {
+	Domain       string    `json:"domain"`
+	FillRate     float64   `json:"fill_rate"`
+	CircuitState string    `json:"circuit_state"`
+	LastActivity time.Time `json:"last_activity"`
 }
 
 // ResourceSnapshot summarizes resource manager internal counters.
@@ -55,7 +76,7 @@ type ResumeSnapshot struct {
 type Engine struct {
 	cfg           Config
 	pl            *engpipeline.Pipeline
-	limiter       engratelimit.RateLimiter
+	limiter       intrat.RateLimiter
 	rm            *intresources.Manager
 	started       atomic.Bool
 	startedAt     time.Time
@@ -206,9 +227,9 @@ func New(cfg Config, opts ...optionFn) (*Engine, error) {
 	}
 
 	// Build rate limiter
-	var limiter engratelimit.RateLimiter
+	var limiter intrat.RateLimiter
 	if cfg.RateLimit.Enabled {
-		limiter = engratelimit.NewAdaptiveRateLimiter(cfg.RateLimit)
+		limiter = intrat.NewAdaptiveRateLimiter(cfg.RateLimit)
 	}
 
 	// Override checkpoint path if provided directly on facade config
@@ -445,8 +466,19 @@ func (e *Engine) Snapshot() Snapshot {
 		snap.Pipeline = e.pl.Metrics()
 	}
 	if e.limiter != nil {
-		ls := e.limiter.Snapshot()
-		snap.Limiter = &ls
+		is := e.limiter.Snapshot()
+		pub := LimiterSnapshot{TotalRequests: is.TotalRequests, Throttled: is.Throttled, Denied: is.Denied, OpenCircuits: is.OpenCircuits, HalfOpenCircuits: is.HalfOpenCircuits}
+		if len(is.Domains) > 0 {
+			pub.Domains = make([]LimiterDomainState, 0, len(is.Domains))
+			for _, d := range is.Domains {
+				pub.Domains = append(pub.Domains, LimiterDomainState{Domain: d.Domain, FillRate: d.FillRate, CircuitState: d.CircuitState, LastActivity: d.LastActivity})
+			}
+		}
+		snap.Limiter = &pub
+	} else {
+		// Provide an empty snapshot rather than nil for simpler external handling.
+		empty := LimiterSnapshot{}
+		snap.Limiter = &empty
 	}
 	if e.rm != nil {
 		rs := e.rm.Stats()

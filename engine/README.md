@@ -9,8 +9,11 @@ Public (importable) surface:
 - `engine` (facade: construction, lifecycle, snapshotting, telemetry policy, health evaluation, asset strategy enablement)
 - `engine/config` (configuration structs & normalization helpers)
 - `engine/models` (data structures: Page, CrawlResult, errors)
-- `engine/ratelimit` (adaptive limiter interfaces & snapshots)
 - `engine/resources` (resource manager configuration & high-level stats)
+
+Removed (internalized) since C5:
+
+- `engine/ratelimit` (adaptive limiter implementation + interfaces). A reduced diagnostic view is now exposed via `engine.LimiterSnapshot` fields on the facade `Snapshot()`. Existing consumers should remove imports of `engine/ratelimit`; no direct replacement API is required.
 
 Internal-only (subject to change without notice):
 

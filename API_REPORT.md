@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-28T14:40:15+01:00
+Signature: 5083c7b4fd6c46a14aa564b0fbdf1567ae3ff9972600cc1e0fc2fd736bbb646c
 
 ## Package `models`
 
@@ -31,24 +31,6 @@ PageMeta | type | Experimental | PageMeta contains structured metadata extracted
 RateLimitConfig | type | Experimental | RateLimitConfig defines adaptive per-domain rate limiting behavior.
 ScraperConfig | type | Experimental | ScraperConfig holds crawler configuration formerly defined in legacy pkg/models.
 ScraperConfig.Validate | method | Experimental | Validate performs basic sanity checks on the configuration.
-
-## Package `ratelimit`
-
-Name | Kind | Stability | Summary
------|------|-----------|--------
-AdaptiveRateLimiter | type | Experimental | AdaptiveRateLimiter implements RateLimiter using AIMD + circuit breaking.
-AdaptiveRateLimiter.Acquire | method |  | 
-AdaptiveRateLimiter.Close | method |  | 
-AdaptiveRateLimiter.Feedback | method |  | 
-AdaptiveRateLimiter.Snapshot | method |  | 
-AdaptiveRateLimiter.WithClock | method |  | 
-Clock | type | Experimental | Clock abstracts time operations for deterministic testing.
-DomainSummary | type | Experimental | DomainSummary reports per-domain adaptive state.
-ErrCircuitOpen | var | Experimental | ErrCircuitOpen signals requests are temporarily denied due to breaker state.
-Feedback | type | Experimental | Feedback supplies outcome metrics from completed requests.
-LimiterSnapshot | type | Experimental | LimiterSnapshot aggregates limiter-level counters.
-Permit | type |  | Permit represents an acquired capacity token.
-RateLimiter | type | Experimental | RateLimiter is the adaptive per-domain limiter interface.
 
 ## Package `engine`
 
@@ -85,6 +67,8 @@ Engine.Tracer | method | Experimental | Tracer returns the engine's tracer imple
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
 Fetcher | type | Experimental | Fetcher defines how pages are fetched.
+LimiterDomainState | type | Experimental | LimiterDomainState summarizes recent domain-level adaptive state.
+LimiterSnapshot | type | Experimental | LimiterSnapshot is a public, reduced view of the internal adaptive rate limiter state.
 MaterializedAsset | type |  | MaterializedAsset represents an asset after execution (download / inline / optimization).
 OutputSink | type | Experimental | OutputSink consumes processed pages.
 Processor | type | Experimental | Processor transforms a fetched page into enriched content.
