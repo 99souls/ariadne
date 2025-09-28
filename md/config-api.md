@@ -1,7 +1,3 @@
-# ConfigX Programmatic API
-
-This is the Go-facing API exposed by the configuration subsystem. CLI exposure is deferred (Phase 7).
-
 > ARCHIVED: The dynamic configuration subsystem (ConfigX) was removed. This file is retained as historical reference. See `md/archive/configx-README-legacy.md` and ADR `md/decisions/2025-09-configx-removal.md`.
 
 # (Archived) ConfigX Programmatic API
@@ -9,12 +5,13 @@ This is the Go-facing API exposed by the configuration subsystem. CLI exposure i
 This document described the Go-facing API exposed by the removed configuration subsystem. It is no longer active code.
 
 ## Core Types
+
 ```go
 // This is an archived section of the ConfigX Programmatic API.
 // The following code snippets are retained for historical reference.
 ```
 
-## Construction
+## Core Type Summary (Historical)
 
 - `EngineConfigSpec` – Root configuration payload composed of section pointers.
 - `VersionedConfig` – Stored immutable version with hash & metadata.
