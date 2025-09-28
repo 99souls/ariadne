@@ -1,6 +1,6 @@
 # API Report
 
-Generated: 2025-09-28T11:47:55+01:00
+Generated: 2025-09-28T14:01:36+01:00
 
 ## Package `models`
 
@@ -91,6 +91,7 @@ Processor | type | Experimental | Processor transforms a fetched page into enric
 ResourceSnapshot | type | Experimental | ResourceSnapshot summarizes resource manager internal counters.
 ResourcesConfig | type | Experimental | ResourcesConfig is the public facade configuration for resource management.
 ResumeSnapshot | type | Experimental | ResumeSnapshot contains resume filter statistics.
+SelectMetricsProvider | func | Experimental | SelectMetricsProvider returns a metrics.Provider based on Config telemetry fields.
 Snapshot | type | Stable | Snapshot is a unified view of engine state.
 
 ## Package `config`
@@ -117,4 +118,8 @@ UnifiedBusinessConfig.ExtractFetchPolicy | method | Experimental | Experimental:
 UnifiedBusinessConfig.ExtractProcessPolicy | method | Experimental | Experimental: ExtractProcessPolicy returns a defensive copy.
 UnifiedBusinessConfig.ExtractSinkPolicy | method | Experimental | Experimental: ExtractSinkPolicy returns a defensive copy.
 UnifiedBusinessConfig.Validate | method | Experimental | Experimental: Validate checks internal consistency. Error messages and
+
+## Package `resources`
+
+(no exported symbols)
 
