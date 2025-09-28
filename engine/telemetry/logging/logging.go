@@ -1,9 +1,9 @@
 package logging
 
 import (
-	tracing "github.com/99souls/ariadne/engine/telemetry/tracing"
 	"context"
 	"log/slog"
+	internaltracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 )
 
 // Logger is a minimal interface wrapper allowing correlation injection.
@@ -23,7 +23,7 @@ func New(base *slog.Logger) Logger {
 }
 
 func (l *correlatedLogger) InfoCtx(ctx context.Context, msg string, attrs ...any) {
-	traceID, spanID := tracing.ExtractIDs(ctx)
+	traceID, spanID := internaltracing.ExtractIDs(ctx)
 	if traceID != "" || spanID != "" {
 		attrs = append(attrs, slog.String("trace_id", traceID), slog.String("span_id", spanID))
 	}
@@ -31,7 +31,7 @@ func (l *correlatedLogger) InfoCtx(ctx context.Context, msg string, attrs ...any
 }
 
 func (l *correlatedLogger) ErrorCtx(ctx context.Context, msg string, attrs ...any) {
-	traceID, spanID := tracing.ExtractIDs(ctx)
+	traceID, spanID := internaltracing.ExtractIDs(ctx)
 	if traceID != "" || spanID != "" {
 		attrs = append(attrs, slog.String("trace_id", traceID), slog.String("span_id", spanID))
 	}

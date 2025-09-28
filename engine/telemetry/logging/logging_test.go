@@ -1,12 +1,13 @@
 package logging
 
 import (
-	tracing "github.com/99souls/ariadne/engine/telemetry/tracing"
 	"bytes"
 	"context"
 	"log/slog"
 	"strings"
 	"testing"
+
+	internaltracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 )
 
 func TestCorrelatedLoggerAddsTraceSpan(t *testing.T) {
@@ -15,7 +16,7 @@ func TestCorrelatedLoggerAddsTraceSpan(t *testing.T) {
 	base := slog.New(handler)
 	log := New(base)
 
-	tr := tracing.NewTracer(true)
+	tr := internaltracing.NewTracer(true)
 	ctx, span := tr.StartSpan(context.Background(), "op")
 	defer span.End()
 	log.InfoCtx(ctx, "hello", "k", "v")

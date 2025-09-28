@@ -8,7 +8,7 @@ import (
 	"time"
 
 	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
-	tracing "github.com/99souls/ariadne/engine/telemetry/tracing"
+	internaltracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 )
 
 // Category enumerations (align with event-schema.md)
@@ -123,7 +123,7 @@ func (b *eventBus) Publish(ev Event) error {
 
 func (b *eventBus) PublishCtx(ctx context.Context, ev Event) error {
 	if ev.TraceID == "" && ev.SpanID == "" { // only enrich if IDs absent
-		if traceID, spanID := tracing.ExtractIDs(ctx); traceID != "" || spanID != "" {
+		if traceID, spanID := internaltracing.ExtractIDs(ctx); traceID != "" || spanID != "" {
 			ev.TraceID = traceID
 			ev.SpanID = spanID
 		}

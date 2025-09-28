@@ -2,7 +2,7 @@ package events
 
 import (
 	metrics "github.com/99souls/ariadne/engine/telemetry/metrics"
-	"github.com/99souls/ariadne/engine/telemetry/tracing"
+	internaltracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 	"context"
 	"testing"
 	"time"
@@ -76,7 +76,7 @@ func TestMultipleSubscribers(t *testing.T) {
 
 func TestPublishCtxTracingCorrelation(t *testing.T) {
 	bus := NewBus(metrics.NewNoopProvider())
-	tr := tracing.NewTracer(true)
+	tr := internaltracing.NewTracer(true)
 	ctx, span := tr.StartSpan(context.Background(), "root")
 	defer span.End()
 	sub, err := bus.Subscribe(2)
@@ -102,7 +102,7 @@ func BenchmarkPublishContextVsSimple(b *testing.B) {
 	bus := NewBus(metrics.NewNoopProvider())
 	sub, _ := bus.Subscribe(128)
 	defer func() { _ = sub.Close() }()
-	tr := tracing.NewTracer(true)
+	tr := internaltracing.NewTracer(true)
 	ctx, span := tr.StartSpan(context.Background(), "bench")
 	defer span.End()
 	ev := Event{Category: CategoryPipeline, Type: "tick"}
