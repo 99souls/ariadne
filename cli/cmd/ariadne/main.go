@@ -16,6 +16,50 @@ import (
 	"github.com/99souls/ariadne/engine"
 )
 
+// simpleJSONConfig represents a minimal subset of engine.Config loadable from a JSON file.
+// Experimental: Placeholder until layered config system is implemented.
+type simpleJSONConfig struct {
+	DiscoveryWorkers  *int           `json:"discovery_workers"`
+	ExtractionWorkers *int           `json:"extraction_workers"`
+	ProcessingWorkers *int           `json:"processing_workers"`
+	OutputWorkers     *int           `json:"output_workers"`
+	BufferSize        *int           `json:"buffer_size"`
+	RetryBaseDelay    *time.Duration `json:"retry_base_delay"`
+	RetryMaxDelay     *time.Duration `json:"retry_max_delay"`
+	RetryMaxAttempts  *int           `json:"retry_max_attempts"`
+}
+
+func applySimpleConfig(base engine.Config, sc *simpleJSONConfig) engine.Config {
+	if sc == nil {
+		return base
+	}
+	if sc.DiscoveryWorkers != nil {
+		base.DiscoveryWorkers = *sc.DiscoveryWorkers
+	}
+	if sc.ExtractionWorkers != nil {
+		base.ExtractionWorkers = *sc.ExtractionWorkers
+	}
+	if sc.ProcessingWorkers != nil {
+		base.ProcessingWorkers = *sc.ProcessingWorkers
+	}
+	if sc.OutputWorkers != nil {
+		base.OutputWorkers = *sc.OutputWorkers
+	}
+	if sc.BufferSize != nil {
+		base.BufferSize = *sc.BufferSize
+	}
+	if sc.RetryBaseDelay != nil {
+		base.RetryBaseDelay = *sc.RetryBaseDelay
+	}
+	if sc.RetryMaxDelay != nil {
+		base.RetryMaxDelay = *sc.RetryMaxDelay
+	}
+	if sc.RetryMaxAttempts != nil {
+		base.RetryMaxAttempts = *sc.RetryMaxAttempts
+	}
+	return base
+}
+
 func main() {
 	var (
 		seedList       string
@@ -26,6 +70,9 @@ func main() {
 		showVersion    bool
 		metricsAddr    string
 		healthAddr     string
+		configPath     string
+		metricsBackend string
+		enableMetrics  bool
 	)
 	flag.StringVar(&seedList, "seeds", "", "Comma separated list of seed URLs")
 	flag.StringVar(&seedFile, "seed-file", "", "Path to file containing one seed URL per line")
@@ -35,6 +82,9 @@ func main() {
 	flag.BoolVar(&showVersion, "version", false, "Show version / build info")
 	flag.StringVar(&metricsAddr, "metrics", "", "Expose metrics on address (e.g. :9090)")
 	flag.StringVar(&healthAddr, "health", "", "Expose health endpoint on address (e.g. :9091)")
+	flag.StringVar(&configPath, "config", "", "Optional JSON config file (temporary minimal format)")
+	flag.StringVar(&metricsBackend, "metrics-backend", "prom", "Metrics backend: prom|otel|noop (effective only if -metrics set and enabled)")
+	flag.BoolVar(&enableMetrics, "enable-metrics", false, "Enable metrics provider (required to serve metrics)")
 	flag.Parse()
 
 	if showVersion {
@@ -53,6 +103,22 @@ func main() {
 
 	cfg := engine.Defaults()
 	cfg.Resume = resume
+	cfg.CheckpointPath = checkpointPath
+
+	// Merge simple config file if provided
+	if configPath != "" {
+		f, err := os.Open(configPath)
+		if err != nil { log.Fatalf("open config: %v", err) }
+		var sc simpleJSONConfig
+		if err := json.NewDecoder(f).Decode(&sc); err != nil { log.Fatalf("decode config: %v", err) }
+		_ = f.Close()
+		cfg = applySimpleConfig(cfg, &sc)
+	}
+
+	if enableMetrics {
+		cfg.MetricsEnabled = true
+		cfg.MetricsBackend = metricsBackend
+	}
 	cfg.CheckpointPath = checkpointPath
 
 	eng, err := engine.New(cfg)
@@ -80,13 +146,13 @@ func main() {
 		log.Fatalf("start engine: %v", err)
 	}
 
-	// Optional metrics server placeholder (logic mount point; real adapter lives outside engine core)
-	if metricsAddr != "" {
+	// Metrics endpoint (basic stub until adapter wiring); only if enabled & address provided.
+	if metricsAddr != "" && cfg.MetricsEnabled {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-			// Placeholder: integrate real metrics exporter adapter in Wave 4 task W4-05
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("# metrics exposition pending adapter integration\n"))
+			// Minimal placeholder exposition; real impl will integrate provider registry.
+			_, _ = w.Write([]byte("# HELP ariadne_build_info Build info metric placeholder\n# TYPE ariadne_build_info gauge\nariadne_build_info 1\n"))
 		})
 		go func() {
 			srv := &http.Server{Addr: metricsAddr, Handler: mux}
@@ -94,8 +160,8 @@ func main() {
 			_ = srv.Shutdown(context.Background())
 		}()
 		go func() {
-			log.Printf("metrics listening on %s", metricsAddr)
-			_ = http.ListenAndServe(metricsAddr, mux) // shutdown handled above
+			log.Printf("metrics listening on %s (backend=%s)", metricsAddr, cfg.MetricsBackend)
+			_ = http.ListenAndServe(metricsAddr, mux)
 		}()
 	}
 
@@ -103,10 +169,8 @@ func main() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			snap := eng.Snapshot()
-			b, _ := json.Marshal(map[string]any{"ok": true, "resources": snap.Resources})
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(b)
+			hs := eng.HealthSnapshot(r.Context())
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": hs.Overall, "probes": hs.Probes, "generated": hs.Generated, "ttl": hs.TTL.Seconds()})
 		})
 		go func() {
 			srv := &http.Server{Addr: healthAddr, Handler: mux}
