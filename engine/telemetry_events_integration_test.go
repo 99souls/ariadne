@@ -1,45 +1,9 @@
 package engine
 
-import (
-	teleevents "github.com/99souls/ariadne/engine/telemetry/events"
-	"testing"
-	"time"
-)
+import "testing"
 
-// TestEngineEventBusInitialization validates the event bus is always non-nil and publish / subscribe works.
+// Deprecated test placeholder: legacy EventBus() accessor removed in C6. This test is
+// intentionally skipped and will be deleted once observer coverage is sufficient.
 func TestEngineEventBusInitialization(t *testing.T) {
-	cfg := Defaults()
-	// metrics disabled by default -> bus should still function (metrics provider nil/noop)
-	eng, err := New(cfg)
-	if err != nil {
-		t.Fatalf("engine new: %v", err)
-	}
-	defer func() { _ = eng.Stop() }()
-
-	bus := eng.EventBus()
-	if bus == nil {
-		t.Fatalf("expected non-nil event bus")
-	}
-
-	sub, err := bus.Subscribe(4)
-	if err != nil {
-		t.Fatalf("subscribe: %v", err)
-	}
-	defer func() { _ = sub.Close() }()
-
-	evType := "engine_start"
-	if err := bus.Publish(teleevents.Event{Category: "engine", Type: evType}); err != nil {
-		t.Fatalf("publish: %v", err)
-	}
-
-	select {
-	case ev := <-sub.C():
-		if ev.Type != evType {
-			t.Fatalf("expected type %s got %s", evType, ev.Type)
-		}
-	case <-time.After(300 * time.Millisecond):
-		t.Fatalf("timeout waiting for event")
-	}
+	t.Skip("EventBus accessor removed; use RegisterEventObserver + TelemetryEvent facade; test retained temporarily during C6")
 }
-
-// (no helper types needed; using events.Event directly)

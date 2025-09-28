@@ -14,11 +14,11 @@ import (
 	intrat "github.com/99souls/ariadne/engine/internal/ratelimit"
 	intresources "github.com/99souls/ariadne/engine/internal/resources"
 	engmodels "github.com/99souls/ariadne/engine/models"
-	telemEvents "github.com/99souls/ariadne/engine/telemetry/events"
+	telemEvents "github.com/99souls/ariadne/engine/internal/telemetry/events"
 	telemetryhealth "github.com/99souls/ariadne/engine/telemetry/health"
 	telemetrymetrics "github.com/99souls/ariadne/engine/telemetry/metrics"
 	telempolicy "github.com/99souls/ariadne/engine/telemetry/policy"
-	telemetrytracing "github.com/99souls/ariadne/engine/telemetry/tracing"
+	telemetrytracing "github.com/99souls/ariadne/engine/internal/telemetry/tracing"
 )
 
 // Snapshot is a unified view of engine state.
@@ -133,10 +133,9 @@ type Engine struct {
 
 	// Phase 5E: metrics provider (initially optional; nil if disabled)
 	metricsProvider telemetrymetrics.Provider
-	// Phase 5E Iteration 2: event bus (always initialized; metrics provider may be noop)
+	// Internal telemetry implementations (C6 step2 will remove public accessors)
 	eventBus telemEvents.Bus
-	// Phase 5E Iteration 3: tracer (simple in-process, may be noop based on future config)
-	tracer telemetrytracing.Tracer
+	tracer   telemetrytracing.Tracer
 	// Phase 5E Iteration 4: health evaluator
 	healthEval *telemetryhealth.Evaluator
 	// health status instrumentation
@@ -588,11 +587,8 @@ func (e *Engine) Snapshot() Snapshot {
 
 // EventBus exposes the telemetry event bus (non-nil).
 // Experimental: Direct bus exposure may be replaced by subscription APIs.
-func (e *Engine) EventBus() telemEvents.Bus { return e.eventBus }
-
-// Tracer returns the engine's tracer implementation.
-// Experimental: May be superseded by span creation helpers.
-func (e *Engine) Tracer() telemetrytracing.Tracer { return e.tracer }
+// (C6) Public EventBus() and Tracer() accessors removed; external observers should use
+// RegisterEventObserver and future span helper (if introduced). Intentionally no replacement exported now.
 
 // EngineStrategies defines business logic components for dependency injection.
 // Experimental: Placeholder for future strategy extension wiring; not yet integrated.

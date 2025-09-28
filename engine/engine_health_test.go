@@ -16,11 +16,12 @@ func TestHealthChangeEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("engine construction failed: %v", err)
 	}
-	sub, err := e.EventBus().Subscribe(8)
-	if err != nil {
-		t.Fatalf("subscribe failed: %v", err)
-	}
-	defer func() { _ = sub.Close() }()
+	ch := make(chan TelemetryEvent, 4)
+	e.RegisterEventObserver(func(ev TelemetryEvent){
+		if ev.Category == "health" && ev.Type == "health_change" {
+			select { case ch <- ev: default: }
+		}
+	})
 	current := telemetryhealth.StatusHealthy
 	probe := telemetryhealth.ProbeFunc(func(ctx context.Context) telemetryhealth.ProbeResult {
 		return telemetryhealth.ProbeResult{Name: "test", Status: current, CheckedAt: time.Now()}
@@ -34,10 +35,9 @@ func TestHealthChangeEvent(t *testing.T) {
 		t.Fatalf("expected first overall healthy got %s", first.Overall)
 	}
 	select {
-	case ev := <-sub.C():
+	case ev := <-ch:
 		t.Fatalf("unexpected event on initial snapshot: %+v", ev)
 	case <-time.After(50 * time.Millisecond):
-		// pass
 	}
 
 	// Change status to degraded triggers an event.
@@ -49,16 +49,15 @@ func TestHealthChangeEvent(t *testing.T) {
 	}
 	// Allow brief scheduling window
 	time.Sleep(10 * time.Millisecond)
-	stats := e.EventBus().Stats()
 	select {
-	case ev := <-sub.C():
+	case ev := <-ch:
 		if ev.Category != "health" || ev.Type != "health_change" {
-			t.Fatalf("unexpected event: %+v", ev)
+			 t.Fatalf("unexpected event: %+v", ev)
 		}
 		if ev.Fields["previous"] != string(telemetryhealth.StatusHealthy) || ev.Fields["current"] != string(telemetryhealth.StatusDegraded) {
-			t.Fatalf("unexpected field transition: %+v", ev.Fields)
+			 t.Fatalf("unexpected field transition: %+v", ev.Fields)
 		}
 	case <-time.After(500 * time.Millisecond):
-		t.Fatalf("expected health_change event not received (bus stats: %+v)", stats)
+		t.Fatalf("expected health_change event not received")
 	}
 }

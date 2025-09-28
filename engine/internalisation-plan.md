@@ -187,7 +187,8 @@ Commit 1 ("prune: remove adapters/resources/strategies stubs") does:
 * [x] C4 Internalize crawler/, processor/, output/ implementations (moved impl packages under internal/, deleted public impl tests, updated all import paths, regenerated API report; facade strategy interfaces only)
 [x] C5 Internalize ratelimit/ (implementation moved under `engine/internal/ratelimit`; legacy `engine/ratelimit` package stub REMOVED – physical deletion complete). Limiter snapshot now always non-nil: when limiter disabled an empty `LimiterSnapshot` struct is returned to simplify callers.
 [*] C6 (step 1) Add telemetry facade types (TelemetryEvent, TelemetryOptions, RegisterEventObserver) and conditional initialization (metrics/events/tracing/health) – DONE on branch c6-internalize-telemetry (commit 190e4c9). Health change events bridged to observers.
-[] C6 (step 2) Internalize telemetry internals (events, tracing, policy) under engine/internal/telemetry/* and remove direct EventBus()/Tracer() exposure (replace with observer + helper functions if needed)
+[*] C6 (step 2a) Internalize telemetry events & tracing packages; remove public EventBus()/Tracer() accessors; add observer test (pending: policy move)
+[] C6 (step 2b) Internalize telemetry policy package and finalize facade span helper decision
 [] C7 Internalize configx/ (or delete)
 [] C8 Final allowlist + API report shrink commit
 ```
@@ -250,6 +251,7 @@ Decision: Proceed with C5 adopting leanest approach (no public ratelimit package
 Step 1 (DONE): Introduced additive facade layer (`TelemetryOptions`, `TelemetryEvent`, `EventObserver`, `Engine.RegisterEventObserver`) plus conditional subsystem initialization. Health evaluator change events now dispatched to registered observers, establishing the bridging mechanism needed to remove public bus exposure.
 
 Upcoming (Step 2):
+
 1. Move `engine/telemetry/events`, `.../tracing`, `.../policy` (and potentially advanced metrics selection logic if narrowed) under `engine/internal/telemetry/`.
 2. Replace public `EventBus()` and `Tracer()` with either removal (preferred) or thin helpers (`StartSpan(ctx, name, labels...)`) if external span creation remains needed.
 3. Expose only high-level policy mutation (`UpdateTelemetryPolicy`) and observer registration.
@@ -258,6 +260,7 @@ Upcoming (Step 2):
 6. Add tests asserting observer receives health change events (already implicit) plus new synthetic event injection test (may publish internal test-only event through bus to ensure bridging holds after internalization).
 
 Risks / Notes:
+
 - Ensure metrics provider selection remains stable; if `SelectMetricsProvider` is retained public, document as provisional until v0.2.0.
 - Tracer removal must not break any existing test relying on span creation; search tests for `Tracer()` usage before removal.
 - Event bus direct usage in tests must be migrated to observer assertions prior to deletion.

@@ -1,6 +1,6 @@
 # API Report
 
-Signature: 1f404747584245701e0c8e341f6a9abff87d9686c5149d40a812f09f5e8c4141
+Signature: d17c7dc5459d8f05bbb467b2d532a094d9e866b98326cf4c294162a42646a58a
 
 ## Package `engine`
 
@@ -26,7 +26,6 @@ DefaultAssetStrategy.Rewrite | method |  |
 Engine | type | Stable | Engine composes all subsystems behind a single facade.
 Engine.AssetEvents | method | Experimental | AssetEvents returns a snapshot copy of collected asset events.
 Engine.AssetMetricsSnapshot | method | Experimental | AssetMetricsSnapshot returns current aggregated counters (zero-value if strategy disabled).
-Engine.EventBus | method | Experimental | EventBus exposes the telemetry event bus (non-nil).
 Engine.HealthSnapshot | method | Experimental | HealthSnapshot evaluates (or returns cached) subsystem health. Zero-value if disabled.
 Engine.MetricsProvider | method | Experimental | MetricsProvider returns the active metrics provider (may be nil if disabled).
 Engine.Policy | method | Experimental | Policy returns the current telemetry policy snapshot.
@@ -34,7 +33,6 @@ Engine.RegisterEventObserver | method | Experimental | RegisterEventObserver add
 Engine.Snapshot | method | Stable | Snapshot returns a unified state view.
 Engine.Start | method | Stable | Start begins processing of the provided seed URLs and returns a read-only results channel.
 Engine.Stop | method | Stable | Stop gracefully stops the engine and underlying components.
-Engine.Tracer | method | Experimental | Tracer returns the engine's tracer implementation.
 Engine.UpdateTelemetryPolicy | method | Experimental | UpdateTelemetryPolicy atomically swaps the active policy. Nil input resets to defaults.
 EngineStrategies | type | Experimental | EngineStrategies defines business logic components for dependency injection.
 EventObserver | type |  | EventObserver receives telemetry events. MUST be fast & non-blocking; heavy work
