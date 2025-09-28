@@ -1,37 +1,66 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { APITester } from "./APITester";
+import React, { useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import { Navigation } from "./components/Navigation";
+import { HomePage } from "./routes/HomePage";
+import { AboutPage } from "./routes/AboutPage";
+import { DocsGettingStarted } from "./routes/DocsGettingStarted";
+import { BlogIndex } from "./routes/blog/BlogIndex";
+import { BlogPost } from "./routes/blog/BlogPost";
+import { TagsIndex } from "./routes/TagsIndex";
+import { DeepLeafPage } from "./routes/labs/depth/depth2/depth3/DeepLeafPage";
 import "./index.css";
 
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
-
 export function App() {
-  return (
-    <div className="container mx-auto p-8 text-center relative z-10">
-      <div className="flex justify-center items-center gap-8 mb-8">
-        <img
-          src={logo}
-          alt="Bun Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
-        />
-      </div>
+  // Handle theme switching via query params for testing
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const theme = params.get("theme");
+    if (theme === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light");
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
 
-      <Card className="bg-card/50 backdrop-blur-sm border-muted">
-        <CardContent className="pt-6">
-          <h1 className="text-5xl font-bold my-4 leading-tight">Bun + React</h1>
-          <p>
-            Edit{" "}
-            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">src/App.tsx</code> and
-            save to test HMR
-          </p>
-          <APITester />
-        </CardContent>
-      </Card>
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <main className="container mx-auto px-4 py-8">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route
+            path="/docs/getting-started"
+            element={<DocsGettingStarted />}
+          />
+          <Route path="/blog" element={<BlogIndex />} />
+          <Route path="/blog/:postId" element={<BlogPost />} />
+          <Route path="/tags" element={<TagsIndex />} />
+          <Route
+            path="/labs/depth/depth2/depth3/leaf"
+            element={<DeepLeafPage />}
+          />
+          {/* Catch all route */}
+          <Route
+            path="*"
+            element={
+              <div className="text-center py-16">
+                <h1 className="text-4xl font-bold mb-4">
+                  404 - Page Not Found
+                </h1>
+                <p className="text-muted-foreground">
+                  The page you're looking for doesn't exist.
+                  <a href="/" className="text-blue-600 hover:underline ml-1">
+                    Go home
+                  </a>
+                </p>
+              </div>
+            }
+          />
+        </Routes>
+      </main>
     </div>
   );
 }

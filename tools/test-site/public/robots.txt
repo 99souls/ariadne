@@ -1,0 +1,48 @@
+# Ariadne Test Site Robots.txt
+# Default configuration for crawler testing
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: http://localhost:3000/sitemap.xml
+
+# Test various crawler directives
+Disallow: /admin/
+Disallow: /private/
+Disallow: /.env
+Disallow: /config/
+
+# Allow specific paths for testing
+Allow: /api/
+Allow: /static/
+
+# Rate limiting suggestion
+Crawl-delay: 1
+
+# Test comments and formatting
+# This is a comment for testing parser robustness
+# Empty lines below should be handled gracefully
+
+
+# Cache directives (non-standard but sometimes used)
+Cache-delay: 3600
+
+# Multiple user agents for testing
+User-agent: Googlebot
+Disallow: /test-google-only/
+
+User-agent: Bingbot  
+Disallow: /test-bing-only/
+
+User-agent: BadBot
+Disallow: /
+
+# Test edge cases
+User-agent: *
+# Multiple disallow patterns
+Disallow: /temp/
+Disallow: /backup/
+Disallow: /*.tmp$
+Disallow: /*?debug=*
+Disallow: /*?admin=*

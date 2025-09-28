@@ -1,0 +1,99 @@
+import { serve, file } from "bun";
+import { resolve, join } from "path";
+
+const port = parseInt(process.env.TESTSITE_PORT || "5173");
+const robotsMode = process.env.TESTSITE_ROBOTS || "allow";
+
+// Static data for API endpoints
+const postsData = [
+  {
+    id: "getting-started",
+    title: "Getting Started with Ariadne",
+    excerpt:
+      "Learn how to set up and use Ariadne for your documentation needs.",
+    date: "2024-01-15",
+    tags: ["setup", "documentation"],
+  },
+  {
+    id: "advanced-features",
+    title: "Advanced Features",
+    excerpt: "Explore the advanced capabilities of Ariadne.",
+    date: "2024-01-20",
+    tags: ["advanced", "features"],
+  },
+];
+
+const server = serve({
+  port,
+  async fetch(req) {
+    const url = new URL(req.url);
+    const pathname = url.pathname;
+
+    // API endpoints
+    if (pathname === "/api/ping") {
+      return Response.json({ ok: true, timestamp: "2024-01-01T00:00:00Z" }); // Fixed timestamp for determinism
+    }
+
+    if (pathname === "/api/posts") {
+      return Response.json(postsData);
+    }
+
+    if (pathname === "/api/slow") {
+      // Deterministic delay - always 500ms for consistent testing
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return Response.json({
+        message: "This endpoint is intentionally slow",
+        delay: 500,
+      });
+    }
+
+    // Dynamic robots.txt based on environment
+    if (pathname === "/robots.txt") {
+      const robotsContent =
+        robotsMode === "deny"
+          ? "User-agent: *\nDisallow: /"
+          : "User-agent: *\nAllow: /\n\nSitemap: http://localhost:" +
+            port +
+            "/sitemap.xml";
+      return new Response(robotsContent, {
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
+    // Sitemap.xml
+    if (pathname === "/sitemap.xml") {
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>http://localhost:${port}/</loc><changefreq>daily</changefreq></url>
+  <url><loc>http://localhost:${port}/about</loc><changefreq>weekly</changefreq></url>
+  <url><loc>http://localhost:${port}/docs/getting-started</loc><changefreq>weekly</changefreq></url>
+  <url><loc>http://localhost:${port}/blog/post-1</loc><changefreq>monthly</changefreq></url>
+  <url><loc>http://localhost:${port}/tags</loc><changefreq>weekly</changefreq></url>
+</urlset>`;
+      return new Response(sitemap, {
+        headers: { "Content-Type": "application/xml" },
+      });
+    }
+
+    // Static assets
+    if (pathname.startsWith("/static/")) {
+      const filePath = join(process.cwd(), "public", pathname);
+      try {
+        return new Response(file(filePath));
+      } catch {
+        return new Response("Not Found", { status: 404 });
+      }
+    }
+
+    // Serve React app for all other routes
+    const indexPath = resolve(process.cwd(), "src/index.html");
+    return new Response(file(indexPath), {
+      headers: { "Content-Type": "text/html" },
+    });
+  },
+  development: process.env.NODE_ENV !== "production",
+});
+
+// Deterministic startup message for test harness detection
+console.log(`TESTSITE: listening on http://127.0.0.1:${port}`);
+console.log(`Robots mode: ${robotsMode}`);
