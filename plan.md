@@ -11,6 +11,22 @@ This document now maps every phase/sub-phase item to a GitHub Issue for single-s
 - **Measurable Progress**: Clear success criteria for each milestone
 - **Fail-Fast Approach**: Identify and resolve blockers quickly
 
+### Expanded Non-Functional Objectives (2025-Q4 Refresh)
+
+We are adding explicit non-functional goals to prevent implicit drift:
+
+- **Determinism**: Integration + end-to-end tests must exhibit zero flakes over 20 consecutive CI runs (target <0.5% flake rolling 30‑day). All dynamic content (timestamps, random IDs) must be fixture-stable or normalized in assertions.
+- **Observability Baseline**: Engine exposes health + metrics (when enabled) with <50ms handler overhead p95 under synthetic load; minimal surface (no internal provider leakage).
+- **Performance Budgets**: Establish & enforce throughput and latency budgets (see Success Metrics). Any PR breaching budget must include perf justification & follow-up issue.
+- **Resource Efficiency**: Memory ceiling for 1k page crawl: <2GB RSS; CPU utilization target: <400% on 8 vCPU machine (leaves headroom for CI noise).
+- **Security & Compliance**: Respect robots.txt (allow override flag for test harness only), never fetch off-scope domains, and redact sensitive headers in logs.
+- **Accessibility (A11y) Forward Prep**: Output HTML passes a basic a11y lint (heading hierarchy + alt text presence) by Phase 7.
+- **Reproducible Dev Environment**: Single make target (`make dev-env`) bootstraps toolchain (Go, Bun) with pinned versions; CI validates lockfiles.
+- **Documentation Quality**: For each new public facade symbol, doc coverage (godoc) ≥95% (auto-checked in Phase 7 gate).
+- **Extensibility Guardrails**: No new exported surface without an accompanying issue labeled `api-surface` and plan delta.
+
+These are enforceable via lightweight CI scripts introduced incrementally (see new Phase 6 & 7 gates).
+
 ---
 
 ## Phase 1: Foundation & Core Architecture (Complete)
@@ -174,25 +190,91 @@ This document now maps every phase/sub-phase item to a GitHub Issue for single-s
 
 ---
 
-## Phase 6: Polish & CLI Experience (Queued)
+## Phase 6: Live Test Site & Realistic Integration Surface (Planned)
+
+**Timeline: Interleaved after Phase 5 (Production Readiness) | Success Metric: Stable, deterministic live wiki-style site powering ≥1 replaced mock-based integration test**
+
+Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that emulates common knowledge base / Obsidian Quartz style patterns: nested pages, asset references, broken links, slow endpoints, robots variants, metadata richness. This becomes the canonical real HTTP origin for end-to-end crawler validation (superseding scattered synthetic fixtures).
+
+### 6.1 Test Site Implementation (P1 – Minimal)
+
+- [ ] Create `tools/test-site` (already scaffolded) formalize package name `@ariadne/testsite`.
+- [ ] Core routes: `/`, `/about`, `/docs/getting-started`, `/docs/deep/n1/n2`, `/blog/post-1`, `/tags/index`.
+- [ ] Assets: at least 2 images (one intentionally missing), CSS, JS (benign DOM mutation), SVG logo.
+- [ ] API endpoints: `/api/ping`, `/api/posts` (static JSON), `/api/slow` (400–600ms inject latency).
+- [ ] Metadata: `<meta name="description">`, canonical link, OpenGraph tags on blog post.
+- [ ] Deterministic build (no date/time leakage) – inject fixed build timestamp env.
+- [ ] Startup banner: `TESTSITE: listening on ...` for readiness detection.
+
+### 6.2 Go Test Harness
+
+- [ ] Helper `WithLiveTestSite(t *testing.T, fn func(baseURL string))` in `engine/internal/testutil/testsite` (or cli equivalent) with reuse (`TESTSITE_REUSE=1`).
+- [ ] Port selection: pick configured `TESTSITE_PORT` else scan free port (avoid collisions in parallel CI matrix).
+- [ ] Readiness wait ≤5s (fail fast with diagnostic log tail on timeout).
+- [ ] Graceful teardown (process kill + wait) unless reuse set.
+
+### 6.3 Integration Test Migration (P1 Scope)
+
+- [ ] Replace at least one current discovery integration test to crawl live site root and assert discovered page set & asset counts.
+- [ ] Assert: depth limiting, broken image tracked, slow endpoint does not stall entire crawl (timeout respected), robots allow variant honored.
+- [ ] Add golden snapshot (normalized) for a representative page to detect content regression in test site.
+
+### 6.4 Determinism & Metrics (P2)
+
+- [ ] Introduce alternate `robots.txt` via env `TESTSITE_ROBOTS=deny` and test deny-all gating.
+- [ ] Add latency jitter boundaries test (ensure p95 within expected window).
+- [ ] Add sitemap `/sitemap.xml` and validate crawler ingestion (if supported by then).
+
+### Success Criteria (Phase 6 Gate)
+
+| Criterion | Target |
+| --------- | ------ |
+| Site cold start | < 200ms Bun process ready on M2 Mac / CI small instance |
+| Test harness reuse | Achieved (second test run reuses process) |
+| Flakiness | 0 flakes in 20 consecutive CI runs |
+| Integration replacement | ≥1 legacy mock test removed / refactored |
+| Deterministic content | No timestamp/random diffs across runs |
+
+### Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+| ---- | ------ | ---------- |
+| Port collisions | Test flakes | Dynamic port selection with retry |
+| Bun install variability | CI failures | Pin version in `bunfig.toml`; cache install layer |
+| Latency variance | Flaky slow endpoint test | Constrain delay with fixed seed RNG or deterministic cycle |
+| Content drift | Assertion churn | Golden snapshots + PR review checklist for test-site changes |
+
+### Outputs
+
+- New Make targets: `testsite-dev`, `integ-live`.
+- Readme section: “Live Test Site Usage”.
+- CI job step for Bun install + reuse of test site across integration suite.
+
+### Exit Gate
+
+Phase 7 (CLI Polish) work may begin only after Phase 6 success criteria met and at least one integration test depends on the live site.
+
+---
+
+## Phase 7: Polish & CLI Experience (Queued)
 
 **Timeline: Day 6-7 | Success Metric: Professional CLI tool ready for distribution**
 
-### 6.1 Command-Line Interface
+### 7.1 Command-Line Interface
 
 - [ ] CLI subcommands (crawl, resume, status) (Issue #42)
 - [ ] Progress bars & real-time status UI (Issue #43)
 - [ ] Interactive configuration prompts (Issue #44)
 - [ ] Help system & usage examples (Issue #45)
 
-### 6.2 Output Quality Improvements
+### 7.2 Output Quality Improvements
 
 - [ ] Markdown output formatting refinements (Issue #46)
 - [ ] PDF generation optimization (Issue #47)
 - [ ] Responsive HTML output enhancements (Issue #48)
 - [ ] Output validation & quality metrics (Issue #49)
 
-### 6.3 Documentation & Testing
+### 7.3 Documentation & Testing
 
 - [ ] Comprehensive README expansion with examples (Issue #50)
 - [ ] Unit tests for critical components (Issue #51)
@@ -200,6 +282,21 @@ This document now maps every phase/sub-phase item to a GitHub Issue for single-s
 - [ ] Configuration options & best practices documentation (Issue #53)
 
 **Validation Test**: Tool can be used by external user with minimal guidance.
+
+---
+
+## Critical Gap Analysis (Added Q4)
+
+| Gap | Current State | Impact if Unaddressed | Planned Mitigation |
+| ---- | ------------- | --------------------- | ------------------ |
+| Lack of realistic crawling surface | Synthetic mocks only | Under-tested edge cases (broken assets, robots) | Phase 6 live test site (P1 + P2) |
+| Determinism enforcement | Ad hoc | Flaky CI undermines confidence | Add flake detector script + golden snapshots |
+| API surface governance in root plan | Implicit via internalisation doc | Risk of accidental re-export | Introduce Phase 7 CI check: exported symbol diff vs allowlist |
+| Performance regression visibility | Manual benchmarking | Slow unnoticed creep | Add periodic benchmark run + budget enforcement (Phase 6 add hook) |
+| Output a11y quality | Not evaluated | Harder future adoption & accessibility debt | Phase 7 a11y lint pass + alt tag enforcement |
+| Config sprawl risk | Expansion in upcoming phases | Harder onboarding & docs drift | Config schema + validation (#31/#32) before adding new flags |
+
+Additional gaps to re-evaluate after Phase 6: plugin architecture clarity, multi-language content support, structured data (JSON-LD) extraction fidelity.
 
 ---
 
