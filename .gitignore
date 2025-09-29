@@ -1,3 +1,4 @@
 ./ariadne
 coverage.out
 engine/cover-engine.out
+engine/coverage.tmp

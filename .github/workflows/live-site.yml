@@ -1,0 +1,98 @@
+name: live-site-integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  live-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.25.1
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Cache Bun installation
+        uses: actions/cache@v3
+        with:
+          path: ~/.bun
+          key: ${{ runner.os }}-bun-${{ hashFiles('tools/test-site/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Workspace sync
+        run: go work sync
+
+      - name: LiveSite integration tests (reuse mode)
+        env:
+          TESTSITE_REUSE: "1"
+        run: make integ-live
+
+      - name: Coverage (soft gate)
+        run: |
+          make coverage-check THRESHOLD=70 || echo "(soft gate) coverage below threshold"
+
+  flake-detector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: live-site
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.25.1
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Workspace sync
+        run: go work sync
+      - name: Flake detector (15 iterations advisory)
+        env:
+          TESTSITE_REUSE: "1"
+        run: ITER=15 make flake-live
+
+  reuse-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: live-site
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.25.1
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+      - name: Workspace sync
+        run: go work sync
+      - name: Verify process reuse
+        env:
+          TESTSITE_REUSE: "1"
+        run: |
+          set -euo pipefail
+          id1=$(go test ./engine/internal/business/crawler -run TestLiveSiteReuseSingleInstance -count=1 -v | grep 'instance id' || true)
+          # Fallback: call integration test twice and diff /api/instance manually if harness output format changes.
+          go test ./engine/internal/business/crawler -run TestLiveSiteReuseSingleInstance -count=1 -v
