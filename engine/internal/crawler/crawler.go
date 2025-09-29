@@ -44,6 +44,12 @@ func (c *Crawler) setupCallbacks() {
 			r.Abort()
 			return
 		}
+		// Depth check (treat depth as number of non-empty path segments). Allow root depth=0.
+		if c.config.MaxDepth > 0 && pathDepth(r.URL) > c.config.MaxDepth {
+			log.Printf("Blocked by max depth (%d): %s", c.config.MaxDepth, r.URL.String())
+			r.Abort()
+			return
+		}
 		if !c.allowedByRobots(r.URL) {
 			log.Printf("Blocked by robots.txt: %s", r.URL.String())
 			r.Abort()
@@ -113,7 +119,11 @@ func (c *Crawler) processLink(link string, base *url.URL) {
 	if _, visited := c.visited.LoadOrStore(normalizedURL, true); visited {
 		return
 	}
+	// Enforce domain, robots, and depth limits prior to queueing.
 	if !c.isAllowedURL(linkURL) || !c.allowedByRobots(linkURL) {
+		return
+	}
+	if c.config.MaxDepth > 0 && pathDepth(linkURL) > c.config.MaxDepth {
 		return
 	}
 	select {
@@ -178,4 +188,17 @@ func (c *Crawler) Stop() {
 	c.stats.EndTime = time.Now()
 	c.stats.Duration = c.stats.EndTime.Sub(c.stats.StartTime)
 	c.mu.Unlock()
+}
+
+// pathDepth returns the number of non-empty path segments in the URL path.
+// Example: "/labs/depth/depth2/depth3/leaf" => 5, "/" => 0
+func pathDepth(u *url.URL) int {
+	if u == nil {
+		return 0
+	}
+	p := strings.Trim(u.Path, "/")
+	if p == "" {
+		return 0
+	}
+	return len(strings.Split(p, "/"))
 }

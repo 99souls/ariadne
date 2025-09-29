@@ -1,6 +1,6 @@
 # Live Test Site Module Plan (Bun + React)
 
-Status: **IN PROGRESS** (Core infrastructure + Harness + First integration + Snapshot scaffold)
+Status: **IN PROGRESS** (Robots enforcement + Snapshot diff + Depth limiting test added)
 Owner: Core / Testing
 Purpose: Introduce a lightweight, deterministic, zero-external-dependency web application inside the monorepo that the engine + CLI integration tests can crawl. This replaces/augments current synthetic mocks with a realistic HTML/CSS/asset/SPA surface.
 
@@ -23,7 +23,8 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 - `/blog` - Blog index with post listings
 - `/blog/post-{id}` - Individual blog posts
 - `/docs/getting-started` - Documentation page
-- `/docs/deep/n1/n2/n3/leaf` - Deep nested route for depth testing
+- `/docs/deep/n1/n2/n3/leaf` - Deep nested route for depth testing (legacy path)
+- `/labs/depth/depth2/depth3/leaf` - New deep nested route used by depth limiting integration test ✅
 - `/tags` - Tag index page
 
 ### API Endpoints ✅
@@ -216,6 +217,10 @@ tools/test-site/           # ✅ Bun React module root (IMPLEMENTED)
 4. Provide helper: `func WithLiveTestSite(t *testing.T, fn func(baseURL string))` that ensures cleanup (kill process) unless reuse enabled via `TESTSITE_REUSE=1`.
 5. CLI integration tests override seeds: `--seeds http://127.0.0.1:<port>/` and assert crawl output includes expected discovered paths.
 
+Assertions added / pending:
+
+- Depth limiting: MaxDepth enforcement prevents visiting leaf at depth 5 when MaxDepth=4 ✅ (TestLiveSiteDepthLimit)
+
 Assertions to add:
 
 - Depth limiting: verify deep chain stops at configured depth.
@@ -320,7 +325,7 @@ Implementation notes:
 - [x] **Robots Allow/Deny** tests (`TestLiveSiteDiscovery` allow-mode, `TestLiveSiteRobotsDeny` deny-mode)
 - [ ] **Slow Endpoint Non-Blocking** test
 - [x] **Golden Snapshot Generation** (non-enforcing)
- - [x] **Snapshot Diff Enforcement** (with UPDATE_SNAPSHOTS)
+- [x] **Snapshot Diff Enforcement** (with UPDATE_SNAPSHOTS)
 
 ### Enhanced Content Features
 

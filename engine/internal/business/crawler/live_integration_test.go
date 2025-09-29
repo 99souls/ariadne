@@ -128,6 +128,69 @@ func TestLiveSiteRobotsDeny(t *testing.T) {
 	})
 }
 
+// TestLiveSiteDepthLimit verifies that MaxDepth prevents the crawler from reaching
+// the deeply nested labs leaf route (depth 5) when configured below that level.
+func TestLiveSiteDepthLimit(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short mode")
+	}
+	testsite.WithLiveTestSite(t, func(base string) {
+		u, err := url.Parse(base)
+		if err != nil {
+			t.Fatalf("parse base: %v", err)
+		}
+		cfg := models.DefaultConfig()
+		cfg.AllowedDomains = []string{u.Host}
+		cfg.StartURL = base + "/"
+		cfg.MaxPages = 50
+		cfg.Timeout = 3 * time.Second
+		cfg.RequestDelay = 50 * time.Millisecond
+		cfg.RespectRobots = true
+		// Set MaxDepth to 4 so that depth-5 leaf is excluded.
+		cfg.MaxDepth = 4
+		crawler := engcrawler.New(cfg)
+		if err := crawler.Start(cfg.StartURL); err != nil {
+			t.Fatalf("start crawler: %v", err)
+		}
+		leaf := base + "/labs/depth/depth2/depth3/leaf"
+		found := make(map[string]struct{})
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			select {
+			case r := <-crawler.Results():
+				if r == nil {
+					break
+				}
+				if r.Success && r.URL != "" {
+					found[r.URL] = struct{}{}
+					if r.URL == leaf { // early exit if (unexpectedly) found
+						deadline = time.Now() // break outer loop
+					}
+				}
+			case <-time.After(100 * time.Millisecond):
+				// continue
+			}
+		}
+		crawler.Stop()
+		if _, ok := found[leaf]; ok {
+			t.Fatalf("leaf page should not be discovered with MaxDepth=4; discovered set=%#v", found)
+		}
+		// Sanity: should still have discovered at least one docs/blog page.
+		if !hasAny(found, base+"/about", base+"/docs/getting-started", base+"/blog") {
+			t.Fatalf("expected to discover some core pages; got %#v", found)
+		}
+	})
+}
+
+func hasAny(set map[string]struct{}, keys ...string) bool {
+	for _, k := range keys {
+		if _, ok := set[k]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 func mustContain(t *testing.T, set map[string]struct{}, key string) {
 	t.Helper()
 	if _, ok := set[key]; !ok {
