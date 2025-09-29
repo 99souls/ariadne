@@ -281,6 +281,9 @@ func (c *Crawler) processQueue() {
 func (c *Crawler) shouldStop() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	if c.stopping {
+		return true
+	}
 	return c.config.MaxPages > 0 && c.stats.ProcessedPages >= c.config.MaxPages
 }
 func (c *Crawler) Results() <-chan *models.CrawlResult { return c.results }
