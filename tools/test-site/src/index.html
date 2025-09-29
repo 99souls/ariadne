@@ -25,6 +25,15 @@
       <a href="/blog">Blog</a>
       <a href="/tags">Tags</a>
     </nav>
+    <!-- Prerender asset references (non-JS crawler visibility) -->
+    <div
+      id="prerender-assets"
+      style="position: absolute; left: -9999px; top: -9999px"
+      aria-hidden="true"
+    >
+      <img src="/static/img/sample1.svg" alt="Prerender working asset" />
+      <img src="/static/img/missing.png" alt="Prerender broken asset" />
+    </div>
     <div id="root"></div>
     <script src="/static/script.js" defer></script>
   </body>

@@ -182,6 +182,41 @@ func TestLiveSiteDepthLimit(t *testing.T) {
 	})
 }
 
+// TestLiveSiteBrokenAsset ensures that a missing image (404) is surfaced as an asset result
+// without preventing normal HTML page discovery.
+func TestLiveSiteBrokenAsset(t *testing.T) {
+	if testing.Short() { t.Skip("short mode") }
+	testsite.WithLiveTestSite(t, func(base string) {
+		u, err := url.Parse(base); if err != nil { t.Fatalf("parse base: %v", err) }
+		cfg := models.DefaultConfig()
+		cfg.AllowedDomains = []string{u.Host}
+		cfg.StartURL = base + "/"
+		cfg.MaxPages = 20
+		cfg.Timeout = 3 * time.Second
+		cfg.RequestDelay = 50 * time.Millisecond
+		cfg.RespectRobots = true
+		crawler := engcrawler.New(cfg)
+		if err := crawler.Start(cfg.StartURL); err != nil { t.Fatalf("start crawler: %v", err) }
+		brokenPath := base + "/static/img/missing.png"
+		foundPages := make(map[string]struct{})
+		sawBroken := false
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			select {
+			case r := <-crawler.Results():
+				if r == nil { break }
+				if r.Stage == "asset" && r.URL == brokenPath && r.StatusCode >= 400 { sawBroken = true }
+				if r.Success && r.Stage == "crawl" && r.URL != "" { foundPages[r.URL] = struct{}{} }
+			case <-time.After(100 * time.Millisecond):
+			}
+			if sawBroken && hasAll(foundPages, base+"/about") { break }
+		}
+		crawler.Stop()
+		if !sawBroken { t.Fatalf("did not observe failing status (>=400) for broken asset %s", brokenPath) }
+		if !hasAll(foundPages, base+"/about") { t.Fatalf("expected to still discover normal pages; got %#v", foundPages) }
+	})
+}
+
 func hasAny(set map[string]struct{}, keys ...string) bool {
 	for _, k := range keys {
 		if _, ok := set[k]; ok {

@@ -56,6 +56,7 @@ type CrawlResult struct {
 	Stage   string `json:"stage"`
 	Success bool   `json:"success"`
 	Retry   bool   `json:"retry"`
+	StatusCode int `json:"status_code,omitempty"`
 }
 
 // CrawlStats aggregates crawl progress metrics.

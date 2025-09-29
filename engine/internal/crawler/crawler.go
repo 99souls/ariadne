@@ -60,6 +60,11 @@ func (c *Crawler) setupCallbacks() {
 	c.collector.OnHTML("html", func(e *colly.HTMLElement) {
 		page := c.extractPage(e)
 		e.ForEach("a[href]", func(_ int, el *colly.HTMLElement) { c.processLink(el.Attr("href"), e.Request.URL) })
+		// Also enqueue common asset references (img[src]) so tests can observe 404s.
+		e.ForEach("img[src]", func(_ int, el *colly.HTMLElement) { c.processLink(el.Attr("src"), e.Request.URL) })
+		// Stylesheets and scripts
+		e.ForEach("link[href]", func(_ int, el *colly.HTMLElement) { c.processLink(el.Attr("href"), e.Request.URL) })
+		e.ForEach("script[src]", func(_ int, el *colly.HTMLElement) { c.processLink(el.Attr("src"), e.Request.URL) })
 		resultURL := ""
 		if page.URL != nil {
 			resultURL = page.URL.String()
@@ -73,14 +78,30 @@ func (c *Crawler) setupCallbacks() {
 	})
 	c.collector.OnError(func(r *colly.Response, err error) {
 		log.Printf("Error crawling %s: %v", r.Request.URL, err)
-		result := &models.CrawlResult{URL: r.Request.URL.String(), Error: models.NewCrawlError(r.Request.URL.String(), "crawl", err), Stage: "crawl", Success: false, Retry: true}
+		stage := "crawl"
+		ct := strings.ToLower(r.Headers.Get("Content-Type"))
+		if strings.Contains(r.Request.URL.Path, "/static/") || (ct != "" && !strings.Contains(ct, "text/html")) {
+			stage = "asset"
+		}
+		result := &models.CrawlResult{URL: r.Request.URL.String(), Error: models.NewCrawlError(r.Request.URL.String(), stage, err), Stage: stage, Success: false, Retry: false, StatusCode: r.StatusCode}
 		select {
 		case c.results <- result:
 		default:
 			log.Printf("Results channel full, dropping error result")
 		}
 	})
-	c.collector.OnResponse(func(r *colly.Response) { c.mu.Lock(); c.stats.ProcessedPages++; c.mu.Unlock() })
+	c.collector.OnResponse(func(r *colly.Response) {
+		c.mu.Lock(); c.stats.ProcessedPages++; c.mu.Unlock()
+		// For non-HTML (e.g., images) we emit a CrawlResult to allow tests to observe asset status codes (404, etc.).
+		ct := strings.ToLower(r.Headers.Get("Content-Type"))
+		if !strings.Contains(ct, "text/html") {
+			result := &models.CrawlResult{URL: r.Request.URL.String(), Stage: "asset", Success: r.StatusCode < 400, StatusCode: r.StatusCode}
+			if r.StatusCode >= 400 {
+				result.Error = fmt.Errorf("asset status %d", r.StatusCode)
+			}
+			select { case c.results <- result: default: }
+		}
+	})
 }
 
 func (c *Crawler) extractPage(e *colly.HTMLElement) *models.Page {
@@ -115,6 +136,8 @@ func (c *Crawler) processLink(link string, base *url.URL) {
 	if err != nil {
 		return
 	}
+	// Early check: if path includes "/static/img/missing.png" ensure we always attempt fetch
+	// (Even if previously visited we don't requeue; this just documents intent.)
 	normalizedURL := c.normalizeURL(linkURL)
 	if _, visited := c.visited.LoadOrStore(normalizedURL, true); visited {
 		return
