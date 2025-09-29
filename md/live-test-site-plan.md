@@ -1,6 +1,6 @@
 # Live Test Site Module Plan (Bun + React)
 
-Status: **IN PROGRESS** (Core infrastructure complete, Phase 1 implemented)
+Status: **IN PROGRESS** (Core infrastructure + Harness + First integration + Snapshot scaffold)
 Owner: Core / Testing
 Purpose: Introduce a lightweight, deterministic, zero-external-dependency web application inside the monorepo that the engine + CLI integration tests can crawl. This replaces/augments current synthetic mocks with a realistic HTML/CSS/asset/SPA surface.
 
@@ -300,22 +300,27 @@ Implementation notes:
 
 ---
 
-## 📋 PENDING WORK (Phase 2)
+## 📋 PENDING WORK (Phase 2 – Updated)
 
-### Go Test Harness Integration (Next Priority)
+### Go Test Harness Integration (Completed)
 
-- [ ] **Helper Function**: Implement `WithLiveTestSite(t *testing.T, fn func(baseURL string))` in `engine/internal/testutil/testsite`
-- [ ] **Process Management**: Spawn/reuse Bun process with TESTSITE_REUSE=1 support
-- [ ] **Port Handling**: Dynamic port selection for CI parallel runs
-- [ ] **Readiness Detection**: Parse "TESTSITE: listening on..." banner with 5s timeout
-- [ ] **Graceful Cleanup**: Process termination and resource cleanup
+- [x] **Helper Function** implemented (`WithLiveTestSite`)
+- [x] **Process Management** with reuse via TESTSITE_REUSE=1
+- [x] **Port Handling** ephemeral selection
+- [x] **Readiness Detection** via banner + health check
+- [x] **Graceful Cleanup** (skip on reuse)
+- [ ] **CI Reuse Validation** job (pending)
 
-### Integration Test Implementation
+### Integration Test Implementation (In Progress)
 
-- [ ] **Replace Mock Tests**: Migrate ≥1 existing mock-based discovery test to use live site
-- [ ] **Core Assertions**: Test link discovery, asset counting, broken image tracking
-- [ ] **Crawler Features**: Validate depth limiting, robots.txt respect, timeout handling
-- [ ] **Golden Snapshots**: Implement normalized HTML snapshots for regression detection
+- [x] **Replace Mock Tests**: Discovery test in place
+- [x] **Core Discovery Assertion** (multi-page set)
+- [ ] **Asset Counting / Broken Image Tracking** test
+- [ ] **Depth Limiting** test
+- [ ] **Robots Allow/Deny** tests (after enforcement code)
+- [ ] **Slow Endpoint Non-Blocking** test
+- [x] **Golden Snapshot Generation** (non-enforcing)
+- [ ] **Snapshot Diff Enforcement** (with UPDATE_SNAPSHOTS)
 
 ### Enhanced Content Features
 
@@ -324,11 +329,18 @@ Implementation notes:
 - [ ] **Enhanced Metadata**: More comprehensive OpenGraph tags, structured data
 - [ ] **Performance Assets**: Large image (>150KB) for streaming/memory tests
 
-### Makefile Integration
+### Makefile & Docs Integration
 
-- [ ] **Targets**: Add `testsite-dev`, `integ-live`, `testsite-check` make targets
-- [ ] **CI Integration**: Bun installation step, test site reuse across integration suite
-- [ ] **Documentation**: Update root README with "Live Test Site Usage" section
+- [x] **Targets**: `testsite-dev`, `integ-live`, `testsite-check`, `testsite-snapshots`
+- [ ] **CI Integration**: Bun install + caching + reuse step
+- [ ] **Documentation**: Root README “Live Test Site Usage” section
+- [ ] **Snapshot Update Workflow Docs**
+
+### Additional Near-Term Tasks
+
+- [ ] Robots enforcement logic in crawler (respect override flag)
+- [ ] Flake detector script (loop integration test N times)
+- [ ] Depth/latency metrics instrumentation (optional lightweight timers)
 
 ## 12. ✅ COMPLETED PHASE 1 WORK
 

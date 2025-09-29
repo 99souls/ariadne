@@ -8,7 +8,7 @@ _Central execution plan synchronized with GitHub issues (authoritative backlog).
 
 We have successfully implemented a comprehensive live test site (`tools/test-site`) that provides a realistic HTTP origin for crawler testing. This represents significant progress toward production-ready integration testing capabilities.
 
-### Key Accomplishments This Session
+### Key Accomplishments (Initial Phase 6.1)
 
 - **Complete Test Site Implementation**: Full Bun + React application with TypeScript transpilation
 - **Rich Wiki-Style Content**: 7+ routes with comprehensive content patterns (typography, code, admonitions, tables, metadata)
@@ -17,9 +17,26 @@ We have successfully implemented a comprehensive live test site (`tools/test-sit
 - **Asset Testing**: Working and intentionally broken assets for error handling validation
 - **Performance**: Sub-200ms startup time with deterministic content generation
 
-### Next Priority (Phase 6.2)
+### Incremental Progress (Same Day – Harness & First Integration) ✅
 
-**Go Test Harness Integration** - Implement `WithLiveTestSite()` helper and migrate integration tests to use the live site instead of synthetic mocks.
+- **Harness Implemented**: `WithLiveTestSite(t, fn)` with dynamic port selection, readiness banner parsing, health polling, and optional reuse via `TESTSITE_REUSE=1`.
+- **Integration Test Added**: `TestLiveSiteDiscovery` exercising real HTTP discovery (multi-page via prerender anchor nav) replacing a mock-based scenario.
+- **Prerender Strategy**: Hidden static `<nav>` injected to surface SPA routes for non-JS crawler.
+- **Makefile Targets**: Added `testsite-dev`, `testsite-check`, `integ-live`, and `testsite-snapshots`.
+- **Snapshot Infrastructure (Initial)**: Normalization utility + generation test producing a first golden artifact (no diff assertion yet).
+- **Lint / Tests Green**: Post-integration all checks passing; unused placeholder robots code removed.
+
+### Updated Immediate Priorities (Phase 6 Continuing)
+
+Focus shifts to expanding coverage of live-site driven behaviors: robots enforcement, depth & latency assertions, snapshot diff gating, and reuse-mode validation.
+
+### Next 5 Tactical Tasks (Fast Lane)
+
+1. Implement robots.txt enforcement in crawler + add allow/deny tests.
+2. Add depth limiting integration test using deep nested route.
+3. Enforce snapshot diff (docs page) with UPDATE_SNAPSHOTS override.
+4. Broken asset + slow endpoint resilience assertions (error counting & timing budget).
+5. README section documenting live test site usage & Makefile targets.
 
 ---
 
@@ -236,24 +253,32 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 - [x] **Error Handling**: Proper 404s, JSON error responses, graceful failure modes
 - [x] **Performance**: Sub-200ms startup time, efficient asset serving
 
-### 6.2 Go Test Harness
+### 6.2 Go Test Harness ✅ (Completed)
 
-- [ ] Helper `WithLiveTestSite(t *testing.T, fn func(baseURL string))` in `engine/internal/testutil/testsite` (or cli equivalent) with reuse (`TESTSITE_REUSE=1`).
-- [ ] Port selection: pick configured `TESTSITE_PORT` else scan free port (avoid collisions in parallel CI matrix).
-- [ ] Readiness wait ≤5s (fail fast with diagnostic log tail on timeout).
-- [ ] Graceful teardown (process kill + wait) unless reuse set.
+- [x] Helper `WithLiveTestSite(t *testing.T, fn func(baseURL string))` in `engine/internal/testutil/testsite` with reuse (`TESTSITE_REUSE=1`).
+- [x] Port selection: choose ephemeral free port when not pinned.
+- [x] Readiness wait ≤5s via startup banner + `/api/ping` health poll.
+- [x] Graceful teardown unless reuse set.
+- [ ] CI reuse validation (add matrix job to ensure single process reused) – Pending.
 
-### 6.3 Integration Test Migration (P1 Scope)
+### 6.3 Integration Test Migration (P1 Scope – In Progress)
 
-- [ ] Replace at least one current discovery integration test to crawl live site root and assert discovered page set & asset counts.
-- [ ] Assert: depth limiting, broken image tracked, slow endpoint does not stall entire crawl (timeout respected), robots allow variant honored.
-- [ ] Add golden snapshot (normalized) for a representative page to detect content regression in test site.
+- [x] Replace at least one discovery test: `TestLiveSiteDiscovery` added.
+- [ ] Depth limiting assertion (use `/docs/deep/.../leaf` with MaxDepth=3 expecting exclusion).
+- [ ] Broken asset tracking assertion (missing PNG should increment error/asset fail count).
+- [ ] Slow endpoint latency non-blocking test (crawl while `/api/slow` requested; total crawl time < threshold).
+- [ ] Robots allow variant honored (baseline) – implicit now, make explicit assertion.
+- [ ] Robots deny variant test (with `TESTSITE_ROBOTS=deny` + `RespectRobots=true` expecting zero pages beyond root rejection log) – depends on crawler enforcement implementation.
+- [x] Snapshot generation utility + first golden capture (non-enforcing).
+- [ ] Snapshot diff enforcement (fail test on drift; allow `UPDATE_SNAPSHOTS=1` override).
 
-### 6.4 Determinism & Metrics (P2)
+### 6.4 Determinism & Metrics (P2 – Upcoming)
 
-- [ ] Introduce alternate `robots.txt` via env `TESTSITE_ROBOTS=deny` and test deny-all gating.
-- [ ] Add latency jitter boundaries test (ensure p95 within expected window).
-- [ ] Add sitemap `/sitemap.xml` and validate crawler ingestion (if supported by then).
+- [ ] Robots enforcement in crawler (respect + override flag) wiring.
+- [ ] Deny-all gating test (blocked pages confirmed).
+- [ ] Latency jitter boundaries test (measure distribution over N slow hits; ensure within 400–600ms, p95 < 610ms).
+- [ ] Sitemap ingestion test (if/when crawler supports sitemap seeding) else create issue & defer.
+- [ ] Flake detector script (run integration test 10x locally; report variance) – optional pre-CI tool.
 
 ### Success Criteria (Phase 6 Gate)
 
@@ -274,11 +299,12 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 | Latency variance        | Flaky slow endpoint test | Constrain delay with fixed seed RNG or deterministic cycle   |
 | Content drift           | Assertion churn          | Golden snapshots + PR review checklist for test-site changes |
 
-### Outputs
+### Outputs (Updated)
 
-- New Make targets: `testsite-dev`, `integ-live`.
-- Readme section: “Live Test Site Usage”.
-- CI job step for Bun install + reuse of test site across integration suite.
+- New Make targets: `testsite-dev`, `integ-live`, `testsite-check`, `testsite-snapshots` (DONE).
+- Readme section: “Live Test Site Usage” (PENDING).
+- CI job step for Bun install + reuse of test site across integration suite (PENDING).
+- Snapshot golden(s) committed + update flow documented (PARTIAL – generation exists, doc missing).
 
 ### Exit Gate
 

@@ -4,6 +4,28 @@ GO ?= go
 
 # Explicit module directories (root has no go.mod)
 MODULES := engine cli tools/apireport
+BUN ?= bun
+
+# Live test site targets
+.PHONY: testsite-dev testsite-check integ-live
+
+testsite-dev:
+	@command -v $(BUN) >/dev/null 2>&1 || { echo "bun not installed (see https://bun.sh)." >&2; exit 1; }
+	cd tools/test-site && TESTSITE_PORT=$${TESTSITE_PORT:-5173} $(BUN) run src/dev.ts
+
+testsite-check:
+	@command -v $(BUN) >/dev/null 2>&1 || { echo "bun not installed." >&2; exit 1; }
+	cd tools/test-site && if [ -f package.json ]; then ($(BUN) run lint || true); fi
+	cd tools/test-site && [ -f tsconfig.json ] && npx --yes tsc --noEmit --skipLibCheck src/**/*.ts src/**/*.tsx || true
+
+# Run only live-site related integration tests (narrow pattern to avoid whole suite)
+integ-live:
+	@echo "==> live integration tests" >&2
+	TESTSITE_REUSE=1 $(GO) test ./engine/... -run 'LiveSite' -count=1 -timeout=90s
+
+# Generate normalized snapshots from the live test site (future use for golden comparisons)
+testsite-snapshots:
+	go test ./engine/internal/testutil/testsite -run TestGenerateSnapshots -count=1 -v
 ENGINE_MOD := engine
 CLI_MOD := cli
 TOOLS_APIREPORT := tools/apireport

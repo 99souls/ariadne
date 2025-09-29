@@ -14,6 +14,17 @@
     <script type="module" src="./main.tsx" async></script>
   </head>
   <body>
+    <!-- Static prerender navigation for non-JS crawler discovery -->
+    <nav
+      id="prerender-nav"
+      aria-label="Primary"
+      style="position: absolute; left: -9999px; top: -9999px"
+    >
+      <a href="/about">About</a>
+      <a href="/docs/getting-started">Docs</a>
+      <a href="/blog">Blog</a>
+      <a href="/tags">Tags</a>
+    </nav>
     <div id="root"></div>
     <script src="/static/script.js" defer></script>
   </body>
