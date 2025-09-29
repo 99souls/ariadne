@@ -60,6 +60,17 @@ func (c *Crawler) setupCallbacks() {
 	})
 	c.collector.OnHTML("html", func(e *colly.HTMLElement) {
 		page := c.extractPage(e)
+		// Normalize the page URL before emitting so cosmetic query params (e.g. theme, utm_*)
+		// do not cause separate logical pages in results. We intentionally only update the
+		// emitted Page + CrawlResult URL; the underlying Colly request URL (with original
+		// query) remains for fetch/accounting purposes.
+		if page.URL != nil {
+			if norm := c.normalizeURL(page.URL); norm != page.URL.String() {
+				if u2, err := url.Parse(norm); err == nil {
+					page.URL = u2
+				}
+			}
+		}
 		e.ForEach("a[href]", func(_ int, el *colly.HTMLElement) { c.processLink(el.Attr("href"), e.Request.URL) })
 		// Also enqueue common asset references (img[src]) so tests can observe 404s.
 		e.ForEach("img[src]", func(_ int, el *colly.HTMLElement) { c.processLink(el.Attr("src"), e.Request.URL) })
@@ -84,7 +95,8 @@ func (c *Crawler) setupCallbacks() {
 		if strings.Contains(r.Request.URL.Path, "/static/") || (ct != "" && !strings.Contains(ct, "text/html")) {
 			stage = "asset"
 		}
-		result := &models.CrawlResult{URL: r.Request.URL.String(), Error: models.NewCrawlError(r.Request.URL.String(), stage, err), Stage: stage, Success: false, Retry: false, StatusCode: r.StatusCode}
+		normURL := c.normalizeURL(r.Request.URL)
+		result := &models.CrawlResult{URL: normURL, Error: models.NewCrawlError(normURL, stage, err), Stage: stage, Success: false, Retry: false, StatusCode: r.StatusCode}
 		select {
 		case c.results <- result:
 		default:
@@ -98,7 +110,8 @@ func (c *Crawler) setupCallbacks() {
 		// For non-HTML (e.g., images) we emit a CrawlResult to allow tests to observe asset status codes (404, etc.).
 		ct := strings.ToLower(r.Headers.Get("Content-Type"))
 		if !strings.Contains(ct, "text/html") {
-			result := &models.CrawlResult{URL: r.Request.URL.String(), Stage: "asset", Success: r.StatusCode < 400, StatusCode: r.StatusCode}
+			normURL := c.normalizeURL(r.Request.URL)
+			result := &models.CrawlResult{URL: normURL, Stage: "asset", Success: r.StatusCode < 400, StatusCode: r.StatusCode}
 			if r.StatusCode >= 400 {
 				result.Error = fmt.Errorf("asset status %d", r.StatusCode)
 			}
@@ -172,7 +185,22 @@ func (c *Crawler) processLink(link string, base *url.URL) {
 func (c *Crawler) normalizeURL(u *url.URL) string {
 	normalized := *u
 	normalized.Fragment = ""
-	normalized.RawQuery = ""
+	if normalized.RawQuery != "" {
+		q := normalized.Query()
+		// Drop cosmetic / non-content-affecting parameters.
+		q.Del("theme")
+		// If other cosmetic keys are added in future (e.g., utm_* tracking), strip them here.
+		for key := range q {
+			if strings.HasPrefix(key, "utm_") {
+				q.Del(key)
+			}
+		}
+		if len(q) == 0 {
+			normalized.RawQuery = ""
+		} else {
+			normalized.RawQuery = q.Encode()
+		}
+	}
 	return normalized.String()
 }
 func (c *Crawler) isAllowedURL(u *url.URL) bool {

@@ -1,6 +1,6 @@
 # Live Test Site Module Plan (Bun + React)
 
-Status: **IN PROGRESS** (Robots, Snapshot diff, Depth limiting, Broken asset, Slow endpoint, Reuse validation tests added)
+Status: **IN PROGRESS** (Robots, Snapshot diff, Depth limiting, Broken asset, Slow endpoint, Reuse validation, Dark mode de-dup, Large asset throughput tests added)
 Owner: Core / Testing
 Purpose: Introduce a lightweight, deterministic, zero-external-dependency web application inside the monorepo that the engine + CLI integration tests can crawl. This replaces/augments current synthetic mocks with a realistic HTML/CSS/asset/SPA surface.
 
@@ -233,8 +233,8 @@ Remaining assertions to add:
 - Code fences captured (language class preserved) and not double-transformed.
 - Footnotes produce backlinks (#fnref markers) and anchor traversal constrained to site.
 - Tag pages enumerated + backlink lists generated.
-- Dark mode attribute normalization (no duplicate logical pages).
-- Large asset fetch (Phase 4) throughput / non-blocking test.
+- Search index endpoint ignoring (to be added with /api/search.json).
+- Sitemap seeding once crawler supports sitemap ingestion.
 
 ---
 
@@ -331,10 +331,10 @@ Implementation notes:
 
 ### Enhanced Content Features
 
-- [ ] **Dark Mode**: Toggle via query param `?theme=dark`, test attribute-based scanning
+- [x] **Dark Mode**: Toggle via query param `?theme=dark`, normalization + de-dup test (`TestLiveSiteDarkModeDeDup`)
 - [ ] **Search Index**: `/api/search.json` endpoint for testing API endpoint ignoring
 - [ ] **Enhanced Metadata**: More comprehensive OpenGraph tags, structured data
-- [ ] **Performance Assets**: Large image (>150KB) for streaming/memory tests
+- [x] **Performance Assets**: Large binary asset (~200KB) throughput test (`TestLiveSiteLargeAssetThroughput`)
 
 ### Makefile & Docs Integration
 
@@ -346,6 +346,9 @@ Implementation notes:
 ### Additional Near-Term Tasks
 
 - [x] Robots enforcement logic in crawler (respect override flag)
+- [x] Dark mode query param canonicalization (normalization layer + integration test)
+- [x] URL normalization unit test coverage (`TestNormalizeURLCosmeticParams`)
+- [x] Large asset throughput assertion
 - [ ] Flake detector script (loop integration test N times)
 - [ ] Depth/latency metrics instrumentation (optional lightweight timers)
 
