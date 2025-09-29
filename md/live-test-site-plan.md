@@ -1,6 +1,6 @@
 # Live Test Site Module Plan (Bun + React)
 
-Status: **IN PROGRESS** (Robots enforcement + Snapshot diff + Depth limiting test added)
+Status: **IN PROGRESS** (Robots, Snapshot diff, Depth limiting, Broken asset, Slow endpoint tests added)
 Owner: Core / Testing
 Purpose: Introduce a lightweight, deterministic, zero-external-dependency web application inside the monorepo that the engine + CLI integration tests can crawl. This replaces/augments current synthetic mocks with a realistic HTML/CSS/asset/SPA surface.
 
@@ -217,22 +217,22 @@ tools/test-site/           # ✅ Bun React module root (IMPLEMENTED)
 4. Provide helper: `func WithLiveTestSite(t *testing.T, fn func(baseURL string))` that ensures cleanup (kill process) unless reuse enabled via `TESTSITE_REUSE=1`.
 5. CLI integration tests override seeds: `--seeds http://127.0.0.1:<port>/` and assert crawl output includes expected discovered paths.
 
-Assertions added / pending:
+Assertions implemented:
 
-- Depth limiting: MaxDepth enforcement prevents visiting leaf at depth 5 when MaxDepth=4 ✅ (TestLiveSiteDepthLimit)
+- Depth limiting: MaxDepth=4 excludes depth-5 leaf ✅ (`TestLiveSiteDepthLimit`)
+- Robots gating allow/deny ✅ (`TestLiveSiteDiscovery`, `TestLiveSiteRobotsDeny`)
+- Broken asset surfaced as asset result with >=400 status ✅ (`TestLiveSiteBrokenAsset`)
+- Slow endpoint latency non-blocking ✅ (`TestLiveSiteSlowEndpoint`)
+- Snapshot diff enforcement ✅ (`TestGenerateSnapshots` with drift check)
 
-Assertions to add:
+Remaining assertions to add:
 
-- Depth limiting: verify deep chain stops at configured depth.
-- Broken asset: ensure error count increments but crawl continues.
-- Robots gating: run once with normal `robots.txt`, once with disallow variant (env `TESTSITE_ROBOTS=deny`).
-- Latency handling: `/api/slow` does not stall overall crawl longer than configured timeout.
 - Admonitions rendered with proper role/aria labels.
-- Code fences captured (ensure language attribute preserved) and not double-transformed.
-- Footnotes produce backlinks (#fnref markers) and anchor traversal remains inside site.
-- Tag pages enumerated and backlink lists generated (ensures multi-directional link graph coverage).
-- Dark mode attribute does not produce duplicate “logical” pages (URL normalization test).
-- Large asset fetch (Phase 4) does not block smaller fetch queue (throughput test).
+- Code fences captured (language class preserved) and not double-transformed.
+- Footnotes produce backlinks (#fnref markers) and anchor traversal constrained to site.
+- Tag pages enumerated + backlink lists generated.
+- Dark mode attribute normalization (no duplicate logical pages).
+- Large asset fetch (Phase 4) throughput / non-blocking test.
 
 ---
 
@@ -316,14 +316,14 @@ Implementation notes:
 - [x] **Graceful Cleanup** (skip on reuse)
 - [ ] **CI Reuse Validation** job (pending)
 
-### Integration Test Implementation (In Progress)
+### Integration Test Implementation (Updated)
 
 - [x] **Replace Mock Tests**: Discovery test in place
 - [x] **Core Discovery Assertion** (multi-page set)
-- [ ] **Asset Counting / Broken Image Tracking** test
-- [ ] **Depth Limiting** test
-- [x] **Robots Allow/Deny** tests (`TestLiveSiteDiscovery` allow-mode, `TestLiveSiteRobotsDeny` deny-mode)
-- [ ] **Slow Endpoint Non-Blocking** test
+- [x] **Asset Counting / Broken Image Tracking** test (basic broken asset assertion)
+- [x] **Depth Limiting** test
+- [x] **Robots Allow/Deny** tests
+- [x] **Slow Endpoint Non-Blocking** test
 - [x] **Golden Snapshot Generation** (non-enforcing)
 - [x] **Snapshot Diff Enforcement** (with UPDATE_SNAPSHOTS)
 
