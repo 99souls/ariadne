@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"strings"
 )
 
 // TestGenerateSnapshots launches the test site (reuse capable) and writes one normalized
@@ -11,8 +12,8 @@ import (
 // for now this simply (re)writes to keep the workflow lightweight.
 func TestGenerateSnapshots(t *testing.T) {
 	WithLiveTestSite(t, func(root string) {
-		url := root + "/docs/getting-started"
-		norm, err := FetchAndNormalize(url)
+		targetURL := root + "/docs/getting-started"
+		norm, err := FetchAndNormalize(targetURL)
 		if err != nil {
 			t.Fatalf("fetch normalize: %v", err)
 		}
@@ -21,10 +22,38 @@ func TestGenerateSnapshots(t *testing.T) {
 		if err := os.MkdirAll(goldDir, 0o755); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
-		outPath := filepath.Join(goldDir, "docs_getting_started.golden.txt")
-		if err := os.WriteFile(outPath, []byte(norm+"\n"), 0o644); err != nil {
-			t.Fatalf("write golden: %v", err)
+		goldenPath := filepath.Join(goldDir, "docs_getting_started.golden.txt")
+		if os.Getenv("UPDATE_SNAPSHOTS") == "1" {
+			if err := os.WriteFile(goldenPath, []byte(norm+"\n"), 0o644); err != nil {
+				t.Fatalf("write golden: %v", err)
+			}
+			t.Logf("updated snapshot %s (%d bytes)", goldenPath, len(norm))
+			return
 		}
-		t.Logf("wrote snapshot %s (%d bytes)", outPath, len(norm))
+		// Read existing golden
+		data, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatalf("read golden: %v (set UPDATE_SNAPSHOTS=1 to create/update)", err)
+		}
+		expected := strings.TrimSpace(string(data))
+		actual := strings.TrimSpace(norm)
+		if expected != actual {
+			// Simple diff (first differing line)
+			expLines := strings.Split(expected, "\n")
+			actLines := strings.Split(actual, "\n")
+			max := len(expLines)
+			if len(actLines) > max { max = len(actLines) }
+			diffLine := -1
+			for i := 0; i < max; i++ {
+				var eLine, aLine string
+				if i < len(expLines) { eLine = expLines[i] }
+				if i < len(actLines) { aLine = actLines[i] }
+				if eLine != aLine { diffLine = i; break }
+			}
+			if diffLine >= 0 {
+				t.Fatalf("snapshot drift detected at line %d\nEXPECTED: %q\nACTUAL:   %q\nRun with UPDATE_SNAPSHOTS=1 to accept changes.", diffLine+1, expLines[diffLine], actLines[diffLine])
+			}
+			t.Fatalf("snapshot drift detected (length differs) run with UPDATE_SNAPSHOTS=1 to accept changes")
+		}
 	})
 }
