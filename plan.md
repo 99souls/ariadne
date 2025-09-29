@@ -306,7 +306,7 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 ### Outputs (Updated)
 
 - New Make targets: `testsite-dev`, `integ-live`, `testsite-check`, `testsite-snapshots` (DONE)
-- Root README: “Live Test Site Usage” section (INITIAL – needs dark mode / large asset / normalization / latency distribution bullets)
+- Root README: “Live Test Site Usage” section (COMPLETED – includes dark mode, large asset, normalization, latency distribution, search index ignore)
 - Engine README: URL Normalization & Variant De-duplication section (DONE)
 - CI job step for Bun install + reuse of test site across integration suite (PENDING)
 - Snapshot golden(s) committed + update flow documented (PARTIAL – snapshot acceptance workflow elaboration pending in root README)
@@ -392,7 +392,7 @@ Weighted coverage = (sum covered statements in designated critical packages) / (
 
 ### Action Backlog
 
-- [ ] Add `make coverage` (profile) and `make coverage-check` (enforce thresholds via Go tool + awk script).
+- [x] Add `make coverage` (profile) and `make coverage-check` (enforce thresholds via Go tool + awk script).
 - [ ] Write asset negative path tests (missing image, rewrite failure fallback) to elevate internal/assets to ≥60%.
 - [ ] Add pipeline cancellation & timeout tests (raise internal/pipeline to ≥80%).
 - [ ] Add processor malformed HTML & encoding tests (target ≥70%).

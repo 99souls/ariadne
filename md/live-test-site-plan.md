@@ -347,7 +347,7 @@ Implementation notes:
 
 - [x] **Targets**: `testsite-dev`, `integ-live`, `testsite-check`, `testsite-snapshots`
 - [ ] **CI Integration**: Bun install + caching + reuse step
-- [ ] **Documentation**: Root README “Live Test Site Usage” section
+- [x] **Documentation**: Root README “Live Test Site Usage” section
 - [ ] **Snapshot Update Workflow Docs**
 
 ### Additional Near-Term Tasks (Updated)
@@ -359,7 +359,7 @@ Implementation notes:
 - [x] Latency distribution test baseline
 - [x] Flake detector script (loop integration test N times)
 - [ ] Depth/latency metrics instrumentation (optional lightweight timers)
-- [ ] Root README enrichment (dark mode, normalization, large asset, latency docs)
+- [x] Root README enrichment (dark mode, normalization, large asset, latency, search index docs)
 
 ## 12. ✅ COMPLETED PHASE 1 WORK
 

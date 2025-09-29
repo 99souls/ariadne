@@ -35,7 +35,7 @@ ENGINE_MOD := engine
 CLI_MOD := cli
 TOOLS_APIREPORT := tools/apireport
 
-.PHONY: all build test race cover lint tidy vet ci snapshot
+.PHONY: all build test race cover coverage coverage-check lint tidy vet ci snapshot
 
 all: build
 
@@ -63,6 +63,17 @@ cover:
 		rm $$m/coverage.tmp; \
 	done; \
 	$(GO) tool cover -func=coverage.out | tail -n 1
+
+# Alias target
+coverage: cover
+
+# coverage-check: run coverage and enforce a minimum threshold (default 70%).
+coverage-check: cover
+	@THRESHOLD=$${THRESHOLD:-70}; \
+	LINE=$$($(GO) tool cover -func=coverage.out | tail -n 1); \
+	PCT=$$(echo $$LINE | awk '{print $$3}' | tr -d '%'); \
+	echo "==> total coverage $$PCT% (threshold $$THRESHOLD%)"; \
+	awk -v p=$$PCT -v t=$$THRESHOLD 'BEGIN { if (p+0 < t+0) { printf "FAIL: coverage below threshold (%.1f < %.1f)\n", p, t; exit 1 } else { printf "PASS\n" } }'
 
 lint:
 	@[ -x $$(command -v golangci-lint) ] || (echo "golangci-lint not found. Install: https://golangci-lint.run/" && exit 1)

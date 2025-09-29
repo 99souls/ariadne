@@ -68,10 +68,12 @@ const server = serve({
         entries: [
           { url: "/", title: "Home" },
           { url: "/about", title: "About" },
-          { url: "/docs/getting-started", title: "Getting Started" }
-        ]
+          { url: "/docs/getting-started", title: "Getting Started" },
+        ],
       };
-      return Response.json(searchIndex, { headers: { "Cache-Control": "no-store" } });
+      return Response.json(searchIndex, {
+        headers: { "Cache-Control": "no-store" },
+      });
     }
 
     // Dynamic robots.txt based on environment
