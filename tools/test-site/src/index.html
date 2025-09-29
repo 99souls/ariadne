@@ -39,6 +39,8 @@
     >
       <img src="/static/img/sample1.svg" alt="Prerender working asset" />
       <img src="/static/img/missing.png" alt="Prerender broken asset" />
+      <!-- Large binary asset (>=150KB) to test non-blocking asset fetch throughput -->
+      <img src="/static/large.bin" alt="Large binary asset" />
     </div>
     <div id="root"></div>
     <script src="/static/script.js" defer></script>
