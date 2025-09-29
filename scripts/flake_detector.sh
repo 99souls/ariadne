@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ITERATIONS=${1:-10}
-PATTERN=${2:-LiveSite}
+ITERATIONS=${ITER:-${1:-10}}
+PATTERN=${PATTERN:-${2:-LiveSite}}
 GO=${GO:-go}
 
 echo "==> Flake detector: running pattern '$PATTERN' for $ITERATIONS iterations" >&2
@@ -11,10 +11,28 @@ fails=0
 durations=()
 
 for i in $(seq 1 "$ITERATIONS"); do
-  start=$(date +%s%3N 2>/dev/null || perl -MTime::HiRes=time -e 'printf("%d" , time()*1000)')
+  # Portable millisecond timestamp (macOS `date` lacks %N with GNU semantics)
+  if start_epoch=$(date +%s 2>/dev/null); then
+    if ms_part=$(date +%3N 2>/dev/null); then
+      start="${start_epoch}${ms_part}"
+    else
+      # Fallback: use perl high‑res time * 1000 (integer)
+      start=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
+    fi
+  else
+    start=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
+  fi
   if TESTSITE_REUSE=1 $GO test ./engine/... -run "$PATTERN" -count=1 -timeout=90s >/tmp/flake_run.$$.$i.log 2>&1; then
-    end=$(date +%s%3N 2>/dev/null || perl -MTime::HiRes=time -e 'printf("%d" , time()*1000)')
-    dur=$((end-start))
+    if end_epoch=$(date +%s 2>/dev/null); then
+      if ms_part=$(date +%3N 2>/dev/null); then
+        end="${end_epoch}${ms_part}"
+      else
+        end=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
+      fi
+    else
+      end=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
+    fi
+    dur=$(( end - start ))
     durations+=("$dur")
     echo "[$i] PASS ${dur}ms" >&2
     passes=$((passes+1))

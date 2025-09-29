@@ -250,13 +250,15 @@ UPDATE_SNAPSHOTS=1 go test ./engine/internal/testutil/testsite -run TestGenerate
 
 4. Commit updated golden file.
 
+See the detailed acceptance criteria & reviewer checklist in `md/snapshot-acceptance.md`.
+
 Flake Detection (optional, local):
 
-Use the flake detector to run the live site tests repeatedly and surface instability:
+Use the flake detector to run the live site tests repeatedly and surface instability (portable on macOS & Linux; set ITER env var or first arg):
 
 ```
 make flake-live            # default 10 iterations
-ITER=25 make flake-live    # custom iteration count
+ITER=25 make flake-live    # custom iteration count (or: make flake-live ITER=25)
 ```
 
 Outputs pass/fail counts plus basic duration stats (min / max / mean / p95). Any failure causes a non‑zero exit.
