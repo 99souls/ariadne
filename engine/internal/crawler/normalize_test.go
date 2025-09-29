@@ -30,7 +30,9 @@ func TestNormalizeURLCosmeticParams(t *testing.T) {
 
 	for _, tc := range cases {
 		parsed, err := url.Parse(tc.in)
-		if err != nil { t.Fatalf("parse %s: %v", tc.in, err) }
+		if err != nil {
+			t.Fatalf("parse %s: %v", tc.in, err)
+		}
 		got := c.normalizeURL(parsed)
 		if got != tc.out {
 			// Show difference once per case
