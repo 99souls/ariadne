@@ -23,6 +23,15 @@ const postsData = [
   },
 ];
 
+// Per-process instance identity so Go test harness can verify reuse semantics.
+const instanceId = (() => {
+  // Use high-resolution time plus random component; determinism across a single process lifetime only.
+  const t = Date.now().toString(36);
+  const r = Math.random().toString(36).slice(2, 10);
+  return `${t}-${r}`;
+})();
+const startedAt = new Date().toISOString();
+
 const server = serve({
   port,
   async fetch(req) {
@@ -45,6 +54,10 @@ const server = serve({
         message: "This endpoint is intentionally slow",
         delay: 500,
       });
+    }
+
+    if (pathname === "/api/instance") {
+      return Response.json({ id: instanceId, startedAt });
     }
 
     // Dynamic robots.txt based on environment

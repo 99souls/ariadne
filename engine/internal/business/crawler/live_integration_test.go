@@ -2,6 +2,9 @@ package crawler_test
 
 import (
 	"net/url"
+	"net/http"
+	"io"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -295,6 +298,37 @@ func TestLiveSiteSlowEndpoint(t *testing.T) {
 		if duration > 2*time.Second+500*time.Millisecond {
 			t.Fatalf("slow endpoint caused excessive total crawl time: %v", duration)
 		}
+	})
+}
+
+// TestLiveSiteReuseSingleInstance verifies that when TESTSITE_REUSE=1 and a fixed TESTSITE_PORT are set,
+// multiple invocations of the harness within a single test process observe the same underlying Bun process
+// (by comparing the /api/instance id). This guards against accidental respawns that would add test latency.
+func TestLiveSiteReuseSingleInstance(t *testing.T) {
+	if testing.Short() { t.Skip("short mode") }
+	// Pick a deterministic port unlikely to collide in local dev; could be overridden by env if needed.
+	t.Setenv("TESTSITE_PORT", "5179")
+	t.Setenv("TESTSITE_REUSE", "1")
+	fetchID := func(base string) string {
+		resp, err := http.Get(base + "/api/instance")
+		if err != nil { t.Fatalf("fetch instance id: %v", err) }
+		defer func(){ _ = resp.Body.Close() }()
+		b, _ := io.ReadAll(resp.Body)
+		var obj struct{ ID string `json:"id"`; StartedAt string `json:"startedAt"` }
+		if err := json.Unmarshal(b, &obj); err != nil { t.Fatalf("unmarshal instance id: %v body=%s", err, string(b)) }
+		if obj.ID == "" { t.Fatalf("empty instance id; body=%s", string(b)) }
+		return obj.ID
+	}
+	var firstID string
+	// First invocation starts (or reuses) instance.
+	testsite.WithLiveTestSite(t, func(base string){
+		firstID = fetchID(base)
+	})
+	if firstID == "" { t.Fatalf("first instance id empty") }
+	// Second invocation should reuse same process & ID.
+	testsite.WithLiveTestSite(t, func(base string){
+		secondID := fetchID(base)
+		if secondID != firstID { t.Fatalf("expected reuse of instance; first=%s second=%s", firstID, secondID) }
 	})
 }
 
