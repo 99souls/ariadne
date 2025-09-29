@@ -29,7 +29,8 @@ func TestLiveSiteDiscovery(t *testing.T) {
 		cfg.MaxPages = 20
 		cfg.Timeout = 2 * time.Second
 		cfg.RequestDelay = 100 * time.Millisecond
-		cfg.RespectRobots = false
+		// Enable robots respect to exercise allow-mode (default) behavior; site serves Allow: / variant
+		cfg.RespectRobots = true
 		crawler := engcrawler.New(cfg)
 		if err := crawler.Start(cfg.StartURL); err != nil {
 			t.Fatalf("start crawler: %v", err)
@@ -69,6 +70,61 @@ func TestLiveSiteDiscovery(t *testing.T) {
 		mustContain(t, found, base+"/docs/getting-started")
 		mustContain(t, found, base+"/blog")
 		mustContain(t, found, base+"/tags")
+	})
+}
+
+// TestLiveSiteRobotsDeny verifies that when the live test site is started in robots deny mode
+// and RespectRobots is enabled, the crawler does not fetch any content pages beyond attempting
+// the start URL (which is itself blocked after fetching robots.txt).
+func TestLiveSiteRobotsDeny(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short mode")
+	}
+	// Force deny robots mode for the live site instance started by the harness.
+	t.Setenv("TESTSITE_ROBOTS", "deny")
+	testsite.WithLiveTestSite(t, func(base string) {
+		u, err := url.Parse(base)
+		if err != nil {
+			t.Fatalf("parse base: %v", err)
+		}
+		cfg := models.DefaultConfig()
+		cfg.AllowedDomains = []string{u.Host}
+		cfg.StartURL = base + "/"
+		cfg.MaxPages = 10
+		cfg.Timeout = 2 * time.Second
+		cfg.RequestDelay = 50 * time.Millisecond
+		cfg.RespectRobots = true
+		crawler := engcrawler.New(cfg)
+		if err := crawler.Start(cfg.StartURL); err != nil {
+			t.Fatalf("start crawler: %v", err)
+		}
+		// Collect for a bounded interval; expect zero successful page results.
+		found := 0
+		deadline := time.Now().Add(2 * time.Second)
+		for time.Now().Before(deadline) {
+			select {
+			case r := <-crawler.Results():
+				if r == nil { // channel closed
+					break
+				}
+				if r.Success && r.URL != "" {
+					found++
+				}
+			case <-time.After(100 * time.Millisecond):
+				// continue polling
+			}
+			if found > 0 {
+				break
+			}
+		}
+		crawler.Stop()
+		if found != 0 {
+			t.Fatalf("expected 0 pages due to robots deny-all; got %d", found)
+		}
+		stats := crawler.Stats()
+		if stats.ProcessedPages != 0 {
+			t.Fatalf("expected 0 processed pages; got %d", stats.ProcessedPages)
+		}
 	})
 }
 

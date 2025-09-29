@@ -267,15 +267,15 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 - [ ] Depth limiting assertion (use `/docs/deep/.../leaf` with MaxDepth=3 expecting exclusion).
 - [ ] Broken asset tracking assertion (missing PNG should increment error/asset fail count).
 - [ ] Slow endpoint latency non-blocking test (crawl while `/api/slow` requested; total crawl time < threshold).
-- [ ] Robots allow variant honored (baseline) – implicit now, make explicit assertion.
-- [ ] Robots deny variant test (with `TESTSITE_ROBOTS=deny` + `RespectRobots=true` expecting zero pages beyond root rejection log) – depends on crawler enforcement implementation.
+- [x] Robots allow variant honored (baseline) – explicit via `TestLiveSiteDiscovery` (RespectRobots=true).
+- [x] Robots deny variant test (with `TESTSITE_ROBOTS=deny` + `RespectRobots=true` expecting zero pages beyond root) – implemented (`TestLiveSiteRobotsDeny`).
 - [x] Snapshot generation utility + first golden capture (non-enforcing).
 - [ ] Snapshot diff enforcement (fail test on drift; allow `UPDATE_SNAPSHOTS=1` override).
 
 ### 6.4 Determinism & Metrics (P2 – Upcoming)
 
-- [ ] Robots enforcement in crawler (respect + override flag) wiring.
-- [ ] Deny-all gating test (blocked pages confirmed).
+- [x] Robots enforcement in crawler (respect + override flag) wiring.
+- [x] Deny-all gating test (blocked pages confirmed via `TestLiveSiteRobotsDeny`).
 - [ ] Latency jitter boundaries test (measure distribution over N slow hits; ensure within 400–600ms, p95 < 610ms).
 - [ ] Sitemap ingestion test (if/when crawler supports sitemap seeding) else create issue & defer.
 - [ ] Flake detector script (run integration test 10x locally; report variance) – optional pre-CI tool.

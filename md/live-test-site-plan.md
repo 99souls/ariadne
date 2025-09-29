@@ -317,7 +317,7 @@ Implementation notes:
 - [x] **Core Discovery Assertion** (multi-page set)
 - [ ] **Asset Counting / Broken Image Tracking** test
 - [ ] **Depth Limiting** test
-- [ ] **Robots Allow/Deny** tests (after enforcement code)
+ - [x] **Robots Allow/Deny** tests (`TestLiveSiteDiscovery` allow-mode, `TestLiveSiteRobotsDeny` deny-mode)
 - [ ] **Slow Endpoint Non-Blocking** test
 - [x] **Golden Snapshot Generation** (non-enforcing)
 - [ ] **Snapshot Diff Enforcement** (with UPDATE_SNAPSHOTS)
@@ -338,7 +338,7 @@ Implementation notes:
 
 ### Additional Near-Term Tasks
 
-- [ ] Robots enforcement logic in crawler (respect override flag)
+ - [x] Robots enforcement logic in crawler (respect override flag)
 - [ ] Flake detector script (loop integration test N times)
 - [ ] Depth/latency metrics instrumentation (optional lightweight timers)
 
