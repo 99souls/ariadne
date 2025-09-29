@@ -200,7 +200,7 @@ The repository includes a deterministic Bun + React live site (`tools/test-site`
 - Dark mode variant de-dup (theme query param canonicalized)
 - Large asset (~200KB) throughput (ensures no crawl stall)
 - Latency distribution baseline for `/api/slow`
-- URL normalization (cosmetic params: theme + utm_* stripped) – see `engine/README.md` section “URL Normalization & Variant De-duplication”
+- URL normalization (cosmetic params: theme + utm\_\* stripped) – see `engine/README.md` section “URL Normalization & Variant De-duplication”
 
 ### Make Targets
 
@@ -250,19 +250,30 @@ UPDATE_SNAPSHOTS=1 go test ./engine/internal/testutil/testsite -run TestGenerate
 
 4. Commit updated golden file.
 
+Flake Detection (optional, local):
+
+Use the flake detector to run the live site tests repeatedly and surface instability:
+
+```
+make flake-live            # default 10 iterations
+ITER=25 make flake-live    # custom iteration count
+```
+
+Outputs pass/fail counts plus basic duration stats (min / max / mean / p95). Any failure causes a non‑zero exit.
+
 ### Current Live Integration Tests (Sampling)
 
-| Test                                | Behavior Exercised                                                         |
-| ----------------------------------- | -------------------------------------------------------------------------- |
-| `TestLiveSiteDiscovery`             | Multi-page link discovery (allow robots)                                   |
-| `TestLiveSiteRobotsDeny`            | Deny-all robots gating (no pages fetched)                                  |
-| `TestLiveSiteDepthLimit`            | Path segment depth limiting (excludes deep leaf)                           |
-| `TestLiveSiteBrokenAsset`           | Broken asset surfaced with >=400 status (non-blocking)                     |
-| `TestLiveSiteSlowEndpoint`          | Slow `/api/slow` endpoint fetched without excessive wall time              |
-| `TestLiveSiteReuseSingleInstance`   | Bun process reuse across tests                                             |
-| `TestLiveSiteDarkModeDeDup`         | Dark mode variant collapses to canonical URL                               |
-| `TestLiveSiteLargeAssetThroughput`  | Large binary asset fetch does not degrade overall crawl throughput         |
-| `TestLiveSiteLatencyDistribution`   | Latency envelope maintained (distribution within expected bounds)          |
+| Test                               | Behavior Exercised                                                 |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `TestLiveSiteDiscovery`            | Multi-page link discovery (allow robots)                           |
+| `TestLiveSiteRobotsDeny`           | Deny-all robots gating (no pages fetched)                          |
+| `TestLiveSiteDepthLimit`           | Path segment depth limiting (excludes deep leaf)                   |
+| `TestLiveSiteBrokenAsset`          | Broken asset surfaced with >=400 status (non-blocking)             |
+| `TestLiveSiteSlowEndpoint`         | Slow `/api/slow` endpoint fetched without excessive wall time      |
+| `TestLiveSiteReuseSingleInstance`  | Bun process reuse across tests                                     |
+| `TestLiveSiteDarkModeDeDup`        | Dark mode variant collapses to canonical URL                       |
+| `TestLiveSiteLargeAssetThroughput` | Large binary asset fetch does not degrade overall crawl throughput |
+| `TestLiveSiteLatencyDistribution`  | Latency envelope maintained (distribution within expected bounds)  |
 
 ### Adding New Assertions
 

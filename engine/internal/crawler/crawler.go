@@ -23,6 +23,7 @@ type Crawler struct {
 	mu        sync.RWMutex
 	robots    *robotsCache
 	stopping  bool
+	closedResults bool
 }
 
 func New(config *models.ScraperConfig) *Crawler {
@@ -59,6 +60,14 @@ func (c *Crawler) setupCallbacks() {
 		log.Printf("Visiting: %s", r.URL.String())
 	})
 	c.collector.OnHTML("html", func(e *colly.HTMLElement) {
+		// Avoid emitting after stop closure; cheap read lock.
+		c.mu.RLock()
+		stopping := c.stopping
+		closed := c.closedResults
+		c.mu.RUnlock()
+		if stopping || closed {
+			return
+		}
 		page := c.extractPage(e)
 		// Normalize the page URL before emitting so cosmetic query params (e.g. theme, utm_*)
 		// do not cause separate logical pages in results. We intentionally only update the
@@ -82,6 +91,12 @@ func (c *Crawler) setupCallbacks() {
 			resultURL = page.URL.String()
 		}
 		result := &models.CrawlResult{URL: resultURL, Page: page, Stage: "crawl", Success: true}
+		c.mu.RLock()
+		closed = c.closedResults
+		c.mu.RUnlock()
+		if closed {
+			return
+		}
 		select {
 		case c.results <- result:
 		default:
@@ -89,6 +104,11 @@ func (c *Crawler) setupCallbacks() {
 		}
 	})
 	c.collector.OnError(func(r *colly.Response, err error) {
+		c.mu.RLock()
+		closed := c.closedResults
+		stopping := c.stopping
+		c.mu.RUnlock()
+		if stopping || closed { return }
 		log.Printf("Error crawling %s: %v", r.Request.URL, err)
 		stage := "crawl"
 		ct := strings.ToLower(r.Headers.Get("Content-Type"))
@@ -97,6 +117,10 @@ func (c *Crawler) setupCallbacks() {
 		}
 		normURL := c.normalizeURL(r.Request.URL)
 		result := &models.CrawlResult{URL: normURL, Error: models.NewCrawlError(normURL, stage, err), Stage: stage, Success: false, Retry: false, StatusCode: r.StatusCode}
+		c.mu.RLock()
+		closed = c.closedResults
+		c.mu.RUnlock()
+		if closed { return }
 		select {
 		case c.results <- result:
 		default:
@@ -110,11 +134,20 @@ func (c *Crawler) setupCallbacks() {
 		// For non-HTML (e.g., images) we emit a CrawlResult to allow tests to observe asset status codes (404, etc.).
 		ct := strings.ToLower(r.Headers.Get("Content-Type"))
 		if !strings.Contains(ct, "text/html") {
+			c.mu.RLock()
+			closed := c.closedResults
+			stopping := c.stopping
+			c.mu.RUnlock()
+			if stopping || closed { return }
 			normURL := c.normalizeURL(r.Request.URL)
 			result := &models.CrawlResult{URL: normURL, Stage: "asset", Success: r.StatusCode < 400, StatusCode: r.StatusCode}
 			if r.StatusCode >= 400 {
 				result.Error = fmt.Errorf("asset status %d", r.StatusCode)
 			}
+			c.mu.RLock()
+			closed = c.closedResults
+			c.mu.RUnlock()
+			if closed { return }
 			select {
 			case c.results <- result:
 			default:
@@ -250,7 +283,12 @@ func (c *Crawler) Stop() {
 	c.mu.Unlock()
 	close(c.queue)
 	c.collector.Wait()
-	close(c.results)
+	c.mu.Lock()
+	if !c.closedResults {
+		close(c.results)
+	c.closedResults = true
+	}
+	c.mu.Unlock()
 	c.mu.Lock()
 	c.stats.EndTime = time.Now()
 	c.stats.Duration = c.stats.EndTime.Sub(c.stats.StartTime)

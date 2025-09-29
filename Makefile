@@ -7,7 +7,7 @@ MODULES := engine cli tools/apireport
 BUN ?= bun
 
 # Live test site targets
-.PHONY: testsite-dev testsite-check integ-live
+.PHONY: testsite-dev testsite-check integ-live flake-live
 
 testsite-dev:
 	@command -v $(BUN) >/dev/null 2>&1 || { echo "bun not installed (see https://bun.sh)." >&2; exit 1; }
@@ -22,6 +22,11 @@ testsite-check:
 integ-live:
 	@echo "==> live integration tests" >&2
 	TESTSITE_REUSE=1 $(GO) test ./engine/... -run 'LiveSite' -count=1 -timeout=90s
+
+# Run flake detector (ITER env or arg overrides iteration count)
+flake-live:
+	@ITER=$${ITER:-10}; echo "==> flake detector ($$ITER iterations)" >&2; \
+	 bash scripts/flake_detector.sh $$ITER LiveSite
 
 # Generate normalized snapshots from the live test site (future use for golden comparisons)
 testsite-snapshots:
