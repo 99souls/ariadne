@@ -1,6 +1,6 @@
 # Live Test Site Module Plan (Bun + React)
 
-Status: **IN PROGRESS** (Robots, Snapshot diff, Depth limiting, Broken asset, Slow endpoint tests added)
+Status: **IN PROGRESS** (Robots, Snapshot diff, Depth limiting, Broken asset, Slow endpoint, Reuse validation tests added)
 Owner: Core / Testing
 Purpose: Introduce a lightweight, deterministic, zero-external-dependency web application inside the monorepo that the engine + CLI integration tests can crawl. This replaces/augments current synthetic mocks with a realistic HTML/CSS/asset/SPA surface.
 
@@ -31,7 +31,8 @@ Purpose: Introduce a lightweight, deterministic, zero-external-dependency web ap
 
 - `/api/ping` - Health check endpoint
 - `/api/posts` - Static JSON post data
-- `/api/slow` - Latency injection endpoint (400-600ms delay)
+- `/api/slow` - Latency injection endpoint (fixed 500ms delay)
+- `/api/instance` - Process identity (id + startedAt) for harness reuse validation (added 2025-09-29)
 
 ### Content Features ✅
 
@@ -223,6 +224,7 @@ Assertions implemented:
 - Robots gating allow/deny ✅ (`TestLiveSiteDiscovery`, `TestLiveSiteRobotsDeny`)
 - Broken asset surfaced as asset result with >=400 status ✅ (`TestLiveSiteBrokenAsset`)
 - Slow endpoint latency non-blocking ✅ (`TestLiveSiteSlowEndpoint`)
+- Reuse single process validation ✅ (`TestLiveSiteReuseSingleInstance`)
 - Snapshot diff enforcement ✅ (`TestGenerateSnapshots` with drift check)
 
 Remaining assertions to add:
