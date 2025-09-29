@@ -296,18 +296,25 @@ func (c *Crawler) Stats() *models.CrawlStats {
 }
 func (c *Crawler) Stop() {
 	log.Println("Stopping crawler...")
+	// Make Stop idempotent: if already stopping, return early.
 	c.mu.Lock()
+	if c.stopping {
+		c.mu.Unlock()
+		return
+	}
 	c.stopping = true
 	c.mu.Unlock()
+	// Closing the queue signals processQueue to finish; it may still be in Visit calls.
+	// We do this before Wait to ensure no additional URLs are enqueued.
 	close(c.queue)
+	// Wait for collector goroutines; protect against WaitGroup reuse by ensuring
+	// we only ever call Wait once (guarded by stopping flag above).
 	c.collector.Wait()
 	c.mu.Lock()
 	if !c.closedResults {
 		close(c.results)
 		c.closedResults = true
 	}
-	c.mu.Unlock()
-	c.mu.Lock()
 	c.stats.EndTime = time.Now()
 	c.stats.Duration = c.stats.EndTime.Sub(c.stats.StartTime)
 	c.mu.Unlock()

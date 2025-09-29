@@ -11,27 +11,10 @@ fails=0
 durations=()
 
 for i in $(seq 1 "$ITERATIONS"); do
-  # Portable millisecond timestamp (macOS `date` lacks %N with GNU semantics)
-  if start_epoch=$(date +%s 2>/dev/null); then
-    if ms_part=$(date +%3N 2>/dev/null); then
-      start="${start_epoch}${ms_part}"
-    else
-      # Fallback: use perl high‑res time * 1000 (integer)
-      start=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
-    fi
-  else
-    start=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
-  fi
+  # Portable millisecond timestamp using Perl only (avoids macOS date quirks returning literals like 16593N)
+  start=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
   if TESTSITE_REUSE=1 $GO test ./engine/... -run "$PATTERN" -count=1 -timeout=90s >/tmp/flake_run.$$.$i.log 2>&1; then
-    if end_epoch=$(date +%s 2>/dev/null); then
-      if ms_part=$(date +%3N 2>/dev/null); then
-        end="${end_epoch}${ms_part}"
-      else
-        end=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
-      fi
-    else
-      end=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
-    fi
+    end=$(perl -MTime::HiRes=time -e 'printf("%d", time()*1000)')
     dur=$(( end - start ))
     durations+=("$dur")
     echo "[$i] PASS ${dur}ms" >&2
@@ -57,10 +40,13 @@ if [ ${#durations[@]} -gt 0 ]; then
   mean=$(( total / ${#durations[@]} ))
   # compute simple p95 (sorted, 95th percentile index)
   sorted=($(printf '%s\n' "${durations[@]}" | sort -n))
-  idx=$(awk -v n=${#sorted[@]} 'BEGIN{ printf "%d", (0.95*n); }')
-  (( idx >= n )) && idx=$((n-1))
-  p95=${sorted[$idx]}
-  echo "Durations(ms): n=${#durations[@]} min=$min max=$max mean=$mean p95=$p95" >&2
+  n=${#sorted[@]}
+  if [ "$n" -gt 0 ]; then
+    idx=$(awk -v n=$n 'BEGIN{ printf "%d", (0.95*n); }')
+    if [ "$idx" -ge "$n" ]; then idx=$((n-1)); fi
+    p95=${sorted[$idx]}
+    echo "Durations(ms): n=$n min=$min max=$max mean=$mean p95=$p95" >&2
+  fi
 fi
 
 if [ "$fails" -ne 0 ]; then
