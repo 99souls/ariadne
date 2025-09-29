@@ -189,7 +189,15 @@ Hooks intentionally use `-short` tests to keep latency low; CI still runs the fu
 
 ## Live Test Site Usage (Integration Surface)
 
-The repository includes a deterministic Bun + React live site (`tools/test-site`) used by integration tests to exercise real HTTP crawling (links, assets, robots, latency, broken references).
+The repository includes a deterministic Bun + React live site (`tools/test-site`) used by integration tests to exercise real HTTP crawling:
+
+- Link discovery & depth limiting
+- Robots allow / deny modes
+- Asset success + intentional 404
+- Slow endpoint latency impact
+- Process reuse (no respawn when `TESTSITE_REUSE=1`)
+- Advanced content fixture (admonitions, code fences, footnotes, table)
+- Latency distribution harness (baseline envelope for `/api/slow`)
 
 ### Make Targets
 
@@ -202,12 +210,12 @@ make testsite-snapshots   # Regenerate normalized HTML snapshot goldens
 
 ### Environment Variables
 
-| Variable | Purpose | Default |
-| -------- | ------- | ------- |
-| `TESTSITE_PORT` | Fixed port (otherwise ephemeral) | 5173 |
-| `TESTSITE_REUSE` | If `1`, keep process alive across tests | unset |
-| `TESTSITE_ROBOTS` | `allow` or `deny` robots mode | allow |
-| `UPDATE_SNAPSHOTS` | If `1`, rewrite snapshot golden files | unset |
+| Variable           | Purpose                                 | Default |
+| ------------------ | --------------------------------------- | ------- |
+| `TESTSITE_PORT`    | Fixed port (otherwise ephemeral)        | 5173    |
+| `TESTSITE_REUSE`   | If `1`, keep process alive across tests | unset   |
+| `TESTSITE_ROBOTS`  | `allow` or `deny` robots mode           | allow   |
+| `UPDATE_SNAPSHOTS` | If `1`, rewrite snapshot golden files   | unset   |
 
 ### Running Integration Tests
 
@@ -232,19 +240,21 @@ The snapshot test (`TestGenerateSnapshots`) fetches a page, normalizes HTML (rem
 1. Edit site content intentionally.
 2. Run test and observe failure (drift output shows first differing line).
 3. Accept change:
-  ```bash
-  UPDATE_SNAPSHOTS=1 go test ./engine/internal/testutil/testsite -run TestGenerateSnapshots -count=1
-  ```
+
+```bash
+UPDATE_SNAPSHOTS=1 go test ./engine/internal/testutil/testsite -run TestGenerateSnapshots -count=1
+```
+
 4. Commit updated golden file.
 
 ### Current Live Integration Tests
 
-| Test | Behavior Exercised |
-| ---- | ------------------- |
-| `TestLiveSiteDiscovery` | Multi-page link discovery (allow robots) |
-| `TestLiveSiteRobotsDeny` | Deny-all robots gating (no pages fetched) |
-| `TestLiveSiteDepthLimit` | Path segment depth limiting (excludes deep leaf) |
-| `TestLiveSiteBrokenAsset` | Broken asset surfaced with >=400 status (non-blocking) |
+| Test                       | Behavior Exercised                                            |
+| -------------------------- | ------------------------------------------------------------- |
+| `TestLiveSiteDiscovery`    | Multi-page link discovery (allow robots)                      |
+| `TestLiveSiteRobotsDeny`   | Deny-all robots gating (no pages fetched)                     |
+| `TestLiveSiteDepthLimit`   | Path segment depth limiting (excludes deep leaf)              |
+| `TestLiveSiteBrokenAsset`  | Broken asset surfaced with >=400 status (non-blocking)        |
 | `TestLiveSiteSlowEndpoint` | Slow `/api/slow` endpoint fetched without excessive wall time |
 
 ### Adding New Assertions
@@ -256,4 +266,3 @@ Prefer adding new behaviors to the live site (e.g., footnotes, dark mode, large 
 - No timestamps or random content in pages.
 - Keep latency injection endpoints bounded (current `/api/slow` 400–600ms).
 - Normalize volatile HTML (ids, data attributes) in snapshot tests.
-

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Content Feature Fixture</title>
+  </head>
+  <body>
+    <h1>Content Feature Fixture</h1>
+    <div class="admonition note" role="note" aria-label="Note">
+      <p><strong>Note:</strong> This is a note admonition.</p>
+    </div>
+    <div class="admonition warning" role="alert" aria-label="Warning">
+      <p><strong>Warning:</strong> This is a warning admonition.</p>
+    </div>
+    <div class="admonition tip" role="note" aria-label="Tip">
+      <p><strong>Tip:</strong> This is a tip admonition.</p>
+    </div>
+    <pre><code class="language-go">package main
+import "fmt"
+func main(){ fmt.Println("hello world") }
+</code></pre>
+    <pre><code class="language-ts">export function add(a: number, b: number){ return a + b }
+</code></pre>
+    <p>
+      Here is a footnote reference.<sup id="fnref1"><a href="#fn1">1</a></sup>
+    </p>
+    <hr />
+    <section id="footnotes">
+      <ol>
+        <li id="fn1">
+          This is the footnote content.
+          <a href="#fnref1" aria-label="Back to content">↩</a>
+        </li>
+      </ol>
+    </section>
+  </body>
+</html>
