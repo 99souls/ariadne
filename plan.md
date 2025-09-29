@@ -32,11 +32,11 @@ Focus shifts to expanding coverage of live-site driven behaviors: robots enforce
 
 ### Next 5 Tactical Tasks (Fast Lane)
 
-1. Implement robots.txt enforcement in crawler + add allow/deny tests.
-2. Add depth limiting integration test using deep nested route.
-3. Enforce snapshot diff (docs page) with UPDATE_SNAPSHOTS override.
-4. Broken asset + slow endpoint resilience assertions (error counting & timing budget).
-5. README section documenting live test site usage & Makefile targets.
+1. Implement robots.txt enforcement in crawler + add allow/deny tests. ✅ (Done)
+2. Add depth limiting integration test using deep nested route. ✅ (Done - TestLiveSiteDepthLimit)
+3. Enforce snapshot diff (docs page) with UPDATE_SNAPSHOTS override. ✅ (Done - snapshot_test)
+4. Broken asset + slow endpoint resilience assertions (error counting & timing budget). ✅ (Done - TestLiveSiteBrokenAsset, TestLiveSiteSlowEndpoint)
+5. README section documenting live test site usage & Makefile targets. ⏳ (Pending)
 
 ---
 
@@ -264,13 +264,13 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 ### 6.3 Integration Test Migration (P1 Scope – In Progress)
 
 - [x] Replace at least one discovery test: `TestLiveSiteDiscovery` added.
-- [ ] Depth limiting assertion (use `/docs/deep/.../leaf` with MaxDepth=3 expecting exclusion).
-- [ ] Broken asset tracking assertion (missing PNG should increment error/asset fail count).
-- [ ] Slow endpoint latency non-blocking test (crawl while `/api/slow` requested; total crawl time < threshold).
+- [x] Depth limiting assertion (use `/labs/depth/.../leaf` with MaxDepth=4 excluding depth-5 leaf) ✅
+- [x] Broken asset tracking assertion (missing PNG increments asset fail count) ✅
+- [x] Slow endpoint latency non-blocking test (ensures total crawl within budget) ✅
 - [x] Robots allow variant honored (baseline) – explicit via `TestLiveSiteDiscovery` (RespectRobots=true).
 - [x] Robots deny variant test (with `TESTSITE_ROBOTS=deny` + `RespectRobots=true` expecting zero pages beyond root) – implemented (`TestLiveSiteRobotsDeny`).
 - [x] Snapshot generation utility + first golden capture (non-enforcing).
-- [ ] Snapshot diff enforcement (fail test on drift; allow `UPDATE_SNAPSHOTS=1` override).
+- [x] Snapshot diff enforcement (fail test on drift; allow `UPDATE_SNAPSHOTS=1` override) ✅
 
 ### 6.4 Determinism & Metrics (P2 – Upcoming)
 

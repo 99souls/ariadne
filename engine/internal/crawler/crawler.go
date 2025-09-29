@@ -22,6 +22,7 @@ type Crawler struct {
 	stats     *models.CrawlStats
 	mu        sync.RWMutex
 	robots    *robotsCache
+	stopping  bool
 }
 
 func New(config *models.ScraperConfig) *Crawler {
@@ -91,7 +92,9 @@ func (c *Crawler) setupCallbacks() {
 		}
 	})
 	c.collector.OnResponse(func(r *colly.Response) {
-		c.mu.Lock(); c.stats.ProcessedPages++; c.mu.Unlock()
+		c.mu.Lock()
+		c.stats.ProcessedPages++
+		c.mu.Unlock()
 		// For non-HTML (e.g., images) we emit a CrawlResult to allow tests to observe asset status codes (404, etc.).
 		ct := strings.ToLower(r.Headers.Get("Content-Type"))
 		if !strings.Contains(ct, "text/html") {
@@ -99,7 +102,10 @@ func (c *Crawler) setupCallbacks() {
 			if r.StatusCode >= 400 {
 				result.Error = fmt.Errorf("asset status %d", r.StatusCode)
 			}
-			select { case c.results <- result: default: }
+			select {
+			case c.results <- result:
+			default:
+			}
 		}
 	})
 }
@@ -136,6 +142,13 @@ func (c *Crawler) processLink(link string, base *url.URL) {
 	if err != nil {
 		return
 	}
+	// If stopping, avoid enqueueing new work to prevent race with collector.Wait.
+	c.mu.RLock()
+	if c.stopping {
+		c.mu.RUnlock()
+		return
+	}
+	c.mu.RUnlock()
 	// Early check: if path includes "/static/img/missing.png" ensure we always attempt fetch
 	// (Even if previously visited we don't requeue; this just documents intent.)
 	normalizedURL := c.normalizeURL(linkURL)
@@ -204,6 +217,9 @@ func (c *Crawler) Stats() *models.CrawlStats {
 }
 func (c *Crawler) Stop() {
 	log.Println("Stopping crawler...")
+	c.mu.Lock()
+	c.stopping = true
+	c.mu.Unlock()
 	close(c.queue)
 	c.collector.Wait()
 	close(c.results)
