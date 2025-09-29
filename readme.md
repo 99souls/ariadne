@@ -274,6 +274,7 @@ Outputs pass/fail counts plus basic duration stats (min / max / mean / p95). Any
 | `TestLiveSiteDarkModeDeDup`        | Dark mode variant collapses to canonical URL                       |
 | `TestLiveSiteLargeAssetThroughput` | Large binary asset fetch does not degrade overall crawl throughput |
 | `TestLiveSiteLatencyDistribution`  | Latency envelope maintained (distribution within expected bounds)  |
+| `TestLiveSiteSearchIndexIgnored`   | `/api/search.json` ignored (non-page JSON endpoint)                |
 
 ### Adding New Assertions
 

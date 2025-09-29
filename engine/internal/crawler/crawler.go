@@ -14,15 +14,15 @@ import (
 )
 
 type Crawler struct {
-	config    *models.ScraperConfig
-	collector *colly.Collector
-	visited   sync.Map
-	queue     chan string
-	results   chan *models.CrawlResult
-	stats     *models.CrawlStats
-	mu        sync.RWMutex
-	robots    *robotsCache
-	stopping  bool
+	config        *models.ScraperConfig
+	collector     *colly.Collector
+	visited       sync.Map
+	queue         chan string
+	results       chan *models.CrawlResult
+	stats         *models.CrawlStats
+	mu            sync.RWMutex
+	robots        *robotsCache
+	stopping      bool
 	closedResults bool
 }
 
@@ -68,6 +68,12 @@ func (c *Crawler) setupCallbacks() {
 		if stopping || closed {
 			return
 		}
+		// If the underlying request URL corresponds to a known non-page JSON endpoint (e.g., search index),
+		// skip emitting a Page result entirely. Discovery of the endpoint may happen via a link, but we do
+		// not want it treated as a logical content page.
+		if strings.HasSuffix(e.Request.URL.Path, "/api/search.json") {
+			return
+		}
 		page := c.extractPage(e)
 		// Normalize the page URL before emitting so cosmetic query params (e.g. theme, utm_*)
 		// do not cause separate logical pages in results. We intentionally only update the
@@ -108,7 +114,9 @@ func (c *Crawler) setupCallbacks() {
 		closed := c.closedResults
 		stopping := c.stopping
 		c.mu.RUnlock()
-		if stopping || closed { return }
+		if stopping || closed {
+			return
+		}
 		log.Printf("Error crawling %s: %v", r.Request.URL, err)
 		stage := "crawl"
 		ct := strings.ToLower(r.Headers.Get("Content-Type"))
@@ -120,7 +128,9 @@ func (c *Crawler) setupCallbacks() {
 		c.mu.RLock()
 		closed = c.closedResults
 		c.mu.RUnlock()
-		if closed { return }
+		if closed {
+			return
+		}
 		select {
 		case c.results <- result:
 		default:
@@ -134,11 +144,17 @@ func (c *Crawler) setupCallbacks() {
 		// For non-HTML (e.g., images) we emit a CrawlResult to allow tests to observe asset status codes (404, etc.).
 		ct := strings.ToLower(r.Headers.Get("Content-Type"))
 		if !strings.Contains(ct, "text/html") {
+			// Ignore known non-page JSON endpoints like search index: do not emit as asset/page.
+			if strings.HasSuffix(r.Request.URL.Path, "/api/search.json") {
+				return
+			}
 			c.mu.RLock()
 			closed := c.closedResults
 			stopping := c.stopping
 			c.mu.RUnlock()
-			if stopping || closed { return }
+			if stopping || closed {
+				return
+			}
 			normURL := c.normalizeURL(r.Request.URL)
 			result := &models.CrawlResult{URL: normURL, Stage: "asset", Success: r.StatusCode < 400, StatusCode: r.StatusCode}
 			if r.StatusCode >= 400 {
@@ -147,7 +163,9 @@ func (c *Crawler) setupCallbacks() {
 			c.mu.RLock()
 			closed = c.closedResults
 			c.mu.RUnlock()
-			if closed { return }
+			if closed {
+				return
+			}
 			select {
 			case c.results <- result:
 			default:
@@ -286,7 +304,7 @@ func (c *Crawler) Stop() {
 	c.mu.Lock()
 	if !c.closedResults {
 		close(c.results)
-	c.closedResults = true
+		c.closedResults = true
 	}
 	c.mu.Unlock()
 	c.mu.Lock()

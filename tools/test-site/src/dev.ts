@@ -60,6 +60,20 @@ const server = serve({
       return Response.json({ id: instanceId, startedAt });
     }
 
+    // Search index endpoint (intentionally ignored by crawler as a non-page JSON surface).
+    if (pathname === "/api/search.json") {
+      const searchIndex = {
+        version: 1,
+        generatedAt: "2024-01-01T00:00:00Z",
+        entries: [
+          { url: "/", title: "Home" },
+          { url: "/about", title: "About" },
+          { url: "/docs/getting-started", title: "Getting Started" }
+        ]
+      };
+      return Response.json(searchIndex, { headers: { "Cache-Control": "no-store" } });
+    }
+
     // Dynamic robots.txt based on environment
     if (pathname === "/robots.txt") {
       const robotsContent =

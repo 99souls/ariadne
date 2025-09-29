@@ -36,7 +36,7 @@ Focus shifts to expanding coverage of live-site driven behaviors: robots enforce
 2. Add depth limiting integration test using deep nested route. ✅ (Done – TestLiveSiteDepthLimit)
 3. Enforce snapshot diff (docs page) with UPDATE_SNAPSHOTS override. ✅ (Done – snapshot_test)
 4. Broken asset + slow endpoint resilience assertions (error counting & timing budget). ✅ (Done – TestLiveSiteBrokenAsset, TestLiveSiteSlowEndpoint)
-5. Dark mode variant de-dup + large asset throughput + latency distribution + URL normalization docs (engine README). ⏳ (Root README update pending)
+5. Dark mode variant de-dup + large asset throughput + latency distribution + URL normalization docs (engine README). ✅
 
 ---
 
@@ -272,16 +272,17 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 - [x] Snapshot generation utility + first golden capture (non-enforcing).
 - [x] Snapshot diff enforcement (fail test on drift; allow `UPDATE_SNAPSHOTS=1` override) ✅
 
-### 6.4 Determinism & Metrics (P2 – In Progress)
+### 6.4 Determinism & Metrics (P2 – Complete)
 
 - [x] Robots enforcement in crawler (respect + override flag) wiring
 - [x] Deny-all gating test (`TestLiveSiteRobotsDeny`)
-- [x] Dark mode variant de-dup test (`TestLiveSiteDarkModeDeDup`) + selective URL normalization (theme + utm_* removal)
+- [x] Dark mode variant de-dup test (`TestLiveSiteDarkModeDeDup`) + selective URL normalization (theme + utm\_\* removal)
 - [x] Large asset throughput test (~200KB) (`TestLiveSiteLargeAssetThroughput`)
 - [x] Latency distribution baseline test (`TestLiveSiteLatencyDistribution`) exercising /api/slow envelope
 - [x] Emission-time URL normalization (pages, assets, errors) ensures canonical URLs downstream
 - [ ] Sitemap ingestion test (if/when crawler supports sitemap seeding) else create issue & defer
-- [ ] Flake detector script (run integration test suite N times; variance & outlier reporting)
+- [x] Flake detector script (run integration test suite N times; variance & outlier reporting)
+- [x] Search index endpoint ignore test (`TestLiveSiteSearchIndexIgnored`) ensuring /api/search.json not treated as page
 
 ### Success Criteria (Phase 6 Gate)
 
