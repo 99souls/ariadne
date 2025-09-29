@@ -197,7 +197,10 @@ The repository includes a deterministic Bun + React live site (`tools/test-site`
 - Slow endpoint latency impact
 - Process reuse (no respawn when `TESTSITE_REUSE=1`)
 - Advanced content fixture (admonitions, code fences, footnotes, table)
-- Latency distribution harness (baseline envelope for `/api/slow`)
+- Dark mode variant de-dup (theme query param canonicalized)
+- Large asset (~200KB) throughput (ensures no crawl stall)
+- Latency distribution baseline for `/api/slow`
+- URL normalization (cosmetic params: theme + utm_* stripped) – see `engine/README.md` section “URL Normalization & Variant De-duplication”
 
 ### Make Targets
 
@@ -235,7 +238,7 @@ go test ./engine/internal/business/crawler -run TestLiveSiteBrokenAsset -count=1
 
 ### Snapshot Workflow
 
-The snapshot test (`TestGenerateSnapshots`) fetches a page, normalizes HTML (removes volatile attributes/whitespace), and compares it to a golden in `engine/internal/testutil/testsite/testdata/snapshots/`.
+The snapshot test (`TestGenerateSnapshots`) fetches a page, normalizes HTML (removes volatile attributes/whitespace and cosmetic query params), and compares it to a golden in `engine/internal/testutil/testsite/testdata/snapshots/`.
 
 1. Edit site content intentionally.
 2. Run test and observe failure (drift output shows first differing line).
@@ -247,15 +250,19 @@ UPDATE_SNAPSHOTS=1 go test ./engine/internal/testutil/testsite -run TestGenerate
 
 4. Commit updated golden file.
 
-### Current Live Integration Tests
+### Current Live Integration Tests (Sampling)
 
-| Test                       | Behavior Exercised                                            |
-| -------------------------- | ------------------------------------------------------------- |
-| `TestLiveSiteDiscovery`    | Multi-page link discovery (allow robots)                      |
-| `TestLiveSiteRobotsDeny`   | Deny-all robots gating (no pages fetched)                     |
-| `TestLiveSiteDepthLimit`   | Path segment depth limiting (excludes deep leaf)              |
-| `TestLiveSiteBrokenAsset`  | Broken asset surfaced with >=400 status (non-blocking)        |
-| `TestLiveSiteSlowEndpoint` | Slow `/api/slow` endpoint fetched without excessive wall time |
+| Test                                | Behavior Exercised                                                         |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| `TestLiveSiteDiscovery`             | Multi-page link discovery (allow robots)                                   |
+| `TestLiveSiteRobotsDeny`            | Deny-all robots gating (no pages fetched)                                  |
+| `TestLiveSiteDepthLimit`            | Path segment depth limiting (excludes deep leaf)                           |
+| `TestLiveSiteBrokenAsset`           | Broken asset surfaced with >=400 status (non-blocking)                     |
+| `TestLiveSiteSlowEndpoint`          | Slow `/api/slow` endpoint fetched without excessive wall time              |
+| `TestLiveSiteReuseSingleInstance`   | Bun process reuse across tests                                             |
+| `TestLiveSiteDarkModeDeDup`         | Dark mode variant collapses to canonical URL                               |
+| `TestLiveSiteLargeAssetThroughput`  | Large binary asset fetch does not degrade overall crawl throughput         |
+| `TestLiveSiteLatencyDistribution`   | Latency envelope maintained (distribution within expected bounds)          |
 
 ### Adding New Assertions
 
@@ -266,3 +273,4 @@ Prefer adding new behaviors to the live site (e.g., footnotes, dark mode, large 
 - No timestamps or random content in pages.
 - Keep latency injection endpoints bounded (current `/api/slow` 400–600ms).
 - Normalize volatile HTML (ids, data attributes) in snapshot tests.
+- Strip cosmetic query parameters (`theme`, `utm_*`) so variants do not inflate result sets.

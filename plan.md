@@ -30,13 +30,13 @@ We have successfully implemented a comprehensive live test site (`tools/test-sit
 
 Focus shifts to expanding coverage of live-site driven behaviors: robots enforcement, depth & latency assertions, snapshot diff gating, and reuse-mode validation.
 
-### Next 5 Tactical Tasks (Fast Lane)
+### Next 5 Tactical Tasks (Fast Lane) (UPDATED 2025-09-29 PM)
 
 1. Implement robots.txt enforcement in crawler + add allow/deny tests. ✅ (Done)
-2. Add depth limiting integration test using deep nested route. ✅ (Done - TestLiveSiteDepthLimit)
-3. Enforce snapshot diff (docs page) with UPDATE_SNAPSHOTS override. ✅ (Done - snapshot_test)
-4. Broken asset + slow endpoint resilience assertions (error counting & timing budget). ✅ (Done - TestLiveSiteBrokenAsset, TestLiveSiteSlowEndpoint)
-5. README section documenting live test site usage & Makefile targets. ⏳ (Pending)
+2. Add depth limiting integration test using deep nested route. ✅ (Done – TestLiveSiteDepthLimit)
+3. Enforce snapshot diff (docs page) with UPDATE_SNAPSHOTS override. ✅ (Done – snapshot_test)
+4. Broken asset + slow endpoint resilience assertions (error counting & timing budget). ✅ (Done – TestLiveSiteBrokenAsset, TestLiveSiteSlowEndpoint)
+5. Dark mode variant de-dup + large asset throughput + latency distribution + URL normalization docs (engine README). ⏳ (Root README update pending)
 
 ---
 
@@ -272,13 +272,16 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 - [x] Snapshot generation utility + first golden capture (non-enforcing).
 - [x] Snapshot diff enforcement (fail test on drift; allow `UPDATE_SNAPSHOTS=1` override) ✅
 
-### 6.4 Determinism & Metrics (P2 – Upcoming)
+### 6.4 Determinism & Metrics (P2 – In Progress)
 
-- [x] Robots enforcement in crawler (respect + override flag) wiring.
-- [x] Deny-all gating test (blocked pages confirmed via `TestLiveSiteRobotsDeny`).
-- [ ] Latency jitter boundaries test (measure distribution over N slow hits; ensure within 400–600ms, p95 < 610ms).
-- [ ] Sitemap ingestion test (if/when crawler supports sitemap seeding) else create issue & defer.
-- [ ] Flake detector script (run integration test 10x locally; report variance) – optional pre-CI tool.
+- [x] Robots enforcement in crawler (respect + override flag) wiring
+- [x] Deny-all gating test (`TestLiveSiteRobotsDeny`)
+- [x] Dark mode variant de-dup test (`TestLiveSiteDarkModeDeDup`) + selective URL normalization (theme + utm_* removal)
+- [x] Large asset throughput test (~200KB) (`TestLiveSiteLargeAssetThroughput`)
+- [x] Latency distribution baseline test (`TestLiveSiteLatencyDistribution`) exercising /api/slow envelope
+- [x] Emission-time URL normalization (pages, assets, errors) ensures canonical URLs downstream
+- [ ] Sitemap ingestion test (if/when crawler supports sitemap seeding) else create issue & defer
+- [ ] Flake detector script (run integration test suite N times; variance & outlier reporting)
 
 ### Success Criteria (Phase 6 Gate)
 
@@ -301,10 +304,11 @@ Purpose: Introduce a lightweight “Ariadne Wiki” live site (Bun + React) that
 
 ### Outputs (Updated)
 
-- New Make targets: `testsite-dev`, `integ-live`, `testsite-check`, `testsite-snapshots` (DONE).
-- Readme section: “Live Test Site Usage” (PENDING).
-- CI job step for Bun install + reuse of test site across integration suite (PENDING).
-- Snapshot golden(s) committed + update flow documented (PARTIAL – generation exists, doc missing).
+- New Make targets: `testsite-dev`, `integ-live`, `testsite-check`, `testsite-snapshots` (DONE)
+- Root README: “Live Test Site Usage” section (INITIAL – needs dark mode / large asset / normalization / latency distribution bullets)
+- Engine README: URL Normalization & Variant De-duplication section (DONE)
+- CI job step for Bun install + reuse of test site across integration suite (PENDING)
+- Snapshot golden(s) committed + update flow documented (PARTIAL – snapshot acceptance workflow elaboration pending in root README)
 
 ### Exit Gate
 

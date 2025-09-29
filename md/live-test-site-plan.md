@@ -1,6 +1,6 @@
 # Live Test Site Module Plan (Bun + React)
 
-Status: **IN PROGRESS** (Robots, Snapshot diff, Depth limiting, Broken asset, Slow endpoint, Reuse validation, Dark mode de-dup, Large asset throughput tests added)
+Status: **IN PROGRESS** (Robots, Snapshot diff, Depth limiting, Broken asset, Slow endpoint, Reuse validation, Dark mode de-dup, Large asset throughput, Latency distribution, URL normalization tests added)
 Owner: Core / Testing
 Purpose: Introduce a lightweight, deterministic, zero-external-dependency web application inside the monorepo that the engine + CLI integration tests can crawl. This replaces/augments current synthetic mocks with a realistic HTML/CSS/asset/SPA surface.
 
@@ -224,6 +224,10 @@ Assertions implemented:
 - Robots gating allow/deny ✅ (`TestLiveSiteDiscovery`, `TestLiveSiteRobotsDeny`)
 - Broken asset surfaced as asset result with >=400 status ✅ (`TestLiveSiteBrokenAsset`)
 - Slow endpoint latency non-blocking ✅ (`TestLiveSiteSlowEndpoint`)
+- Dark mode variant de-dup ✅ (`TestLiveSiteDarkModeDeDup`)
+- Large asset throughput ✅ (`TestLiveSiteLargeAssetThroughput`)
+- Latency distribution baseline ✅ (`TestLiveSiteLatencyDistribution`)
+- URL normalization unit test guard ✅ (`TestNormalizeURLCosmeticParams`)
 - Reuse single process validation ✅ (`TestLiveSiteReuseSingleInstance`)
 - Snapshot diff enforcement ✅ (`TestGenerateSnapshots` with drift check)
 
@@ -235,6 +239,7 @@ Remaining assertions to add:
 - Tag pages enumerated + backlink lists generated.
 - Search index endpoint ignoring (to be added with /api/search.json).
 - Sitemap seeding once crawler supports sitemap ingestion.
+- Flake detector multi-run variance reporting.
 
 ---
 
@@ -329,12 +334,14 @@ Implementation notes:
 - [x] **Golden Snapshot Generation** (non-enforcing)
 - [x] **Snapshot Diff Enforcement** (with UPDATE_SNAPSHOTS)
 
-### Enhanced Content Features
+### Enhanced Content Features (Updated)
 
 - [x] **Dark Mode**: Toggle via query param `?theme=dark`, normalization + de-dup test (`TestLiveSiteDarkModeDeDup`)
+- [x] **URL Normalization**: Cosmetic param stripping (theme, utm_*) with unit test guard (`TestNormalizeURLCosmeticParams`)
+- [x] **Performance Assets**: Large binary asset (~200KB) throughput test (`TestLiveSiteLargeAssetThroughput`)
+- [x] **Latency Distribution**: `/api/slow` exercised across multiple requests (`TestLiveSiteLatencyDistribution`)
 - [ ] **Search Index**: `/api/search.json` endpoint for testing API endpoint ignoring
 - [ ] **Enhanced Metadata**: More comprehensive OpenGraph tags, structured data
-- [x] **Performance Assets**: Large binary asset (~200KB) throughput test (`TestLiveSiteLargeAssetThroughput`)
 
 ### Makefile & Docs Integration
 
@@ -343,14 +350,16 @@ Implementation notes:
 - [ ] **Documentation**: Root README “Live Test Site Usage” section
 - [ ] **Snapshot Update Workflow Docs**
 
-### Additional Near-Term Tasks
+### Additional Near-Term Tasks (Updated)
 
 - [x] Robots enforcement logic in crawler (respect override flag)
 - [x] Dark mode query param canonicalization (normalization layer + integration test)
 - [x] URL normalization unit test coverage (`TestNormalizeURLCosmeticParams`)
 - [x] Large asset throughput assertion
+- [x] Latency distribution test baseline
 - [ ] Flake detector script (loop integration test N times)
 - [ ] Depth/latency metrics instrumentation (optional lightweight timers)
+- [ ] Root README enrichment (dark mode, normalization, large asset, latency docs)
 
 ## 12. ✅ COMPLETED PHASE 1 WORK
 
