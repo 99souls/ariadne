@@ -50,13 +50,13 @@ type OpenGraphMeta struct {
 // CrawlResult represents the result of processing a single URL through the pipeline.
 // Experimental: Error and Stage fields may change shape (structured error) before v1.0.
 type CrawlResult struct {
-	URL     string `json:"url"`
-	Page    *Page  `json:"page"`
-	Error   error  `json:"error,omitempty"`
-	Stage   string `json:"stage"`
-	Success bool   `json:"success"`
-	Retry   bool   `json:"retry"`
-	StatusCode int `json:"status_code,omitempty"`
+	URL        string `json:"url"`
+	Page       *Page  `json:"page"`
+	Error      error  `json:"error,omitempty"`
+	Stage      string `json:"stage"`
+	Success    bool   `json:"success"`
+	Retry      bool   `json:"retry"`
+	StatusCode int    `json:"status_code,omitempty"`
 }
 
 // CrawlStats aggregates crawl progress metrics.

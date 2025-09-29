@@ -3,8 +3,8 @@ package testsite
 import (
 	"os"
 	"path/filepath"
-	"testing"
 	"strings"
+	"testing"
 )
 
 // TestGenerateSnapshots launches the test site (reuse capable) and writes one normalized
@@ -42,13 +42,22 @@ func TestGenerateSnapshots(t *testing.T) {
 			expLines := strings.Split(expected, "\n")
 			actLines := strings.Split(actual, "\n")
 			max := len(expLines)
-			if len(actLines) > max { max = len(actLines) }
+			if len(actLines) > max {
+				max = len(actLines)
+			}
 			diffLine := -1
 			for i := 0; i < max; i++ {
 				var eLine, aLine string
-				if i < len(expLines) { eLine = expLines[i] }
-				if i < len(actLines) { aLine = actLines[i] }
-				if eLine != aLine { diffLine = i; break }
+				if i < len(expLines) {
+					eLine = expLines[i]
+				}
+				if i < len(actLines) {
+					aLine = actLines[i]
+				}
+				if eLine != aLine {
+					diffLine = i
+					break
+				}
 			}
 			if diffLine >= 0 {
 				t.Fatalf("snapshot drift detected at line %d\nEXPECTED: %q\nACTUAL:   %q\nRun with UPDATE_SNAPSHOTS=1 to accept changes.", diffLine+1, expLines[diffLine], actLines[diffLine])
